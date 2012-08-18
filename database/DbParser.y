@@ -97,8 +97,8 @@ relDef : relation upperId lbrace
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : maybeOptional fieldType lowerId fieldOptions { Field $1 (tokenType $2) $3 $4 } 
-      | maybeOptional upperId lowerId backRef { RefField $1 $2 $3 $4 }
+field : maybeOptional fieldType lowerId fieldOptions { Field $1 $3 (NormalField (tokenType $2) $4) } 
+      | maybeOptional upperId lowerId backRef { Field $1 $2 (RelField $3 $4) }
 
 fieldOptions : { [] }
              | lparen fieldOptionsList rparen { $2 }

@@ -533,7 +533,7 @@ happyReduction_18 ((HappyAbsSyn16  happy_var_4) `HappyStk`
 	(HappyAbsSyn27  happy_var_1) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn15
-		 (Field happy_var_1 (tokenType happy_var_2) happy_var_3 happy_var_4
+		 (Field happy_var_1 happy_var_3 (NormalField (tokenType happy_var_2) happy_var_4)
 	) `HappyStk` happyRest
 
 happyReduce_19 = happyReduce 4# 15# happyReduction_19
@@ -543,7 +543,7 @@ happyReduction_19 ((HappyAbsSyn24  happy_var_4) `HappyStk`
 	(HappyAbsSyn27  happy_var_1) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn15
-		 (RefField happy_var_1 happy_var_2 happy_var_3 happy_var_4
+		 (Field happy_var_1 happy_var_2 (RelField happy_var_3 happy_var_4)
 	) `HappyStk` happyRest
 
 happyReduce_20 = happySpecReduce_0  16# happyReduction_20

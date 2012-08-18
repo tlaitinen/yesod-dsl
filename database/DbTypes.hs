@@ -1,5 +1,7 @@
 module DbTypes where
 import DbLexer
+import Data.Maybe
+import Data.List
 type ImportPath = FilePath
 
 data DbModule = DbModule {
@@ -22,6 +24,7 @@ data DbDef = EntityDef Entity
            deriving (Show)
 
 
+ 
 isIface (IfaceDef _) = True
 isIface _ = False
 isEntity (EntityDef _) = True
@@ -36,7 +39,7 @@ getRelations defs = map (\(RelDef e) -> e) $ filter isRelation defs
 getIfaces :: [DbDef] -> [Iface]
 getIfaces defs = map (\(IfaceDef e) -> e) $ filter isIface defs
 
-
+   
 
 
 type IfaceName = String
@@ -83,12 +86,31 @@ data Relation = Relation {
     relIndices :: [Index]
 } deriving (Show)
 
+dbLookup :: DbModule -> String -> DbDef
+dbLookup db name 
+        | isJust entityMatch = EntityDef $ fromJust entityMatch
+        | isJust ifaceMatch  = IfaceDef $ fromJust ifaceMatch
+        | isJust relMatch    = RelDef $ fromJust relMatch
+        | otherwise = error $ "dbLookup failed : " ++ name
+    where
+        entityMatch = find (\e -> name == entityName e) (dbEntities db)
+        ifaceMatch  = find (\i -> name == ifaceName i) (dbIfaces db)
+        relMatch    = find (\r -> name == relName r) (dbRelations db)
+ 
 type DefaultValue = String
+data FieldContent = NormalField {
+                        normFieldType     :: FieldType,
+                        normFieldOptions  :: [FieldOption]
+                    } | RelField {
+                        relFieldRef       :: String,
+                        relFieldBackRef   :: Maybe BackRefField
+                    } deriving (Show)
 
-data Field = Field OptionalFlag FieldType FieldName [FieldOption]
-                 | RefField OptionalFlag EntityName FieldName (Maybe BackRefField)
-                 deriving (Show)
-
+data Field = Field {
+    fieldOptional :: OptionalFlag,
+    fieldName     :: FieldName,
+    fieldContent  :: FieldContent
+} deriving (Show)
 type FunctionName = String
 
 data FieldOption = FieldDefaultValue FieldValue

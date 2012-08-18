@@ -13,9 +13,6 @@ entity Foo {
 interface Versioned {
     integer version;
 }
-interface Foo {
-    integer version;
-}
 
 
 relation FooBar {
