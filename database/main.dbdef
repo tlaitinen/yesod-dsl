@@ -13,6 +13,11 @@ entity Foo {
 interface Versioned {
     integer version;
 }
+interface Foo {
+    integer version;
+}
+
+
 relation FooBar {
     Foo foo ([] fooBars);
     Bar bar (bar);

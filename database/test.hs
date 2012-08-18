@@ -4,6 +4,8 @@ import System.Environment
 import ModuleMerger
 import NameFinder
 import IfaceImplementer
+import DbTypes
+import Data.List
 main = do
     [ path ] <- getArgs
     dbs <- parse path
@@ -14,5 +16,4 @@ main = do
     let impl = implementInterfaces merged
     print impl
     print names
-
     

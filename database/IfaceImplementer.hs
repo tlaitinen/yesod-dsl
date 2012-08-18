@@ -21,7 +21,7 @@ implInEntities ifaces entities = map (implInEntity ifaces) entities
 
 
 implInRelations :: [Iface] -> [Relation] -> [Relation]
-implInRelations ifaces rels = map (implInRelation ifaces) rels
+implInRelations ifaces rels = concatMap (implInRelation ifaces) rels
 
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
@@ -44,5 +44,6 @@ implInEntity ifaces e
         extraIndices = concat $ map ifaceIndices validIfaces
         
     
-implInRelation :: [Iface] -> Relation -> Relation
-implInRelation ifaces rel = rel
+implInRelation :: [Iface] -> Relation -> [Relation]
+implInRelation ifaces rel = [rel]
+

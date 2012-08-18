@@ -13,8 +13,11 @@ findNames db
         relNames     = [(relLoc r, relName r) | r <- dbRelations db ]
         allNames     = entityNames ++ ifaceNames ++ relNames
 
+        sameNameOrd (_,n1) (_,n2) = compare n1 n2
+        sortedNames = sortBy sameNameOrd allNames
+
         sameName (_,n1) (_,n2) = n1 == n2
-        groupedNames = groupBy sameName allNames
+        groupedNames = groupBy sameName sortedNames
 
         factorName :: [(Location,String)] -> (String,[Location])
         factorName (all@((_,name):rest)) = (name, [l | (l,_) <- all ])
