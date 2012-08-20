@@ -28,4 +28,4 @@ The generated code uses:
  * work in progress
 
 ## License
- * This library is distributed under the terms of [Simplified BSD license](enterdsl/LICENSE)
+ * This library is distributed under the terms of [Simplified BSD license](enterdsl/blob/master/LICENSE)
