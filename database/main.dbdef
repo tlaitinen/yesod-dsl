@@ -1,22 +1,22 @@
 import "module.dbdef";
 
 entity Bar {
-    string name (default "foo", unique, check longer3);
+    Text name (default "foo", unique, check longer3);
     Foo foo (bar);
     unique index (name);
 }
 entity Foo {
     implements Versioned;
-    optional string name;
+    optional Text name;
 }
 
 interface Versioned {
-    integer version;
+    Int64 version;
 }
 
 
 relation FooBar {
-    Foo foo ([] fooBars);
+    Foo foo (fooBars);
     Bar bar (bar);
 }
     
