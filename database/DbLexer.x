@@ -35,24 +35,19 @@ tokens :-
     "index" { mkT TIndex }
     "check" { mkT TCheck }
     "default" { mkT TDefault }
-    "word32" { mkT TWord32 }
-    "word64" { mkT TWord64 }
-    "int32" { mkT TInt32 }
-    "int64" { mkT TInt64 }
-    "integer" { mkT TInteger }
-    "string" { mkT TStringType }
-    "bool" { mkT TBool }
-    "char" { mkT TChar }
-    "rational" { mkT TRational }
-    "double" { mkT TDouble }
+    "Word32" { mkT TWord32 }
+    "Word64" { mkT TWord64 }
+    "Int32" { mkT TInt32 }
+    "Int64" { mkT TInt64 }
+    "Text" { mkT TText }
+    "Bool" { mkT TBool }
+    "Double" { mkT TDouble }
     "optional" { mkT TOptional }
-    "localdate" { mkT TLocalDate }
-    "localtime" { mkT TLocalTime }
-    "localdatetime" { mkT TLocalDateTime }
-    "zonedtime" { mkT TZonedTime }
-    "zoneddatetime" { mkT TZonedDateTime }
-    "utcdatetime" { mkT TUTCDateTime }
-    "posixtime" { mkT TPosixTime }
+    "Date" { mkT TDate }
+    "Time" { mkT TTime }
+    "DateTime" { mkT TDateTime }
+    "ZonedTime" { mkT TZonedTime }
+    "ZonedDateTime" { mkT TZonedDateTime }
 	$digit+ 		{ mkTvar (\s -> TInt (read s)) }
     $digit+ "." $digit+ { mkTvar (\s -> TFloat (read s)) }
 	$lower [$alpha $digit \_ ]*  { mkTvar (\s -> TLowerId s) }
@@ -89,16 +84,13 @@ data TokenType = TSemicolon
                | TWord64
                | TInt32
                | TInt64
-               | TInteger
-               | TStringType
+               | TText
                | TBool
-               | TChar
-               | TRational
                | TDouble
                | TOptional
-               | TLocalTime
-               | TLocalDate
-               | TLocalDateTime
+               | TTime
+               | TDate
+               | TDateTime
                | TZonedTime
                | TZonedDateTime
                | TUTCDateTime

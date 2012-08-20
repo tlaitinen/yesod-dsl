@@ -42,19 +42,14 @@ import System.Exit
     word64   { Tk _ TWord64 }
     int32    { Tk _ TInt32 }
     int64    { Tk _ TInt64 }
-    integer  { Tk _ TInteger }
-    string { Tk _ TStringType }
+    text { Tk _ TText }
     bool { Tk _ TBool }
-    char { Tk _ TChar }
-    rational { Tk _ TRational }
     double { Tk _ TDouble }
-    localtime { Tk _ TLocalTime }
-    localdate { Tk _ TLocalDate }
-    localdatetime { Tk _ TLocalDateTime }
+    time { Tk _ TTime }
+    date { Tk _ TDate }
+    datetime { Tk _ TDateTime }
     zonedtime { Tk _ TZonedTime }
     zoneddatetime { Tk _ TZonedDateTime }
-    utcdatetime { Tk _ TUTCDateTime }
-    posixtime { Tk _ TPosixTime }
     optional { Tk _ TOptional }
 
 %%
@@ -132,18 +127,13 @@ fieldType : word32 { $1 }
           | word64{ $1 }
           | int32{ $1 }
           | int64{ $1 }
-          | integer{ $1 }
-          | string{ $1 }
+          | text { $1 }
           | bool{ $1 }
-          | char{ $1 }
-          | rational{ $1 }
           | double{ $1 }
-          | localtime{ $1 }
-          | localdatetime{ $1 }
+          | time { $1 }
+          | datetime{ $1 }
           | zonedtime{ $1 }
           | zoneddatetime{ $1 }
-          | utcdatetime{ $1 }
-          | posixtime{ $1 }
 
 maybeOptional : { False }
               | optional { True }
