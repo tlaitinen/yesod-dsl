@@ -45,5 +45,11 @@ implInEntity ifaces e
         
     
 implInRelation :: [Iface] -> Relation -> [Relation]
-implInRelation ifaces rel = [rel]
+implInRelation ifaces rel = rels
+    where 
+        getRef (RelField refName _) = Just refName
+        getRef _ = Nothing
+        refs = catMaybes $ map (getRef . fieldContent) (relFields rel)
+        rels = []
+
 

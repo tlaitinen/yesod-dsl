@@ -98,13 +98,10 @@ dbLookup db name
         relMatch    = find (\r -> name == relName r) (dbRelations db)
  
 type DefaultValue = String
-data FieldContent = NormalField {
-                        normFieldType     :: FieldType,
-                        normFieldOptions  :: [FieldOption]
-                    } | RelField {
-                        relFieldRef       :: String,
-                        relFieldBackRef   :: Maybe BackRefField
-                    } deriving (Show)
+data FieldContent = NormalField FieldType [FieldOption]
+                    | RelField EntityName (Maybe BackRefField)
+                deriving (Show)
+   
 
 data Field = Field {
     fieldOptional :: OptionalFlag,
