@@ -57,7 +57,8 @@ instance Show Location where
     show (Loc path row col) = path ++ " line " ++ show row ++ " col " ++ show col
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
-data Index = Index UniqueFlag [FieldName] 
+data IndexDir = AscIndex | DescIndex deriving (Show)
+data Index = Index UniqueFlag IndexDir [FieldName] 
            deriving (Show)
 data Entity = Entity {
     entityLoc        :: Location,
@@ -98,7 +99,10 @@ dbLookup db name
         relMatch    = find (\r -> name == relName r) (dbRelations db)
  
 type DefaultValue = String
+type IsListFlag = Bool
+data EmbedFieldType = EmbedSingle | EmbedList deriving (Show)
 data FieldContent = NormalField FieldType [FieldOption]
+                    | EmbedField EmbedFieldType EntityName 
                     | RelField EntityName (Maybe BackRefField)
                 deriving (Show)
    

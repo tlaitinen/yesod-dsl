@@ -1,22 +1,42 @@
 import "module.dbdef";
 
-entity Bar {
-    Text name (default "foo", unique, check longer3);
-    Foo foo (bar);
-    unique index (name);
+interface Playable {
+
 }
-entity Foo {
+
+entity AudioFile {
+    implements Playable;
+    file File;
+}
+
+entity PlayList {
+    implements Playable;
+    items [Playable];
+}
+
+entity User {
     implements Versioned;
-    optional Text name;
+
+    name Text default "foo" check longer3;
+    files [File];
+
+    unique asc index name;
+}
+
+entity File {
+    implements Versioned;
+    name Text;
+    contents Text;
 }
 
 interface Versioned {
-    Int64 version;
+    version Int64;
+    changes [ChangeRecord];
 }
 
-
-relation FooBar {
-    Foo foo (fooBars);
-    Bar bar (bar);
+entity ChangeRecord {
+    field    Text;
+    oldValue Text;
+    newValue Text;
+    time     DateTime;
 }
-    

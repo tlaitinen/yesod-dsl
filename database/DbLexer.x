@@ -34,6 +34,8 @@ tokens :-
     "unique" { mkT TUnique }
     "index" { mkT TIndex }
     "check" { mkT TCheck }
+    "asc" { mkT TAsc }
+    "desc" { mkT TDesc }
     "default" { mkT TDefault }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
@@ -42,7 +44,7 @@ tokens :-
     "Text" { mkT TText }
     "Bool" { mkT TBool }
     "Double" { mkT TDouble }
-    "optional" { mkT TOptional }
+    "Maybe" { mkT TMaybe }
     "Date" { mkT TDate }
     "Time" { mkT TTime }
     "DateTime" { mkT TDateTime }
@@ -87,7 +89,7 @@ data TokenType = TSemicolon
                | TText
                | TBool
                | TDouble
-               | TOptional
+               | TMaybe
                | TTime
                | TDate
                | TDateTime
@@ -95,6 +97,8 @@ data TokenType = TSemicolon
                | TZonedDateTime
                | TUTCDateTime
                | TPosixTime
+               | TAsc
+               | TDesc
 	deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

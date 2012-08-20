@@ -50,7 +50,9 @@ import System.Exit
     datetime { Tk _ TDateTime }
     zonedtime { Tk _ TZonedTime }
     zoneddatetime { Tk _ TZonedDateTime }
-    optional { Tk _ TOptional }
+    maybe { Tk _ TMaybe }
+    asc { Tk _ TAsc }
+    desc { Tk _ TDesc }
 
 %%
 
@@ -87,20 +89,22 @@ ifaceDef : iface upperId lbrace
 relDef : relation upperId lbrace
             fields
             indices
-        rbrace { Relation (mkLoc $1) $2 $4 $5 } 
+            rbrace { Relation (mkLoc $1) $2 $4 $5 } 
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : maybeOptional fieldType lowerId fieldOptions { Field $1 $3 (NormalField (tokenType $2) $4) } 
-      | maybeOptional upperId lowerId backRef { Field $1 $2 (RelField $3 $4) }
+field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField (tokenType $3) $4) } 
+      | lowerId maybeMaybe upperId { Field $2 $1 (EmbedField EmbedSingle $3) }
+      | lowerId maybeMaybe lbrack upperId rbrack { Field $2 $1 (EmbedField EmbedList $4) }
+--      | maybeMaybe upperId lowerId backRef { Field $1 $2 (RelField $3 $4) }
 
 fieldOptions : { [] }
-             | lparen fieldOptionsList rparen { $2 }
+             | fieldOptionsList { $1 }
 fieldOptionsList : fieldOption { [$1] }
-                 | fieldOptionsList comma fieldOption { $3 : $1 }
-fieldOption : unique { FieldUnique }
-            | default value { FieldDefaultValue $2 }
+                 | fieldOptionsList  fieldOption { $2 : $1 }
+fieldOption : 
+            default value { FieldDefaultValue $2 }
             | check lowerId { FieldCheck $2 }
 
 value : stringval { StringValue $1 }
@@ -109,8 +113,9 @@ value : stringval { StringValue $1 }
 
 indices : { [] }
         | indices indexDef semicolon { $2 : $1 }
-indexDef :  maybeUnique index lparen lowerIdList rparen { Index $1 $4 }
-
+indexDef :  maybeUnique indexDir index lowerIdList { Index $1 $2 $4 }
+indexDir : asc { AscIndex }
+         | desc { DescIndex }
 maybeUnique : { False }
             | unique { True }
 lowerIdList : lowerId { [$1] }
@@ -135,8 +140,8 @@ fieldType : word32 { $1 }
           | zonedtime{ $1 }
           | zoneddatetime{ $1 }
 
-maybeOptional : { False }
-              | optional { True }
+maybeMaybe : { False }
+              | maybe { True }
 
 {
 data ParseError = ParseError String deriving (Show, Typeable)
