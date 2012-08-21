@@ -6,36 +6,35 @@ type ImportPath = FilePath
 
 data DbModule = DbModule {
     dbImports   :: [ImportPath],
-    dbEntities  :: [Entity],
-    dbRelations :: [Relation],
+    dbDocs  :: [Doc],
+    dbRecs   :: [Record],
     dbIfaces :: [Iface]
 }
     deriving (Show)
 emptyDbModule = DbModule {
     dbImports = [],
-    dbEntities = [],
-    dbRelations = [],
+    dbDocs = [],
+    dbRecs = [],
     dbIfaces = []
-
 }
-data DbDef = EntityDef Entity
+data DbDef = DocDef Doc
+           | RecDef Record
            | IfaceDef Iface
-           | RelDef Relation
            deriving (Show)
 
 
  
 isIface (IfaceDef _) = True
 isIface _ = False
-isEntity (EntityDef _) = True
-isEntity _ = False
-isRelation (RelDef _) = True
-isRelation _ = False
+isRecord (RecDef _) = True
+isRecord _ = False
+isDoc (DocDef _) = True
+isDoc _ = False
 
-getEntities :: [DbDef] -> [Entity]
-getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
-getRelations :: [DbDef] -> [Relation]
-getRelations defs = map (\(RelDef e) -> e) $ filter isRelation defs
+getDocs :: [DbDef] -> [Doc]
+getDocs defs = map (\(DocDef e) -> e) $ filter isDoc defs
+getRecords :: [DbDef] -> [Record]
+getRecords defs = map (\(RecDef e) -> e) $ filter isRecord defs
 getIfaces :: [DbDef] -> [Iface]
 getIfaces defs = map (\(IfaceDef e) -> e) $ filter isIface defs
 
@@ -46,7 +45,7 @@ type IfaceName = String
 
 type UniqueFlag = Bool
 
-type EntityName = String
+type DocName = String
 type FieldType = TokenType
 type FieldName = String
 type OptionalFlag = Bool
@@ -58,19 +57,26 @@ instance Show Location where
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
 data IndexDir = AscIndex | DescIndex deriving (Show)
-data Index = Index UniqueFlag IndexDir [FieldName] 
+type IndexId = [FieldName]
+data Index = Index UniqueFlag IndexDir [IndexId] 
            deriving (Show)
-data Entity = Entity {
-    entityLoc        :: Location,
-    entityName       :: String,
-    entityImplements :: [IfaceName],
-    entityFields     :: [Field],
-    entityIndices    :: [Index]
+data Doc = Doc {
+    docLoc        :: Location,
+    docName       :: String,
+    docImplements :: [IfaceName],
+    docFields     :: [Field],
+    docIndices    :: [Index]
+} deriving (Show)
+
+data Record = Record {
+    recLoc  :: Location,
+    recName :: String,
+    recFields :: [Field]
 } deriving (Show)
 
 
-entityPath :: Entity -> String
-entityPath e = entityName e ++ " in " ++ show (entityLoc e)
+docPath :: Doc -> String
+docPath e = docName e ++ " in " ++ show (docLoc e)
 
 
 data Iface = Iface {
@@ -80,30 +86,23 @@ data Iface = Iface {
     ifaceIndices :: [Index]
 } deriving (Show)
 
-data Relation = Relation {
-    relLoc     :: Location,
-    relName    :: String,
-    relFields  :: [Field],
-    relIndices :: [Index]
-} deriving (Show)
-
 dbLookup :: DbModule -> String -> DbDef
 dbLookup db name 
-        | isJust entityMatch = EntityDef $ fromJust entityMatch
+        | isJust docMatch = DocDef $ fromJust docMatch
         | isJust ifaceMatch  = IfaceDef $ fromJust ifaceMatch
-        | isJust relMatch    = RelDef $ fromJust relMatch
+        | isJust recMatch = RecDef $ fromJust recMatch
         | otherwise = error $ "dbLookup failed : " ++ name
     where
-        entityMatch = find (\e -> name == entityName e) (dbEntities db)
+        docMatch = find (\e -> name == docName e) (dbDocs db)
         ifaceMatch  = find (\i -> name == ifaceName i) (dbIfaces db)
-        relMatch    = find (\r -> name == relName r) (dbRelations db)
+        recMatch = find (\r -> name == recName r) (dbRecs db)
  
 type DefaultValue = String
 type IsListFlag = Bool
 data EmbedFieldType = EmbedSingle | EmbedList deriving (Show)
 data FieldContent = NormalField FieldType [FieldOption]
-                    | EmbedField EmbedFieldType EntityName 
-                    | RelField EntityName (Maybe BackRefField)
+                    | EmbedField EmbedFieldType DocName 
+                    | RelField DocName
                 deriving (Show)
    
 
@@ -123,10 +122,6 @@ data FieldValue = StringValue String
                 | IntValue Int
                 | FloatValue Double
                 deriving (Show)
-data Multiplicity = One | Many
-                  deriving (Show)
-data BackRefField = BackRefField Multiplicity FieldName
-                  deriving (Show)
 
 
 

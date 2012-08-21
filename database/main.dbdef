@@ -1,20 +1,19 @@
 import "module.dbdef";
 
-interface Playable {
-
-}
-
-entity AudioFile {
-    implements Playable;
+record AudioFile {
     file File;
 }
 
-entity PlayList {
-    implements Playable;
+record PlayList {
     items [Playable];
 }
+document Playable {
+    implements Versioned;
+    name Text check nonempty;
 
-entity User {
+
+}
+document User {
     implements Versioned;
 
     name Text default "foo" check longer3;
@@ -23,7 +22,7 @@ entity User {
     unique asc index name;
 }
 
-entity File {
+document File {
     implements Versioned;
     name Text;
     contents Text;
@@ -34,7 +33,7 @@ interface Versioned {
     changes [ChangeRecord];
 }
 
-entity ChangeRecord {
+record ChangeRecord {
     field    Text;
     oldValue Text;
     newValue Text;

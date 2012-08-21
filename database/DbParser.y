@@ -17,9 +17,9 @@ import System.Exit
 
 %token
     import     { Tk _ TImport }
-    entity      { Tk _ TEntity }
+    document   { Tk _ TDoc }
+    record     { Tk _ TRecord }
     iface      { Tk _ TIface }
-    relation   { Tk _ TRelation }
     implements { Tk _ TImplements }
     default    { Tk _ TDefault }
     index      { Tk _ TIndex }
@@ -37,6 +37,7 @@ import System.Exit
     lbrack { Tk _ TLBrack }
     rbrack { Tk _ TRBrack }
     comma  { Tk _ TComma }
+    dot  { Tk _ TDot }
     stringval     { Tk _ (TString $$) }
     word32   { Tk _ TWord32 }
     word64   { Tk _ TWord64 }
@@ -56,8 +57,8 @@ import System.Exit
 
 %%
 
-dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
-                                        (getRelations $2)
+dbModule : imports dbDefs { DbModule $1 (getDocs $2) 
+                                        (getRecords $2)
                                         (getIfaces $2)}
 
 imports : { [] }
@@ -66,15 +67,19 @@ imports : { [] }
 importStmt : import stringval semicolon { $2 }
 dbDefs : {- empty -}   { [] }
        | dbDefs dbDef  { $2 : $1 }
-dbDef : entityDef      { EntityDef $1 } 
+dbDef : docDef      { DocDef $1 } 
       | ifaceDef      { IfaceDef $1 }
-      | relDef        { RelDef $1 }
+      | recordDef { RecDef $1}
 
-entityDef : entity upperId lbrace 
+recordDef : record upperId lbrace 
+            fields
+            rbrace { Record (mkLoc $1) $2 $4 }
+
+docDef : document upperId lbrace 
             implementations 
             fields
             indices
-            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 }
+            rbrace { Doc (mkLoc $1) $2 $4 $5 $6 }
 
 implementations : { [] }
                 | implementations implementation semicolon { $2 : $1 }
@@ -86,18 +91,13 @@ ifaceDef : iface upperId lbrace
              indices
             rbrace { Iface (mkLoc $1) $2 $4 $5 }
 
-relDef : relation upperId lbrace
-            fields
-            indices
-            rbrace { Relation (mkLoc $1) $2 $4 $5 } 
-
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
 field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField (tokenType $3) $4) } 
       | lowerId maybeMaybe upperId { Field $2 $1 (EmbedField EmbedSingle $3) }
       | lowerId maybeMaybe lbrack upperId rbrack { Field $2 $1 (EmbedField EmbedList $4) }
---      | maybeMaybe upperId lowerId backRef { Field $1 $2 (RelField $3 $4) }
+--      | maybeMaybe upperId lowerId { Field $1 $2 (RelField $3) }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }
@@ -113,20 +113,16 @@ value : stringval { StringValue $1 }
 
 indices : { [] }
         | indices indexDef semicolon { $2 : $1 }
-indexDef :  maybeUnique indexDir index lowerIdList { Index $1 $2 $4 }
+indexDef :  maybeUnique indexDir index indexIdList { Index $1 $2 $4 }
 indexDir : asc { AscIndex }
          | desc { DescIndex }
 maybeUnique : { False }
             | unique { True }
-lowerIdList : lowerId { [$1] }
-            | lowerIdList comma lowerId { $3:  $1 }
+indexIdList : indexId { [$1] }
+            | indexIdList comma indexId { $3:  $1 }
 
-backRef : { Nothing } 
-        | lparen multiplicity lowerId rparen { Just (BackRefField $2 $3) }
-
-multiplicity : 
-             { One }
-             | lbrack rbrack { Many }
+indexId : lowerId { [$1] }
+        | indexId dot lowerId { $3 : $1 }
 
 fieldType : word32 { $1 }
           | word64{ $1 }

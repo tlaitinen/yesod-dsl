@@ -15,20 +15,20 @@ removeDuplicates db = db {
 merge :: DbModule -> DbModule -> DbModule
 merge db1 db2 = DbModule {
         dbImports = dbImports db1 ++ dbImports db2,
-        dbEntities = dbEntities db1 ++ dbEntities db2,
-        dbRelations = dbRelations db1 ++ dbRelations db2,
+        dbDocs = dbDocs db1 ++ dbDocs db2,
+        dbRecs = dbRecs db1 ++ dbRecs db2,
         dbIfaces = dbIfaces db1 ++ dbIfaces db2
     }
 
 updateLocation :: (FilePath,DbModule) -> DbModule
 updateLocation (path,db) = db {
-        dbEntities = map (updateEntityLoc path) (dbEntities db),
-        dbRelations = map (updateRelationLoc path) (dbRelations db),
+        dbDocs = map (updateDocLoc path) (dbDocs db),
+        dbRecs = map (updateRecordLoc path) (dbRecs db),
         dbIfaces    = map (updateIfaceLoc path) (dbIfaces db)
     } 
     where 
-        updateEntityLoc path e = e { entityLoc = updateLoc path (entityLoc e) }
-        updateRelationLoc path r = r { relLoc = updateLoc path (relLoc r) }
+        updateDocLoc path e = e { docLoc = updateLoc path (docLoc e) }
+        updateRecordLoc path r = r { recLoc = updateLoc path (recLoc r) }
         updateIfaceLoc path i = i { ifaceLoc = updateLoc path (ifaceLoc i) }
  
 updateLoc :: FilePath -> Location -> Location

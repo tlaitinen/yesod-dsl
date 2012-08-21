@@ -8,10 +8,10 @@ findNames db
     | checkNames nameGroups = nameGroups
     | otherwise = []
     where
-        entityNames  = [(entityLoc e, entityName e) | e <- dbEntities db ]
+        docNames  = [(docLoc e, docName e) | e <- dbDocs db ]
         ifaceNames   = [(ifaceLoc i, ifaceName i) | i <- dbIfaces db ]
-        relNames     = [(relLoc r, relName r) | r <- dbRelations db ]
-        allNames     = entityNames ++ ifaceNames ++ relNames
+        recNames     = [(recLoc r, recName r) | r <- dbRecs db ]
+        allNames     = docNames ++ ifaceNames ++ recNames
 
         sameNameOrd (_,n1) (_,n2) = compare n1 n2
         sortedNames = sortBy sameNameOrd allNames

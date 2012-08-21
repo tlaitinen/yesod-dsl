@@ -26,9 +26,10 @@ tokens :-
     \( { mkT TLParen }
     \) { mkT TRParen }
     \, { mkT TComma }
+    \. { mkT TDot }
     "import" { mkT TImport }
-    "entity" { mkT TEntity }
-    "relation" { mkT TRelation }
+    "document" { mkT TDoc }
+    "record" { mkT TRecord }
     "interface" { mkT TIface  }
     "implements" { mkT TImplements }
     "unique" { mkT TUnique }
@@ -68,9 +69,10 @@ data TokenType = TSemicolon
                | TLBrack
                | TRBrack
                | TComma
+               | TDot
                | TImport
-               | TEntity
-               | TRelation
+               | TDoc
+               | TRecord
                | TImplements
                | TDefault
                | TIndex
