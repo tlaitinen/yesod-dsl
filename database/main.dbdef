@@ -4,14 +4,19 @@ record AudioFile {
     file File;
 }
 
-record PlayList {
-    items [Playable];
+record VideoFile {
+    file File;
+
 }
-document Playable {
+document AudioPlayable {
     implements Versioned;
     name Text check nonempty;
-
-
+    audioFiles [AudioFile];
+}
+document VideoPlayable {
+    implements Versioned;
+    name Text check nonempty;
+    videoFiles [VideoFile];
 }
 document User {
     implements Versioned;
@@ -31,6 +36,7 @@ document File {
 interface Versioned {
     version Int64;
     changes [ChangeRecord];
+    desc index changes.time;
 }
 
 record ChangeRecord {

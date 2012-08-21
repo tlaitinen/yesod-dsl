@@ -1,6 +1,6 @@
 all: test
 
-test: test.hs DbLexer.hs DbParser.hs ModuleMerger.hs IfaceImplementer.hs NameFinder.hs DbTypes.hs
+test: test.hs DbLexer.hs DbParser.hs ModuleMerger.hs IfaceImplementer.hs NameFinder.hs DbTypes.hs Generator.hs SyncFiles.hs
 	ghc --make test.hs
 
 DbLexer.hs: DbLexer.x
