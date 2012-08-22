@@ -7,18 +7,15 @@ type ImportPath = FilePath
 data DbModule = DbModule {
     dbImports   :: [ImportPath],
     dbDocs  :: [Doc],
-    dbRecs   :: [Record],
     dbIfaces :: [Iface]
 }
     deriving (Show)
 emptyDbModule = DbModule {
     dbImports = [],
     dbDocs = [],
-    dbRecs = [],
     dbIfaces = []
 }
 data DbDef = DocDef Doc
-           | RecDef Record
            | IfaceDef Iface
            deriving (Show)
 
@@ -26,15 +23,11 @@ data DbDef = DocDef Doc
  
 isIface (IfaceDef _) = True
 isIface _ = False
-isRecord (RecDef _) = True
-isRecord _ = False
 isDoc (DocDef _) = True
 isDoc _ = False
 
 getDocs :: [DbDef] -> [Doc]
 getDocs defs = map (\(DocDef e) -> e) $ filter isDoc defs
-getRecords :: [DbDef] -> [Record]
-getRecords defs = map (\(RecDef e) -> e) $ filter isRecord defs
 getIfaces :: [DbDef] -> [Iface]
 getIfaces defs = map (\(IfaceDef e) -> e) $ filter isIface defs
 
@@ -68,11 +61,6 @@ data Doc = Doc {
     docIndices    :: [Index]
 } deriving (Show)
 
-data Record = Record {
-    recLoc  :: Location,
-    recName :: String,
-    recFields :: [Field]
-} deriving (Show)
 
 
 docPath :: Doc -> String
@@ -90,12 +78,10 @@ dbLookup :: DbModule -> String -> DbDef
 dbLookup db name 
         | isJust docMatch = DocDef $ fromJust docMatch
         | isJust ifaceMatch  = IfaceDef $ fromJust ifaceMatch
-        | isJust recMatch = RecDef $ fromJust recMatch
         | otherwise = error $ "dbLookup failed : " ++ name
     where
         docMatch = find (\e -> name == docName e) (dbDocs db)
         ifaceMatch  = find (\i -> name == ifaceName i) (dbIfaces db)
-        recMatch = find (\r -> name == recName r) (dbRecs db)
  
 type DefaultValue = String
 type IsListFlag = Bool

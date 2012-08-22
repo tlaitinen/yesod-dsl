@@ -11,13 +11,9 @@ import SyncFiles
 main = do
     [ path ] <- getArgs
     dbs <- parse path
-    print dbs
-    let merged = mergeModules dbs
-    print merged
-    let names = findNames merged
-    let impl = implementInterfaces merged
-    print impl
-    print names
+    let merged    = mergeModules dbs
+    let names     = findNames merged
+    let impl      = implementInterfaces merged
     let generated = generateModels impl
     syncFiles generated
     

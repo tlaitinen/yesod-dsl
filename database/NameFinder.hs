@@ -10,8 +10,7 @@ findNames db
     where
         docNames  = [(docLoc e, docName e) | e <- dbDocs db ]
         ifaceNames   = [(ifaceLoc i, ifaceName i) | i <- dbIfaces db ]
-        recNames     = [(recLoc r, recName r) | r <- dbRecs db ]
-        allNames     = docNames ++ ifaceNames ++ recNames
+        allNames     = docNames ++ ifaceNames
 
         sameNameOrd (_,n1) (_,n2) = compare n1 n2
         sortedNames = sortBy sameNameOrd allNames

@@ -18,7 +18,6 @@ import System.Exit
 %token
     import     { Tk _ TImport }
     document   { Tk _ TDoc }
-    record     { Tk _ TRecord }
     iface      { Tk _ TIface }
     implements { Tk _ TImplements }
     default    { Tk _ TDefault }
@@ -58,7 +57,6 @@ import System.Exit
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getDocs $2) 
-                                        (getRecords $2)
                                         (getIfaces $2)}
 
 imports : { [] }
@@ -69,11 +67,6 @@ dbDefs : {- empty -}   { [] }
        | dbDefs dbDef  { $2 : $1 }
 dbDef : docDef      { DocDef $1 } 
       | ifaceDef      { IfaceDef $1 }
-      | recordDef { RecDef $1}
-
-recordDef : record upperId lbrace 
-            fields
-            rbrace { Record (mkLoc $1) $2 $4 }
 
 docDef : document upperId lbrace 
             implementations 

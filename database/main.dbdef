@@ -1,27 +1,28 @@
 import "module.dbdef";
 
-record AudioFile {
+document AudioFile {
     file File;
 }
 
-record VideoFile {
+document VideoFile {
     file File;
 
 }
 document AudioPlayable {
     implements Versioned;
-    name Text check nonempty;
+    implements Named;
     audioFiles [AudioFile];
 }
 document VideoPlayable {
     implements Versioned;
-    name Text check nonempty;
+    implements Named;
     videoFiles [VideoFile];
 }
 document User {
     implements Versioned;
+    implements Named;
 
-    name Text default "foo" check longer3;
+
     files [File];
 
     unique asc index name;
@@ -32,14 +33,16 @@ document File {
     name Text;
     contents Text;
 }
-
+interface Named {
+    name Text check nonempty;
+}
 interface Versioned {
     version Int64;
     changes [ChangeRecord];
     desc index changes.time;
 }
 
-record ChangeRecord {
+document ChangeRecord {
     field    Text;
     oldValue Text;
     newValue Text;

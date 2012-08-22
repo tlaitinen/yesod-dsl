@@ -29,7 +29,6 @@ tokens :-
     \. { mkT TDot }
     "import" { mkT TImport }
     "document" { mkT TDoc }
-    "record" { mkT TRecord }
     "interface" { mkT TIface  }
     "implements" { mkT TImplements }
     "unique" { mkT TUnique }
@@ -72,7 +71,6 @@ data TokenType = TSemicolon
                | TDot
                | TImport
                | TDoc
-               | TRecord
                | TImplements
                | TDefault
                | TIndex

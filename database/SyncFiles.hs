@@ -9,7 +9,7 @@ syncFiles files = forM_ files (\(path,content) -> do
     oldContent <- catch (readFile path) (\_ -> return "")
     if content /= oldContent 
         then do
-            putStrLn $ "Updating" ++ path
+            putStrLn $ "Updating    " ++ path
             writeFile path content
         else
             return ())
