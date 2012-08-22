@@ -3,14 +3,37 @@ import System.IO (FilePath)
 import DbTypes
 import DbLexer
 generateModels :: DbModule -> [(FilePath,String)]
-generateModels db = map genDoc (dbDocs db) ++ map genIface (dbIfaces db)
+generateModels db = genCommon db ++ map genDoc (dbDocs db) ++ map genIface (dbIfaces db)
+
+
+genCommon :: DbModule -> [(FilePath, String)]
+genCommon db = [("Model/Common.hs", unlines $ [
+    "module Model.Common (",
+    "    Text(..),", 
+    "    Int32(..),",
+    "    Int64(..),",
+    "    Word32(..),",
+    "    Word64(..),",
+    "    Double(..),",
+    "    UTCTime(..),",
+    "    Day(..),",
+    "    TimeOfDay(..)) where",
+    "import Data.Text",
+    "import Data.Int",
+    "import Data.Word",
+    "import Data.Double",
+    "import Data.Time"
+    ])]
+
+indent :: [String] -> [String]
+indent = map (\l -> "    " ++ l)
 
 imports = ["import Database.Persist",
            "import Database.Persist.MongoDB",
            "import Database.Persist.TH",
-           "import Language.Haskell.TH.Syntax"]
+           "import Language.Haskell.TH.Syntax",
+           "import Model.Common"]
 
-persistHeader = "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }]"
 
 
 
@@ -41,23 +64,32 @@ genFieldType field = case (fieldContent field) of
                     | otherwise = "Id"
 
 
-genFields :: [Field] -> String
-genFields fields = ""
+maybeMaybe True = " Maybe "
+maybeMaybe False = " "
+
+genField :: Field -> String
+genField field = fieldName field ++ " " ++ genFieldType field ++ (maybeMaybe (fieldOptional field))
+    
 
 
 genIface :: Iface -> (FilePath,String)
 genIface iface = ("Model/" ++ name ++ ".hs",unlines $[
-        "module " ++ name ++ " where ",
+        "module Model." ++ name ++ " where ",
+        "import Model.Common",
         "class " ++ name ++ " a where "]
-        ++ (map genIfaceField (ifaceFields iface))
+        ++ indent (map genIfaceField (ifaceFields iface))
         )
     where name = ifaceName iface
-          genIfaceField field = "    " 
-                              ++ (fieldName field)
-                              ++ " :: a -> " ++ genFieldType field
+          genIfaceField field = (fieldName field)
+                                ++ " :: a ->" ++ maybeMaybe (fieldOptional field) ++ genFieldType field
 
 genDoc :: Doc -> (FilePath,String)
 genDoc doc = ("Model/" ++ name ++ ".hs",unlines $ [ 
-        "module " ++ name ++ " where "] ++ imports ++ [
+        "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
+        "{-# LANGUAGE GADTs, FlexibleContexts #-}",
+        "module Model." ++ name ++ " where "] ++ imports ++ [
+        "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|",
+        name] ++ indent (map genField (docFields doc)) ++ [
+        "|]"
         ])
     where name = docName doc

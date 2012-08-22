@@ -8,14 +8,18 @@ document VideoFile {
     file File;
 
 }
+interface Playable {
+}
 document AudioPlayable {
     implements Versioned;
     implements Named;
+    implements Playable;
     audioFiles [AudioFile];
 }
 document VideoPlayable {
     implements Versioned;
     implements Named;
+    implements Playable;
     videoFiles [VideoFile];
 }
 document User {
@@ -32,13 +36,13 @@ document File {
     implements Versioned;
     implements Named;
 
-    contents Text;
+    contents Maybe Text;
 }
 interface Named {
     name Text check nonempty;
 }
 interface Versioned {
-    version Int64;
+    version Maybe Int64;
     changes [ChangeRecord];
     desc index changes.time;
 }
