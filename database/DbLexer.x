@@ -27,6 +27,7 @@ tokens :-
     \) { mkT TRParen }
     \, { mkT TComma }
     \. { mkT TDot }
+    "ref" { mkT TRef }
     "import" { mkT TImport }
     "document" { mkT TDoc }
     "interface" { mkT TIface  }
@@ -49,7 +50,6 @@ tokens :-
     "Time" { mkT TTime }
     "DateTime" { mkT TDateTime }
     "ZonedTime" { mkT TZonedTime }
-    "ZonedDateTime" { mkT TZonedDateTime }
 	$digit+ 		{ mkTvar (\s -> TInt (read s)) }
     $digit+ "." $digit+ { mkTvar (\s -> TFloat (read s)) }
 	$lower [$alpha $digit \_ ]*  { mkTvar (\s -> TLowerId s) }
@@ -81,6 +81,7 @@ data TokenType = TSemicolon
                | TUpperId String
                | TInt     Int
                | TFloat   Double
+               | TRef 
                | TCheck
                | TWord32
                | TWord64
@@ -94,9 +95,6 @@ data TokenType = TSemicolon
                | TDate
                | TDateTime
                | TZonedTime
-               | TZonedDateTime
-               | TUTCDateTime
-               | TPosixTime
                | TAsc
                | TDesc
 	deriving (Show)

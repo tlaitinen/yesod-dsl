@@ -23,14 +23,15 @@ document User {
     implements Named;
 
 
-    files [File];
+    files [ref File];
 
     unique asc index name;
 }
 
 document File {
     implements Versioned;
-    name Text;
+    implements Named;
+
     contents Text;
 }
 interface Named {

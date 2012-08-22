@@ -85,10 +85,10 @@ dbLookup db name
  
 type DefaultValue = String
 type IsListFlag = Bool
-data EmbedFieldType = EmbedSingle | EmbedList deriving (Show)
+data DocFieldType = SingleField | ListField deriving (Show,Eq)
+data DocFieldEmbedding = EmbedField | RefField deriving (Show,Eq)
 data FieldContent = NormalField FieldType [FieldOption]
-                    | EmbedField EmbedFieldType DocName 
-                    | RelField DocName
+                    | DocField DocFieldEmbedding DocFieldType DocName 
                 deriving (Show)
    
 

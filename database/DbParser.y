@@ -26,6 +26,7 @@ import System.Exit
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
     upperId    { Tk _ (TUpperId $$)  }
+    ref        { Tk _ TRef }
     intval        { Tk _ (TInt $$)  }
     floatval      { Tk _ (TFloat $$) }
     semicolon  { Tk _ TSemicolon }
@@ -49,7 +50,6 @@ import System.Exit
     date { Tk _ TDate }
     datetime { Tk _ TDateTime }
     zonedtime { Tk _ TZonedTime }
-    zoneddatetime { Tk _ TZonedDateTime }
     maybe { Tk _ TMaybe }
     asc { Tk _ TAsc }
     desc { Tk _ TDesc }
@@ -88,9 +88,8 @@ fields : { [] }
               | fields field semicolon { $2 : $1 }
  
 field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField (tokenType $3) $4) } 
-      | lowerId maybeMaybe upperId { Field $2 $1 (EmbedField EmbedSingle $3) }
-      | lowerId maybeMaybe lbrack upperId rbrack { Field $2 $1 (EmbedField EmbedList $4) }
---      | maybeMaybe upperId lowerId { Field $1 $2 (RelField $3) }
+      | lowerId maybeMaybe maybeRef upperId { Field $2 $1 (DocField $3 SingleField $4) }
+      | lowerId maybeMaybe lbrack maybeRef upperId rbrack { Field $2 $1 (DocField $4 ListField $5) }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }
@@ -111,6 +110,8 @@ indexDir : asc { AscIndex }
          | desc { DescIndex }
 maybeUnique : { False }
             | unique { True }
+maybeRef : { EmbedField }
+         | ref { RefField }
 indexIdList : indexId { [$1] }
             | indexIdList comma indexId { $3:  $1 }
 
@@ -127,7 +128,6 @@ fieldType : word32 { $1 }
           | time { $1 }
           | datetime{ $1 }
           | zonedtime{ $1 }
-          | zoneddatetime{ $1 }
 
 maybeMaybe : { False }
               | maybe { True }
