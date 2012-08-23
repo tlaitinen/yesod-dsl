@@ -3,12 +3,26 @@ import System.IO (FilePath)
 import DbTypes
 import DbLexer
 import Dependencies
+import Data.Char
+-- from Database.Persist.TH
+recName :: String -> String -> String
+recName dt f = lowerFirst dt ++ upperFirst f
+
+lowerFirst :: String -> String
+lowerFirst (a:b) = (toLower a):b
+lowerFirst a = a
+
+upperFirst :: String -> String
+upperFirst (a:b) = (toUpper a):b
+upperFirst a = a
+-- ^^^^ Database.Persist.TH        
+
+
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db = genCommon db 
                   ++ map (genDoc deps) (dbDocs db) 
                   ++ map (genIface deps) (dbIfaces db)
         where deps = makeDependencies db
-
 
 genCommon :: DbModule -> [(FilePath, String)]
 genCommon db = [("Model/Common.hs", unlines $ [
@@ -100,5 +114,7 @@ genDoc deps doc = ("Model/" ++ name ++ ".hs",unlines $ [
         "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|",
         name] ++ indent (map genField (docFields doc)) ++ [
         "|]"
-        ])
+        ] ++ map genShortFieldName (docFields doc)) 
     where name = docName doc
+          genShortFieldName field = fieldName field ++ " = "
+                                    ++ recName name (fieldName field) 
