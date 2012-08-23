@@ -1,26 +1,17 @@
 import "module.dbdef";
 
 document AudioFile {
+    implements Named;
+    implements Playable;
+
     file File;
 }
 
-document VideoFile {
-    file File;
-
-}
 interface Playable {
 }
-document AudioPlayable {
-    implements Versioned;
-    implements Named;
-    implements Playable;
-    audioFiles [AudioFile];
-}
-document VideoPlayable {
-    implements Versioned;
-    implements Named;
-    implements Playable;
-    videoFiles [VideoFile];
+
+document PlayList {
+    playables [ref Playable];
 }
 document User {
     implements Versioned;
