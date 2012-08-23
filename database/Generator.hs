@@ -2,8 +2,12 @@ module Generator (generateModels) where
 import System.IO (FilePath)
 import DbTypes
 import DbLexer
+import Dependencies
 generateModels :: DbModule -> [(FilePath,String)]
-generateModels db = genCommon db ++ map genDoc (dbDocs db) ++ map genIface (dbIfaces db)
+generateModels db = genCommon db 
+                  ++ map (genDoc deps) (dbDocs db) 
+                  ++ map (genIface deps) (dbIfaces db)
+        where deps = makeDependencies db
 
 
 genCommon :: DbModule -> [(FilePath, String)]
@@ -14,16 +18,19 @@ genCommon db = [("Model/Common.hs", unlines $ [
     "    Int64(..),",
     "    Word32(..),",
     "    Word64(..),",
-    "    Double(..),",
     "    UTCTime(..),",
     "    Day(..),",
     "    TimeOfDay(..)) where",
     "import Data.Text",
     "import Data.Int",
     "import Data.Word",
-    "import Data.Double",
     "import Data.Time"
-    ])]
+    ]),
+    ("Model.hs", unlines $ ["module Model where"] ++
+     map (\n -> "import Model." ++ n) allNames
+     )] 
+    where
+        allNames = map ifaceName (dbIfaces db) ++ map docName (dbDocs db)
 
 indent :: [String] -> [String]
 indent = map (\l -> "    " ++ l)
@@ -70,12 +77,13 @@ maybeMaybe False = " "
 genField :: Field -> String
 genField field = fieldName field ++ " " ++ genFieldType field ++ (maybeMaybe (fieldOptional field))
     
+importDeps :: Deps -> String -> [String]
+importDeps deps name = map (\n -> "import Model." ++ n) $ lookupDeps deps name
 
-
-genIface :: Iface -> (FilePath,String)
-genIface iface = ("Model/" ++ name ++ ".hs",unlines $[
+genIface :: Deps -> Iface -> (FilePath,String)
+genIface deps iface = ("Model/" ++ name ++ ".hs",unlines $[
         "module Model." ++ name ++ " where ",
-        "import Model.Common",
+        "import Model.Common"] ++ importDeps deps name ++ [
         "class " ++ name ++ " a where "]
         ++ indent (map genIfaceField (ifaceFields iface))
         )
@@ -83,11 +91,12 @@ genIface iface = ("Model/" ++ name ++ ".hs",unlines $[
           genIfaceField field = (fieldName field)
                                 ++ " :: a ->" ++ maybeMaybe (fieldOptional field) ++ genFieldType field
 
-genDoc :: Doc -> (FilePath,String)
-genDoc doc = ("Model/" ++ name ++ ".hs",unlines $ [ 
+genDoc :: Deps -> Doc -> (FilePath,String)
+genDoc deps doc = ("Model/" ++ name ++ ".hs",unlines $ [ 
         "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
         "{-# LANGUAGE GADTs, FlexibleContexts #-}",
-        "module Model." ++ name ++ " where "] ++ imports ++ [
+        "module Model." ++ name ++ " where "] ++ imports 
+        ++ importDeps deps name ++ [
         "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|",
         name] ++ indent (map genField (docFields doc)) ++ [
         "|]"
