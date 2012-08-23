@@ -59,8 +59,8 @@ imports = ["import Database.Persist",
            "import Database.Persist.MongoDB",
            "import Database.Persist.TH",
            "import Language.Haskell.TH.Syntax",
-           "import Model.Common",
-           "import Model.Validation"
+           "import Model.Validation",
+           "import Model.Common"
            ]
 
 mkDocFieldName :: DbModule -> DocFieldEmbedding -> DocFieldType -> DocName -> String
@@ -105,9 +105,23 @@ genField :: DbModule -> Field -> String
 genField db field = fieldName field ++ " " ++ genFieldType db field ++ (maybeMaybe (fieldOptional field))
     
 importDeps :: Deps -> String -> [String]
-importDeps deps name = map (\n -> "import Model." ++ n) $ lookupDeps deps name
+importDeps deps name = map (\n -> "import Model." ++ n ++ " (" ++ n ++ ", " ++ n ++ "Generic, " ++ n ++ "Id)") $ lookupDeps deps name
 persistHeader = "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|"
 persistFooter = "|]"
+
+implIfaceInst :: Iface -> String
+implIfaceInst iface = let
+            name = ifaceName iface
+            instName = name ++ "Inst"
+            fields = ifaceFields iface
+            fieldNames = map fieldName fields
+            fieldImpls = [ " -- " ++ fname ++ " = Model." ++ instName ++ "." ++ fname
+                              | fname <- fieldNames ]
+        in unlines $ ["-- TODO : instance " ++ name ++ " " ++ instName ++ " where"]
+                   ++ indent fieldImpls
+
+
+
 mkIfaceInstance :: DbModule -> Iface -> [(FilePath, String)]
 mkIfaceInstance db iface = let
             instName = ifaceName iface ++ "Inst"
@@ -122,10 +136,14 @@ mkIfaceInstance db iface = let
             instRefFields = [ Field True ((lowerFirst name) ++ "Id")
                                  (DocField RefField SingleField name)
                            | name <- docNames ]
-            instDeps = [(instName, [ifaceName iface] ++ docNames)]
-            instRefDeps = [(instRefName, [ifaceName iface] ++ docNames)]
-        in [genPersist db instDeps instName instFields,
-            genPersist db instRefDeps instRefName instRefFields]
+            instDeps = [(instName, docNames)]
+            instRefDeps = [(instRefName,  docNames)]
+            extraImports = ["import qualified Model." ++ifaceName iface ++ " as " ++ ifaceName iface ]
+            (instFileName, instContent) = genPersist db instDeps extraImports instName instFields
+            (instRefFileName, instRefContent) = genPersist db instRefDeps extraImports instRefName instRefFields
+           in
+              [ (instFileName, instContent ++ implIfaceInst iface),
+                (instRefFileName, instRefContent) ]
 
 
         
@@ -134,21 +152,23 @@ genIface :: DbModule -> Deps -> Iface -> [(FilePath,String)]
 genIface db deps iface = [("Model/" ++ name ++ ".hs",unlines $[
         "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
         "{-# LANGUAGE GADTs, FlexibleContexts #-}",
-        "module Model." ++ name ++ " where ",
-        "import Model.Common"] ++ imports ++ importDeps deps name ++ [
+        "module Model." ++ name ++ "(" ++ exportList ++ ") where ",
+        "import Model.Common"] ++ importDeps deps name ++ [
         "class " ++ name ++ " a where "]
-        ++ indent (map genIfaceField (ifaceFields iface)))]
+        ++ indent (map genIfaceField fields))]
         ++ mkIfaceInstance db iface
     where name = ifaceName iface
+          fields = ifaceFields iface
+          exportList = name ++ "(..)"
           genIfaceField field = (fieldName field)
                                 ++ " :: a ->" ++ maybeMaybe (fieldOptional field) ++ genFieldType db field
-genPersist :: DbModule -> Deps -> String -> [Field] -> (FilePath, String)
-genPersist db deps name fields = 
+genPersist :: DbModule -> Deps -> [String] -> String -> [Field] -> (FilePath, String)
+genPersist db deps extraImports name fields = 
         ("Model/" ++ name ++ ".hs",unlines $ [ 
         "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
-        "{-# LANGUAGE GADTs, FlexibleContexts #-}",
+        "{-# LANGUAGE GADTs, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}",
         "module Model." ++ name ++ " where "] ++ imports 
-        ++ importDeps deps name ++ [
+        ++ importDeps deps name ++ extraImports ++ [
         persistHeader,
         name] ++ indent (map (genField db) fields) ++ [
         persistFooter
@@ -156,10 +176,28 @@ genPersist db deps name fields =
     where 
         genShortFieldName field = fieldName field ++ " = "
                                  ++ recName name (fieldName field) 
+implDocIfaces :: DbModule -> Doc -> String -> [String]
+implDocIfaces db doc implName = 
+    let
+        name = docName doc
+        (IfaceDef iface) = dbLookup db implName
+        fields = ifaceFields iface
+        fieldNames = map fieldName fields
+        fieldImpls = [ fname ++ " = Model." ++ name ++ "." ++ fname 
+                       | fname <- fieldNames ]
+    in
+        ["instance " ++ implName ++ "." ++ implName ++ " " ++ name ++ " where"]
+        ++ indent fieldImpls
+
+    
 
 genDoc :: DbModule -> Deps -> Doc -> (FilePath,String)
 genDoc db deps doc = let
-        (name, content) = genPersist db deps (docName doc) (docFields doc)
+        extraImports = ["import qualified Model." ++ iName ++ " as " ++ iName |
+                         iName <- docImplements doc ]
+        (name, content) = genPersist db deps extraImports (docName doc) (docFields doc)
+       
      in 
-        (name, content ++ [
-            ])
+        (name, content ++ unlines (concatMap (implDocIfaces db doc) 
+                                     (docImplements doc)))
+
