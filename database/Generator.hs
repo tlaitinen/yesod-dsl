@@ -27,7 +27,7 @@ genCommon db = [("Model/Common.hs", unlines $ [
     "import Data.Time"
     ]),
     ("Model.hs", unlines $ ["module Model where"] ++
-     map (\n -> "import Model." ++ n) allNames
+     map (\n -> "import qualified Model." ++ n ++ " as " ++ n) allNames
      )] 
     where
         allNames = map ifaceName (dbIfaces db) ++ map docName (dbDocs db)

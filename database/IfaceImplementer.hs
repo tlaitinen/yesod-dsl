@@ -2,10 +2,12 @@ module IfaceImplementer (implementInterfaces) where
 import Data.List
 import DbTypes
 import Data.Maybe
+import CheckFieldNames
 
 implementInterfaces :: DbModule -> DbModule
-implementInterfaces db = 
+implementInterfaces db' = 
     let
+        db = checkFieldNames db'
         ifaces = dbIfaces db
     in 
         db {
