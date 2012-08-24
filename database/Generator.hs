@@ -46,13 +46,16 @@ genCommon db = [("Model/Common.hs", unlines $ [
     "    UTCTime(..),",
     "    Day(..),",
     "    TimeOfDay(..),",
-    "    Either(..), Maybe(..), isJust, fromJust) where",
+    "    Either(..), Maybe(..), isJust, fromJust, NoInstance, throw) where",
     "import Data.Text",
     "import Data.Int",
     "import Data.Word",
     "import Data.Time",
     "import Data.Either",
-    "import Data.Maybe"
+    "import Data.Maybe",
+    "import Control.Exception",
+    "data EnterException = NoInstance",
+    "instance Exception EnterException"
     ])]
 --    ("Model.hs", unlines $ ["module Model where"] ++
 --     map (\n -> "import qualified Model." ++ n ++ " as " ++ n) allNames
@@ -128,15 +131,26 @@ importDeps db name = nub $ map (\n -> "import Model." ++ n ++ " (" ++ n ++ ", " 
 persistHeader = "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|"
 persistFooter = "|]"
 
-implIfaceInst :: Iface -> String
-implIfaceInst iface = let
+mkIfaceFieldImpl :: [String] -> String -> [String]
+mkIfaceFieldImpl docNames fname = 
+         [ 
+          fname ++ " d"] ++ indent ([ " | isJust " ++ lowerFirst name ++ " d"
+                               ++ " = Model." ++ name ++ "." ++ fname 
+                               ++ "$ fromJust " ++ lowerFirst name ++ " d"
+                               | name <- docNames ] ++ [
+                               "| otherwise = throw NoInstance"])
+
+ 
+
+    
+implIfaceInst :: DbModule -> Iface -> [String] -> String
+implIfaceInst db  iface docNames = let
             name = ifaceName iface
             instName = name ++ "Inst"
             fields = ifaceFields iface
             fieldNames = map fieldName fields
-            fieldImpls = [ " -- " ++ fname ++ " = Model." ++ instName ++ "." ++ fname
-                              | fname <- fieldNames ]
-        in unlines $ ["-- TODO : instance " ++ name ++ " " ++ instName ++ " where"]
+            fieldImpls = concatMap (mkIfaceFieldImpl  docNames) fieldNames
+        in unlines $ ["instance " ++ name ++ " " ++ instName ++ " where"]
                    ++ indent fieldImpls
 
 
@@ -164,7 +178,7 @@ mkIfaceInstance db iface = let
             (instFileName, instContent) = genPersist db instImports instName instFields
             (instRefFileName, instRefContent) = genPersist db instRefImports instRefName instRefFields
            in
-              [ (instFileName, instContent ++ implIfaceInst iface),
+              [ (instFileName, instContent ++ implIfaceInst db iface docNames),
                 (instRefFileName, instRefContent) ]
 
 
