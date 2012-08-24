@@ -44,97 +44,98 @@ The generated code uses:
     yesod init
 
 ### Step 3: write database definition .dbdef-file
+```haskell
+-- .dbdef-file can include other .dbdef-files for increased 
+-- reusability
+import "mymodule.dbdef"     
 
-    -- .dbdef-file can include other .dbdef-files for increased 
-    -- reusability
-    import "mymodule.dbdef"     
+-- 'document' keyword is used to define a data container
+document User {
+    -- Field name in lower case comes first and after that field type
+    -- which can be one of (Word32, Word64, Int32, Int64, Text, Bool,
+    --                      Double, Date, Time, DateTime, ZonedTime)
+    -- or another document.
+    userName Text;
+    password Text;
 
-    -- 'document' keyword is used to define a data container
-    document User {
-        -- Field name in lower case comes first and after that field type
-        -- which can be one of (Word32, Word64, Int32, Int64, Text, Bool,
-        --                      Double, Date, Time, DateTime, ZonedTime)
-        -- or another document.
-        userName Text;
-        password Text;
+    -- Other documents can be embedded within a documents.
+    -- Square brackets denote a list.
+    messages [Message];
 
-        -- Other documents can be embedded within a documents.
-        -- Square brackets denote a list.
-        messages [Message];
+}
 
-    }
+document Message {
+    -- 'ref' keyword is used to indicate a reference to another document.
+    -- Note that embedded documents cannot be referenced.
+    from ref User;
+    to ref User;
+    subject Text;
+    body Text;
+    time DateTime;
+}
 
-    document Message {
-        -- 'ref' keyword is used to indicate a reference to another document.
-        -- Note that embedded documents cannot be referenced.
-        from ref User;
-        to ref User;
-        subject Text;
-        body Text;
-        time DateTime;
-    }
+-- 'interface' keyword is used to define an access pattern 
+-- to multiple documents. Each document that 'implements' the
+-- interface inherits all the fields defined in the interface.
+interface Named {
+    -- this is an interface for all documents that are guaranteed
+    -- to have a name. 
+    
+    -- 'check' keyword is used to define custom
+    -- field validation checks. In this case, the function 'nonEmpty'
+    -- can return an error message if the supplied value is an empty string.
+    name Text check nonEmpty;
+}
 
-    -- 'interface' keyword is used to define an access pattern 
-    -- to multiple documents. Each document that 'implements' the
-    -- interface inherits all the fields defined in the interface.
-    interface Named {
-        -- this is an interface for all documents that are guaranteed
-        -- to have a name. 
-        
-        -- 'check' keyword is used to define custom
-        -- field validation checks. In this case, the function 'nonEmpty'
-        -- can return an error message if the supplied value is an empty string.
-        name Text check nonEmpty;
-    }
+interface Playable {
+    -- this is an interface for all documents that can be "played"
 
-    interface Playable {
-        -- this is an interface for all documents that can be "played"
+    -- no fields here, just for referencing
+}
 
-        -- no fields here, just for referencing
-    }
+document AudioFile {
+    -- A document can implement a number of interfaces.
+    -- 'implements' keywords must be placed in the beginning of the
+    -- document declaration.
 
-    document AudioFile {
-        -- A document can implement a number of interfaces.
-        -- 'implements' keywords must be placed in the beginning of the
-        -- document declaration.
+    implements Named;
+    implements Playable;
 
-        implements Named;
-        implements Playable;
+    path Text;
 
-        path Text;
-
-        -- AudioFile embeds another document 'File'
-        file File;
-    }
+    -- AudioFile embeds another document 'File'
+    file File;
+}
 
 
-    document File {
-        implements Named;
-        size Word64;
-        chunks [ref Chunk];
-    }
+document File {
+    implements Named;
+    size Word64;
+    chunks [ref Chunk];
+}
 
-    document Chunk {
-        num Word64;
-        bytes Text;
-    }
+document Chunk {
+    num Word64;
+    bytes Text;
+}
 
-    document HTTPStream {
-        implements Named;
-        implements Playable;
+document HTTPStream {
+    implements Named;
+    implements Playable;
 
-        url Text;
-    }
+    url Text;
+}
 
-    document PlayList {
-        implements Named;
+document PlayList {
+    implements Named;
 
-        -- PlayList is a list of Playables (audio files and HTTP streams).
-        playables [ref Playable];
+    -- PlayList is a list of Playables (audio files and HTTP streams).
+    playables [ref Playable];
 
-        -- Note that PlayList cannot implement the interface 'Playable'
-        -- because that would cause module import cycle.
-    }
+    -- Note that PlayList cannot implement the interface 'Playable'
+    -- because that would cause module import cycle.
+}
+```
 
 ### Step 4: run code generator
 
