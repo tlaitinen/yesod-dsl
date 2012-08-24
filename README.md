@@ -171,26 +171,26 @@ import Model.Chunk (Chunk, ChunkGeneric, ChunkId)
 import qualified Model.Named as Named
 share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|
 File
-chunks [ChunkId] 
-size Word64 
-name Text 
+    chunks [ChunkId] 
+    size Word64 
+    name Text 
 |]
 chunks = fileChunks
 size = fileSize
 name = fileName
 s_chunks ::  [ChunkId] -> File -> Either String File
 s_chunks v d 
-| otherwise = Right $ d { fileChunks = v } 
+    | otherwise = Right $ d { fileChunks = v } 
 
 s_size ::  Word64 -> File -> Either String File
 s_size v d 
-| otherwise = Right $ d { fileSize = v } 
+    | otherwise = Right $ d { fileSize = v } 
 
 s_name ::  Text -> File -> Either String File
 s_name v d 
-| isJust $ V.nonEmpty v = Left $ fromJust $ V.nonEmpty v
-| otherwise = Right $ d { fileName = v } 
+    | isJust $ V.nonEmpty v = Left $ fromJust $ V.nonEmpty v
+    | otherwise = Right $ d { fileName = v } 
 
 instance Named.Named File where
-name = Model.File.name
+    name = Model.File.name
 ```        
