@@ -44,7 +44,7 @@ The generated code uses:
     yesod init
 
 ### Step 3: write database definition .dbdef-file
-```haskell
+```
 -- .dbdef-file can include other .dbdef-files for increased 
 -- reusability
 import "mymodule.dbdef"     
