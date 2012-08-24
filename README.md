@@ -139,5 +139,58 @@ The generated code uses:
 ### Step 4: run code generator
 
     $ dbdef-gen main.dbdef
+    Updating    Model/Common.hs
+    Updating    Model/PlayList.hs
+    Updating    Model/HTTPStream.hs
+    Updating    Model/Chunk.hs
+    Updating    Model/File.hs
+    Updating    Model/AudioFile.hs
+    Updating    Model/Message.hs
+    Updating    Model/User.hs
+    Updating    Model/Playable.hs
+    Updating    Model/PlayableInst.hs
+    Updating    Model/PlayableInstRef.hs
+    Updating    Model/Named.hs
+    Updating    Model/NamedInst.hs
+    Updating    Model/NamedInstRef.hs
 
+The generator writes Haskell modules for each document and each interface.
 
+For example, Model/File.hs is as follows:
+```haskell
+{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}
+{-# LANGUAGE GADTs, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}
+module Model.File where 
+import Database.Persist
+import Database.Persist.MongoDB
+import Database.Persist.TH
+import Language.Haskell.TH.Syntax
+import qualified Model.Validation as V
+import Model.Common
+import Model.Chunk (Chunk, ChunkGeneric, ChunkId)
+import qualified Model.Named as Named
+share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|
+File
+chunks [ChunkId] 
+size Word64 
+name Text 
+|]
+chunks = fileChunks
+size = fileSize
+name = fileName
+s_chunks ::  [ChunkId] -> File -> Either String File
+s_chunks v d 
+| otherwise = Right $ d { fileChunks = v } 
+
+s_size ::  Word64 -> File -> Either String File
+s_size v d 
+| otherwise = Right $ d { fileSize = v } 
+
+s_name ::  Text -> File -> Either String File
+s_name v d 
+| isJust $ V.nonEmpty v = Left $ fromJust $ V.nonEmpty v
+| otherwise = Right $ d { fileName = v } 
+
+instance Named.Named File where
+name = Model.File.name
+```        

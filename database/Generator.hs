@@ -53,10 +53,10 @@ genCommon db = [("Model/Common.hs", unlines $ [
     "import Data.Time",
     "import Data.Either",
     "import Data.Maybe"
-    ]),
-    ("Model.hs", unlines $ ["module Model where"] ++
-     map (\n -> "import qualified Model." ++ n ++ " as " ++ n) allNames
-     )] 
+    ])]
+--    ("Model.hs", unlines $ ["module Model where"] ++
+--     map (\n -> "import qualified Model." ++ n ++ " as " ++ n) allNames
+ --    )] 
     where
         ifaces = dbIfaces db
         ifaceNames = map ifaceName ifaces
