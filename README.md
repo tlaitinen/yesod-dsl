@@ -195,3 +195,33 @@ s_name v d
 instance Named.Named File where
     name = Model.File.name
 ```        
+
+References to instances of an interface are implemented using an auxiliary data type. For example, a reference to a document that implements the interface "Playable" is represented by PlayableInstRef:
+```haskell
+{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}
+{-# LANGUAGE GADTs, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}
+module Model.PlayableInstRef where 
+import Database.Persist
+import Database.Persist.MongoDB
+import Database.Persist.TH
+import Language.Haskell.TH.Syntax
+import qualified Model.Validation as V
+import Model.Common
+import qualified Model.Playable as Playable
+import Model.HTTPStream (HTTPStreamId, HTTPStreamGeneric)
+import Model.AudioFile (AudioFileId, AudioFileGeneric)
+share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|
+PlayableInstRef
+    hTTPStreamId HTTPStreamId Maybe 
+    audioFileId AudioFileId Maybe 
+|]
+hTTPStreamId = playableInstRefHTTPStreamId
+audioFileId = playableInstRefAudioFileId
+s_hTTPStreamId ::  Maybe HTTPStreamId -> PlayableInstRef -> Either String PlayableInstRef
+s_hTTPStreamId v d 
+    | otherwise = Right $ d { playableInstRefHTTPStreamId = v } 
+
+s_audioFileId ::  Maybe AudioFileId -> PlayableInstRef -> Either String PlayableInstRef
+s_audioFileId v d 
+    | otherwise = Right $ d { playableInstRefAudioFileId = v } 
+```
