@@ -4,6 +4,7 @@ document AudioFile {
     implements Named;
     implements Playable;
 
+    -- comment
     file File;
 }
 
@@ -17,10 +18,16 @@ document User {
     implements Versioned;
     implements Named;
 
+    messages [Message];
 
     files [ref File];
 
     unique asc index name;
+}
+
+document Message {
+    from ref User;
+    to ref User;
 }
 
 document File {

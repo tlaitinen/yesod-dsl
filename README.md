@@ -26,6 +26,49 @@ The generated code uses:
 
 ## Status
  * work in progress
+ * code generator writes Yesod-compatible MongoDB wrappers
 
 ## License
  * This library is distributed under the terms of [Simplified BSD license](enterdsl/blob/master/LICENSE)
+
+## Quick start
+
+### Step 1: get the source code 
+
+    git clone git://github.com/tlaitinen/enterdsl.git
+
+### Step 2: Create scaffolded Yesod site
+
+    yesod init
+
+### Step 3: write database definition .dbdef-file
+
+    -- .dbdef-file can include other .dbdef-files for increased 
+    -- reusability
+    import "mymodule.dbdef"     
+
+    -- 'document' keyword is used to define a data container
+    document User {
+        -- Field name in lower case comes first and after that field type
+        -- which can be one of (Word32, Word64, Int32, Int64, Text, Bool,
+        --                      Double, Date, Time, DateTime, ZonedTime)
+        -- or another document.
+        userName Text;
+        password Text;
+
+        -- Other documents can be embedded within a documents.
+        -- Square brackets denote a list.
+        messages [Message];
+
+    }
+
+    document Message {
+        -- 'ref' keyword is used to indicate a reference to another document.
+        -- Note that embedded documents cannot be referenced.
+        from ref User;
+        to ref User;
+        subject Text;
+        body Text;
+        time DateTime;
+    }
+
