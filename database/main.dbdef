@@ -12,6 +12,7 @@ interface Playable {
 }
 
 document PlayList {
+    implements Named;
     playables [ref Playable];
 }
 document User {
@@ -26,8 +27,11 @@ document User {
 }
 
 document Message {
-    from ref User;
-    to ref User;
+    from Text;
+    to Text;
+    subject Text;
+    body Text;
+    dateTime DateTime;
 }
 
 document File {

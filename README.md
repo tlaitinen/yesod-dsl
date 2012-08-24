@@ -33,9 +33,11 @@ The generated code uses:
 
 ## Quick start
 
-### Step 1: get the source code 
+### Step 1: get the source code and compile
 
     git clone git://github.com/tlaitinen/enterdsl.git
+    cd enterdsl/database
+    make
 
 ### Step 2: Create scaffolded Yesod site
 
@@ -71,4 +73,71 @@ The generated code uses:
         body Text;
         time DateTime;
     }
+
+    -- 'interface' keyword is used to define an access pattern 
+    -- to multiple documents. Each document that 'implements' the
+    -- interface inherits all the fields defined in the interface.
+    interface Named {
+        -- this is an interface for all documents that are guaranteed
+        -- to have a name. 
+        
+        -- 'check' keyword is used to define custom
+        -- field validation checks. In this case, the function 'nonEmpty'
+        -- can return an error message if the supplied value is an empty string.
+        name Text check nonEmpty;
+    }
+
+    interface Playable {
+        -- this is an interface for all documents that can be "played"
+
+        -- no fields here, just for referencing
+    }
+
+    document AudioFile {
+        -- A document can implement a number of interfaces.
+        -- 'implements' keywords must be placed in the beginning of the
+        -- document declaration.
+
+        implements Named;
+        implements Playable;
+
+        path Text;
+
+        -- AudioFile embeds another document 'File'
+        file File;
+    }
+
+
+    document File {
+        implements Named;
+        size Word64;
+        chunks [ref Chunk];
+    }
+
+    document Chunk {
+        num Word64;
+        bytes Text;
+    }
+
+    document HTTPStream {
+        implements Named;
+        implements Playable;
+
+        url Text;
+    }
+
+    document PlayList {
+        implements Named;
+
+        -- PlayList is a list of Playables (audio files and HTTP streams).
+        playables [ref Playable];
+
+        -- Note that PlayList cannot implement the interface 'Playable'
+        -- because that would cause module import cycle.
+    }
+
+### Step 4: run code generator
+
+    $ dbdef-gen main.dbdef
+
 

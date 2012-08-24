@@ -2,8 +2,9 @@ module Generator (generateModels) where
 import System.IO (FilePath)
 import DbTypes
 import DbLexer
-import Dependencies
 import Data.Char
+import Data.List
+import Data.Maybe
 -- from Database.Persist.TH
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
@@ -16,13 +17,23 @@ upperFirst :: String -> String
 upperFirst (a:b) = (toUpper a):b
 upperFirst a = a
 -- ^^^^ Database.Persist.TH        
+docFieldDeps :: DbModule -> String -> [String]
+docFieldDeps db name 
+    | name `elem` [ docName doc | doc <- dbDocs db ] = [name]
+    | otherwise = [name ++ "Inst", name ++ "InstRef"]
 
+getFieldDeps :: DbModule -> Field -> [String]
+getFieldDeps db field = case (fieldContent field) of
+    (NormalField _ _) -> []
+    (DocField _ _ docName) -> docFieldDeps db docName
+
+lookupDeps :: DbModule -> String -> [String]
+lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db)) name
 
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db = genCommon db 
-                  ++ map (genDoc db deps) (dbDocs db) 
-                  ++ concatMap (genIface db deps) (dbIfaces db)
-        where deps = makeDependencies db
+                  ++ map (genDoc db) (dbDocs db) 
+                  ++ concatMap (genIface db) (dbIfaces db)
 
 genCommon :: DbModule -> [(FilePath, String)]
 genCommon db = [("Model/Common.hs", unlines $ [
@@ -34,11 +45,14 @@ genCommon db = [("Model/Common.hs", unlines $ [
     "    Word64(..),",
     "    UTCTime(..),",
     "    Day(..),",
-    "    TimeOfDay(..)) where",
+    "    TimeOfDay(..),",
+    "    Either(..), Maybe(..), isJust, fromJust) where",
     "import Data.Text",
     "import Data.Int",
     "import Data.Word",
-    "import Data.Time"
+    "import Data.Time",
+    "import Data.Either",
+    "import Data.Maybe"
     ]),
     ("Model.hs", unlines $ ["module Model where"] ++
      map (\n -> "import qualified Model." ++ n ++ " as " ++ n) allNames
@@ -59,7 +73,7 @@ imports = ["import Database.Persist",
            "import Database.Persist.MongoDB",
            "import Database.Persist.TH",
            "import Language.Haskell.TH.Syntax",
-           "import Model.Validation",
+           "import qualified Model.Validation as V",
            "import Model.Common"
            ]
 
@@ -101,11 +115,16 @@ genFieldType db field = case (fieldContent field) of
 maybeMaybe True = " Maybe "
 maybeMaybe False = " "
 
+persistFieldType :: DbModule -> Field -> String
+persistFieldType db field = genFieldType db field ++ (maybeMaybe (fieldOptional field))
+haskellFieldType :: DbModule -> Field -> String
+haskellFieldType db field = maybeMaybe (fieldOptional field) ++ genFieldType db field
+
 genField :: DbModule -> Field -> String
-genField db field = fieldName field ++ " " ++ genFieldType db field ++ (maybeMaybe (fieldOptional field))
+genField db field = fieldName field ++ " " ++ persistFieldType db field
     
-importDeps :: Deps -> String -> [String]
-importDeps deps name = map (\n -> "import Model." ++ n ++ " (" ++ n ++ ", " ++ n ++ "Generic, " ++ n ++ "Id)") $ lookupDeps deps name
+importDeps :: DbModule -> String -> [String]
+importDeps db name = nub $ map (\n -> "import Model." ++ n ++ " (" ++ n ++ ", " ++ n ++ "Generic, " ++ n ++ "Id)") $ lookupDeps db name
 persistHeader = "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|"
 persistFooter = "|]"
 
@@ -139,8 +158,11 @@ mkIfaceInstance db iface = let
             instDeps = [(instName, docNames)]
             instRefDeps = [(instRefName,  docNames)]
             extraImports = ["import qualified Model." ++ifaceName iface ++ " as " ++ ifaceName iface ]
-            (instFileName, instContent) = genPersist db instDeps extraImports instName instFields
-            (instRefFileName, instRefContent) = genPersist db instRefDeps extraImports instRefName instRefFields
+            instImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ ")" | d <- docNames ]
+            instRefImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ "Id, " ++ d ++ "Generic)" | d <- docNames ]
+
+            (instFileName, instContent) = genPersist db instImports instName instFields
+            (instRefFileName, instRefContent) = genPersist db instRefImports instRefName instRefFields
            in
               [ (instFileName, instContent ++ implIfaceInst iface),
                 (instRefFileName, instRefContent) ]
@@ -148,12 +170,12 @@ mkIfaceInstance db iface = let
 
         
 
-genIface :: DbModule -> Deps -> Iface -> [(FilePath,String)]
-genIface db deps iface = [("Model/" ++ name ++ ".hs",unlines $[
+genIface :: DbModule -> Iface -> [(FilePath,String)]
+genIface db iface = [("Model/" ++ name ++ ".hs",unlines $[
         "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
         "{-# LANGUAGE GADTs, FlexibleContexts #-}",
         "module Model." ++ name ++ "(" ++ exportList ++ ") where ",
-        "import Model.Common"] ++ importDeps deps name ++ [
+        "import Model.Common"] ++ importDeps db name ++ [
         "class " ++ name ++ " a where "]
         ++ indent (map genIfaceField fields))]
         ++ mkIfaceInstance db iface
@@ -161,18 +183,37 @@ genIface db deps iface = [("Model/" ++ name ++ ".hs",unlines $[
           fields = ifaceFields iface
           exportList = name ++ "(..)"
           genIfaceField field = (fieldName field)
-                                ++ " :: a ->" ++ maybeMaybe (fieldOptional field) ++ genFieldType db field
-genPersist :: DbModule -> Deps -> [String] -> String -> [Field] -> (FilePath, String)
-genPersist db deps extraImports name fields = 
+                                ++ " :: a ->" ++ haskellFieldType db field
+genFieldChecks :: FieldContent -> [String]
+genFieldChecks (NormalField _ opts) = catMaybes (map maybeCheck opts)
+    where
+        maybeCheck (FieldCheck func) = Just $ "| isJust $ V." ++ func ++ " v = Left $ fromJust $ V." ++ func ++ " v"
+        maybeCheck _ = Nothing
+genFieldChecks _ = []        
+
+genFieldSetter :: DbModule -> String -> Field -> String
+genFieldSetter db name field = unlines $ [ 
+        funName ++ " :: " ++ ftype ++ " -> "  ++ name ++ " -> Either String " ++ name,
+        funName ++ " v d "] ++ indent checks 
+            ++ indent [ "| otherwise = Right $ d { " ++ recName name fname ++ " = v } " ]
+        where
+            fname = fieldName field 
+            funName = "s_" ++ fname
+            ftype = haskellFieldType db field
+            checks = genFieldChecks (fieldContent field)
+
+genPersist :: DbModule -> [String] -> String -> [Field] -> (FilePath, String)
+genPersist db extraImports name fields = 
         ("Model/" ++ name ++ ".hs",unlines $ [ 
         "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
         "{-# LANGUAGE GADTs, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}",
         "module Model." ++ name ++ " where "] ++ imports 
-        ++ importDeps deps name ++ extraImports ++ [
+         ++ extraImports ++ [
         persistHeader,
         name] ++ indent (map (genField db) fields) ++ [
         persistFooter
-        ] ++ map genShortFieldName fields)
+        ] ++ map genShortFieldName fields 
+          ++ map (genFieldSetter db name) fields)
     where 
         genShortFieldName field = fieldName field ++ " = "
                                  ++ recName name (fieldName field) 
@@ -191,11 +232,11 @@ implDocIfaces db doc implName =
 
     
 
-genDoc :: DbModule -> Deps -> Doc -> (FilePath,String)
-genDoc db deps doc = let
-        extraImports = ["import qualified Model." ++ iName ++ " as " ++ iName |
+genDoc :: DbModule -> Doc -> (FilePath,String)
+genDoc db doc = let
+        extraImports = importDeps db (docName doc) ++ ["import qualified Model." ++ iName ++ " as " ++ iName |
                          iName <- docImplements doc ]
-        (name, content) = genPersist db deps extraImports (docName doc) (docFields doc)
+        (name, content) = genPersist db extraImports (docName doc) (docFields doc)
        
      in 
         (name, content ++ unlines (concatMap (implDocIfaces db doc) 

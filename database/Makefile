@@ -1,6 +1,6 @@
 all: dbdef-gen
 
-dbdef-gen: dbdef-gen.hs DbLexer.hs DbParser.hs ModuleMerger.hs IfaceImplementer.hs NameFinder.hs DbTypes.hs Generator.hs SyncFiles.hs CheckFieldNames.hs Dependencies.hs
+dbdef-gen: dbdef-gen.hs DbLexer.hs DbParser.hs ModuleMerger.hs IfaceImplementer.hs NameFinder.hs DbTypes.hs Generator.hs SyncFiles.hs CheckFieldNames.hs 
 	ghc --make dbdef-gen.hs
 
 DbLexer.hs: DbLexer.x

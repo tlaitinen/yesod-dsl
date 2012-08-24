@@ -82,7 +82,12 @@ dbLookup db name
     where
         docMatch = find (\e -> name == docName e) (dbDocs db)
         ifaceMatch  = find (\i -> name == ifaceName i) (dbIfaces db)
- 
+
+dbdefFields :: DbDef -> [Field]
+dbdefFields dbdef = case dbdef of
+    (DocDef doc)     -> docFields doc
+    (IfaceDef iface) -> ifaceFields iface
+    
 type DefaultValue = String
 type IsListFlag = Bool
 data DocFieldType = SingleField | ListField deriving (Show,Eq)
