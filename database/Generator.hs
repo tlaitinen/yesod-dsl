@@ -5,6 +5,7 @@ import DbLexer
 import Data.Char
 import Data.List
 import Data.Maybe
+import Data.String.Utils
 -- from Database.Persist.TH
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
@@ -37,6 +38,7 @@ generateModels db = genCommon db
 
 genCommon :: DbModule -> [(FilePath, String)]
 genCommon db = [("Model/Common.hs", unlines $ [
+    "{-# LANGUAGE DeriveDataTypeable #-}",
     "module Model.Common (",
     "    Text(..),", 
     "    Int32(..),",
@@ -46,16 +48,20 @@ genCommon db = [("Model/Common.hs", unlines $ [
     "    UTCTime(..),",
     "    Day(..),",
     "    TimeOfDay(..),",
-    "    Either(..), Maybe(..), isJust, fromJust, NoInstance, throw) where",
+    "    Validatable(..),",
+    "    Either(..), Maybe(..), catMaybes, isJust, fromJust, EnterException(..), throw) where",
     "import Data.Text",
     "import Data.Int",
     "import Data.Word",
     "import Data.Time",
     "import Data.Either",
     "import Data.Maybe",
+    "import Data.Typeable",
     "import Control.Exception",
-    "data EnterException = NoInstance",
-    "instance Exception EnterException"
+    "data EnterException = NoInstance deriving (Show,Typeable)",
+    "instance Exception EnterException",
+    "class Validatable a where",
+    "    validate :: a -> [Text]"
     ])]
 --    ("Model.hs", unlines $ ["module Model where"] ++
 --     map (\n -> "import qualified Model." ++ n ++ " as " ++ n) allNames
@@ -132,13 +138,21 @@ persistHeader = "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action
 persistFooter = "|]"
 
 mkIfaceFieldImpl :: [String] -> String -> [String]
-mkIfaceFieldImpl docNames fname = 
+mkIfaceFieldImpl  docNames fname = 
          [ 
-          fname ++ " d"] ++ indent ([ " | isJust " ++ lowerFirst name ++ " d"
+          fname ++ " d"] ++ indent ([ "| isJust (" ++ lowerFirst name ++ " d)"
                                ++ " = Model." ++ name ++ "." ++ fname 
-                               ++ "$ fromJust " ++ lowerFirst name ++ " d"
+                               ++ "$ fromJust (" ++ lowerFirst name ++ " d)"
                                | name <- docNames ] ++ [
                                "| otherwise = throw NoInstance"])
+         ++ ["s_" ++ fname ++ " v d"] 
+         ++ indent (["| isJust (" ++ lowerFirst name ++ " d)"
+                        ++ " = s_" ++ (lowerFirst name) ++ 
+                          " (Just $ Model." ++ name ++ ".s_" ++ fname
+                           ++ " v $ fromJust (" ++ lowerFirst name ++ " d)) d"
+                             | name <- docNames]
+                          ++ ["| otherwise = throw NoInstance"])
+            
 
  
 
@@ -149,11 +163,21 @@ implIfaceInst db  iface docNames = let
             instName = name ++ "Inst"
             fields = ifaceFields iface
             fieldNames = map fieldName fields
-            fieldImpls = concatMap (mkIfaceFieldImpl  docNames) fieldNames
-        in unlines $ ["instance " ++ name ++ " " ++ instName ++ " where"]
+            fieldImpls = concatMap (mkIfaceFieldImpl docNames) fieldNames
+        in unlines $ ["instance " ++ name ++ "." ++ name ++ " " ++ instName ++ " where"]
                    ++ indent fieldImpls
 
-
+genIfaceValidate :: DbModule -> Iface -> [String] -> String
+genIfaceValidate db iface docNames = let
+        instName = ifaceName iface ++ "Inst"
+        in unlines $ ["instance Validatable " ++ instName ++ " where"]
+                     ++ (indent $ ["validate d"] 
+                         ++(indent (["| isJust (" ++ lowerFirst name ++ " d) = "
+                                 ++ " validate $ fromJust (" 
+                                 ++ lowerFirst name ++ " d)" 
+                                 | name <- docNames] 
+                                 ++ ["| otherwise = throw NoInstance"])))
+                      
 
 mkIfaceInstance :: DbModule -> Iface -> [(FilePath, String)]
 mkIfaceInstance db iface = let
@@ -172,13 +196,16 @@ mkIfaceInstance db iface = let
             instDeps = [(instName, docNames)]
             instRefDeps = [(instRefName,  docNames)]
             extraImports = ["import qualified Model." ++ifaceName iface ++ " as " ++ ifaceName iface ]
-            instImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ ")" | d <- docNames ]
+            instImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ ")" | d <- docNames ] 
+                     ++ ["import qualified Model." ++ d | d <- docNames ]
             instRefImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ "Id, " ++ d ++ "Generic)" | d <- docNames ]
 
             (instFileName, instContent) = genPersist db instImports instName instFields
             (instRefFileName, instRefContent) = genPersist db instRefImports instRefName instRefFields
            in
-              [ (instFileName, instContent ++ implIfaceInst db iface docNames),
+              [ (instFileName, instContent   
+                              ++ implIfaceInst db iface docNames
+                              ++ genIfaceValidate db iface docNames),
                 (instRefFileName, instRefContent) ]
 
 
@@ -191,30 +218,33 @@ genIface db iface = [("Model/" ++ name ++ ".hs",unlines $[
         "module Model." ++ name ++ "(" ++ exportList ++ ") where ",
         "import Model.Common"] ++ importDeps db name ++ [
         "class " ++ name ++ " a where "]
-        ++ indent (map genIfaceField fields))]
+        ++ indent (map genIfaceFieldGetter fields)
+        ++ indent (map genIfaceFieldSetter fields))]
         ++ mkIfaceInstance db iface
     where name = ifaceName iface
           fields = ifaceFields iface
           exportList = name ++ "(..)"
-          genIfaceField field = (fieldName field)
+          genIfaceFieldGetter field = (fieldName field)
                                 ++ " :: a ->" ++ haskellFieldType db field
-genFieldChecks :: FieldContent -> [String]
-genFieldChecks (NormalField _ opts) = catMaybes (map maybeCheck opts)
+          genIfaceFieldSetter field = "s_" ++ (fieldName field)
+                                ++ " :: " ++ haskellFieldType db field
+                                ++ " -> a -> a"
+genFieldChecker :: DbModule -> String -> Field -> String
+genFieldChecker db name (Field _ fname (NormalField _ opts)) = join ",\n" $ catMaybes (map maybeCheck opts)
     where
-        maybeCheck (FieldCheck func) = Just $ "| isJust $ V." ++ func ++ " v = Left $ fromJust $ V." ++ func ++ " v"
+        maybeCheck (FieldCheck func) = Just $ "if not $ V." ++ func ++ " $ " ++ fname ++ " d then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
         maybeCheck _ = Nothing
-genFieldChecks _ = []        
+        
+genFieldChecker db name _ = []        
 
 genFieldSetter :: DbModule -> String -> Field -> String
 genFieldSetter db name field = unlines $ [ 
-        funName ++ " :: " ++ ftype ++ " -> "  ++ name ++ " -> Either String " ++ name,
-        funName ++ " v d "] ++ indent checks 
-            ++ indent [ "| otherwise = Right $ d { " ++ recName name fname ++ " = v } " ]
+        funName ++ " :: " ++ ftype ++ " -> "  ++ name ++ " -> " ++ name,
+        funName ++ " v d = d { " ++ recName name fname ++ " = v }"]
         where
             fname = fieldName field 
             funName = "s_" ++ fname
             ftype = haskellFieldType db field
-            checks = genFieldChecks (fieldContent field)
 
 genPersist :: DbModule -> [String] -> String -> [Field] -> (FilePath, String)
 genPersist db extraImports name fields = 
@@ -223,10 +253,10 @@ genPersist db extraImports name fields =
         "{-# LANGUAGE GADTs, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}",
         "module Model." ++ name ++ " where "] ++ imports 
          ++ extraImports ++ [
-        persistHeader,
-        name] ++ indent (map (genField db) fields) ++ [
-        persistFooter
-        ] ++ map genShortFieldName fields 
+         persistHeader,
+         name] ++ indent (map (genField db) fields) ++ [
+            persistFooter
+         ] ++ map genShortFieldName fields 
           ++ map (genFieldSetter db name) fields)
     where 
         genShortFieldName field = fieldName field ++ " = "
@@ -239,7 +269,10 @@ implDocIfaces db doc implName =
         fields = ifaceFields iface
         fieldNames = map fieldName fields
         fieldImpls = [ fname ++ " = Model." ++ name ++ "." ++ fname 
-                       | fname <- fieldNames ]
+                       | fname <- fieldNames ] 
+                    ++ [ "s_" ++ fname ++ " = Model." ++ name ++ ".s_" ++ fname 
+                       | fname <- fieldNames ] 
+
     in
         ["instance " ++ implName ++ "." ++ implName ++ " " ++ name ++ " where"]
         ++ indent fieldImpls
@@ -254,5 +287,11 @@ genDoc db doc = let
        
      in 
         (name, content ++ unlines (concatMap (implDocIfaces db doc) 
-                                     (docImplements doc)))
+                                     (docImplements doc)
+               ++ ["instance Validatable " ++ (docName doc) ++ " where "])
+               ++ (join "" (indent (["validate d = catMaybes ["]
+                    ++ map (genFieldChecker db (docName doc)) 
+                                 (docFields doc)
+                    ++ ["]"]))))
+
 

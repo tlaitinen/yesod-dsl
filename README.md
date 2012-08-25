@@ -179,21 +179,20 @@ File
 chunks = fileChunks
 size = fileSize
 name = fileName
-s_chunks ::  [ChunkId] -> File -> Either String File
-s_chunks v d 
-    | otherwise = Right $ d { fileChunks = v } 
+s_chunks ::  [ChunkId] -> File -> File
+s_chunks v d = d { fileChunks = v }
 
-s_size ::  Word64 -> File -> Either String File
-s_size v d 
-    | otherwise = Right $ d { fileSize = v } 
+s_size ::  Word64 -> File -> File
+s_size v d = d { fileSize = v }
 
-s_name ::  Text -> File -> Either String File
-s_name v d 
-    | isJust $ V.nonEmpty v = Left $ fromJust $ V.nonEmpty v
-    | otherwise = Right $ d { fileName = v } 
+s_name ::  Text -> File -> File
+s_name v d = d { fileName = v }
 
 instance Named.Named File where
     name = Model.File.name
+    s_name = Model.File.s_name
+instance Validatable File where 
+    validate d = catMaybes [            if not $ V.nonEmpty $ name d then Just "File.name nonEmpty" else Nothing    ]
 ```        
 
 References to instances of an interface are implemented using an auxiliary data type. For example, a reference to a document that implements the interface "Playable" is represented by PlayableInstRef:
@@ -217,11 +216,74 @@ PlayableInstRef
 |]
 hTTPStreamId = playableInstRefHTTPStreamId
 audioFileId = playableInstRefAudioFileId
-s_hTTPStreamId ::  Maybe HTTPStreamId -> PlayableInstRef -> Either String PlayableInstRef
-s_hTTPStreamId v d 
-    | otherwise = Right $ d { playableInstRefHTTPStreamId = v } 
+s_hTTPStreamId ::  Maybe HTTPStreamId -> PlayableInstRef -> PlayableInstRef
+s_hTTPStreamId v d = d { playableInstRefHTTPStreamId = v }
 
-s_audioFileId ::  Maybe AudioFileId -> PlayableInstRef -> Either String PlayableInstRef
-s_audioFileId v d 
-    | otherwise = Right $ d { playableInstRefAudioFileId = v } 
+s_audioFileId ::  Maybe AudioFileId -> PlayableInstRef -> PlayableInstRef
+s_audioFileId v d = d { playableInstRefAudioFileId = v }
+```
+
+Instances of an interface can also be embedded within another document. For example, an embedded instance of the "Named" interface is represented by NamedInst:
+```haskell
+{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}
+{-# LANGUAGE GADTs, FlexibleContexts, TypeSynonymInstances, FlexibleInstances #-}
+module Model.NamedInst where 
+import Database.Persist
+import Database.Persist.MongoDB
+import Database.Persist.TH
+import Language.Haskell.TH.Syntax
+import qualified Model.Validation as V
+import Model.Common
+import qualified Model.Named as Named
+import Model.PlayList (PlayList)
+import Model.HTTPStream (HTTPStream)
+import Model.File (File)
+import Model.AudioFile (AudioFile)
+import qualified Model.PlayList
+import qualified Model.HTTPStream
+import qualified Model.File
+import qualified Model.AudioFile
+share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action }] [persist|
+NamedInst
+    playList PlayList Maybe 
+    hTTPStream HTTPStream Maybe 
+    file File Maybe 
+    audioFile AudioFile Maybe 
+|]
+playList = namedInstPlayList
+hTTPStream = namedInstHTTPStream
+file = namedInstFile
+audioFile = namedInstAudioFile
+s_playList ::  Maybe PlayList -> NamedInst -> NamedInst
+s_playList v d = d { namedInstPlayList = v }
+
+s_hTTPStream ::  Maybe HTTPStream -> NamedInst -> NamedInst
+s_hTTPStream v d = d { namedInstHTTPStream = v }
+
+s_file ::  Maybe File -> NamedInst -> NamedInst
+s_file v d = d { namedInstFile = v }
+
+s_audioFile ::  Maybe AudioFile -> NamedInst -> NamedInst
+s_audioFile v d = d { namedInstAudioFile = v }
+
+instance Named.Named NamedInst where
+    name d
+        | isJust (playList d) = Model.PlayList.name$ fromJust (playList d)
+        | isJust (hTTPStream d) = Model.HTTPStream.name$ fromJust (hTTPStream d)
+        | isJust (file d) = Model.File.name$ fromJust (file d)
+        | isJust (audioFile d) = Model.AudioFile.name$ fromJust (audioFile d)
+        | otherwise = throw NoInstance
+    s_name v d
+        | isJust (playList d) = s_playList (Just $ Model.PlayList.s_name v $ fromJust (playList d)) d
+        | isJust (hTTPStream d) = s_hTTPStream (Just $ Model.HTTPStream.s_name v $ fromJust (hTTPStream d)) d
+        | isJust (file d) = s_file (Just $ Model.File.s_name v $ fromJust (file d)) d
+        | isJust (audioFile d) = s_audioFile (Just $ Model.AudioFile.s_name v $ fromJust (audioFile d)) d
+        | otherwise = throw NoInstance
+instance Validatable NamedInst where
+    validate d
+        | isJust (playList d) =  validate $ fromJust (playList d)
+        | isJust (hTTPStream d) =  validate $ fromJust (hTTPStream d)
+        | isJust (file d) =  validate $ fromJust (file d)
+        | isJust (audioFile d) =  validate $ fromJust (audioFile d)
+        | otherwise = throw NoInstance
 ```
