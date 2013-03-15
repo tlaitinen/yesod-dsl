@@ -1,4 +1,4 @@
-# enterdsl - Enterprise DSL
+# enterdsl 
 
 A domain specific language and a code generator desined to create RESTful
 services for managing g a MongoDB database. 
