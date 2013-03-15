@@ -104,9 +104,7 @@ data Field = Field {
 } deriving (Show)
 type FunctionName = String
 
-data FieldOption = FieldDefaultValue FieldValue
-                 | FieldUnique
-                 | FieldCheck FunctionName
+data FieldOption = FieldCheck FunctionName
                  deriving (Show)
 
 data FieldValue = StringValue String

@@ -20,7 +20,6 @@ import System.Exit
     document   { Tk _ TDoc }
     iface      { Tk _ TIface }
     implements { Tk _ TImplements }
-    default    { Tk _ TDefault }
     index      { Tk _ TIndex }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
@@ -95,9 +94,7 @@ fieldOptions : { [] }
              | fieldOptionsList { $1 }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
-fieldOption : 
-            default value { FieldDefaultValue $2 }
-            | check lowerId { FieldCheck $2 }
+fieldOption : check lowerId { FieldCheck $2 }
 
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }

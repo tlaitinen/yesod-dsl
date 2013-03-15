@@ -37,7 +37,6 @@ tokens :-
     "check" { mkT TCheck }
     "asc" { mkT TAsc }
     "desc" { mkT TDesc }
-    "default" { mkT TDefault }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -72,7 +71,6 @@ data TokenType = TSemicolon
                | TImport
                | TDoc
                | TImplements
-               | TDefault
                | TIndex
                | TUnique
                | TIface

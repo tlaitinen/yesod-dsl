@@ -121,6 +121,7 @@ genFieldType db field = case (fieldContent field) of
         fromTkType TDateTime = "UTCTime"
         fromTkType TZonedTime = "ZonedTime"
         fromTkType ft = error $ "Unknown field type: " ++ show ft 
+
 maybeMaybe True = " Maybe "
 maybeMaybe False = " "
 
@@ -233,7 +234,6 @@ genFieldChecker :: DbModule -> String -> Field -> String
 genFieldChecker db name (Field _ fname (NormalField _ opts)) = join ",\n" $ catMaybes (map maybeCheck opts)
     where
         maybeCheck (FieldCheck func) = Just $ "if not $ V." ++ func ++ " $ " ++ fname ++ " d then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
-        maybeCheck _ = Nothing
         
 genFieldChecker db name _ = []        
 
