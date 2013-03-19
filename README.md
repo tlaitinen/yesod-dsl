@@ -123,7 +123,7 @@ User
 ```
 
 #### Model/Validation.hs
-```
+```haskell
 {-# LANGUAGE OverloadedStrings #-}
 module Model.Validation (
     Validatable(..) where
