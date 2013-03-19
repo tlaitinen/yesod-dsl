@@ -6,7 +6,7 @@ and [Persistent](http://www.yesodweb.com/book/persistent).
 
 ## Features (parentheses if not yet implemented)
  * splitting database definitions into multiple files
- * "polymorphic" relations and grouping of common entity fields through interfaces
+ * generates support code for implementing polymorphic relations and accessing common fields
  * generates boilerplate code for entity validation
  * supports following field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
  * (generates RESTful web service for managing entities)
@@ -83,11 +83,11 @@ entity ChangeRecord {
 
     $ yesod-generate-rest main.dbdef
 
-At the moment, the code generator writes config/models and Model/Validation.hs
+At the moment, the code generator writes config/generated-models and Model/Validation.hs
 that have the following contents.
 
 
-#### config/models
+#### config/generated-models
 ```
 ChangeRecord
     entityNote NoteId Maybe 

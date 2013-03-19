@@ -73,7 +73,7 @@ genModel db entity = unlines $ [ entityName entity ]
                                       ++ (map genUnique (entityUniques entity)))
 
 generateModels :: DbModule -> [(FilePath,String)]
-generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db)),
+generateModels db =  [("config/generated-models", unlines $ map (genModel db) (dbEntities db)),
                       ("Model/Validation.hs", genValidation db ),
                       ("Model/Interfaces.hs", genInterfaces db ) ]
 
