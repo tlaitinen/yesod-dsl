@@ -83,8 +83,8 @@ entity ChangeRecord {
 
     $ yesod-generate-rest main.dbdef
 
-At the moment, the code generator writes config/generated-models and Model/Validation.hs
-that have the following contents.
+At the moment, the code generator writes config/generated-models, Model/Validation.hs,
+   and Model/Interfaces.hs that have the following contents.
 
 
 #### config/generated-models
