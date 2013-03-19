@@ -42,6 +42,7 @@ type EntityName = String
 type FieldType = TokenType
 type FieldName = String
 type OptionalFlag = Bool
+type UniqueName = String
 
 data Location = Loc FilePath Int Int 
 
@@ -49,7 +50,7 @@ instance Show Location where
     show (Loc path row col) = path ++ " line " ++ show row ++ " col " ++ show col
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
-data Unique = Unique [FieldName]
+data Unique = Unique UniqueName [FieldName]
            deriving (Show)
 data Entity = Entity {
     entityLoc        :: Location,

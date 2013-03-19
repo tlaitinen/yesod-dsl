@@ -96,10 +96,10 @@ value : stringval { StringValue $1 }
 
 uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
-uniqueDef :  unique fieldIdList { Unique $2  }
+uniqueDef :  unique upperId fieldIdList { Unique $2 $3 }
 
-
-fieldIdList : lowerId { [$1] }
+fieldIdList : { [] }
+            | lowerId fieldIdList { $1 : $2 }
 
 fieldType : word32 { $1 }
           | word64{ $1 }

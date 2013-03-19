@@ -24,6 +24,7 @@ entity User {
 }
 
 entity Message {
+    implements Versioned;
     from User;
     to User;
     subject Text;
@@ -36,8 +37,11 @@ entity File {
     implements Named;
 
     user User;
+    name Text;
 
     contents Maybe Text;
+
+    unique UserFileName user name;
 }
 interface Named {
     name Text check nonempty;
@@ -52,5 +56,5 @@ entity ChangeRecord {
     newValue Text;
     time     DateTime;
     version  Int64;
-    'entity' Versioned;
+    'entity' Maybe Versioned;
 }

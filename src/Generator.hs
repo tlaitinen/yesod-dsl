@@ -31,9 +31,13 @@ getFieldDeps db field = case (fieldContent field) of
 lookupDeps :: DbModule -> String -> [String]
 lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db)) name
 
+genUnique :: Unique -> String
+genUnique (Unique name fields) = "Unique" ++ name ++ " " ++ intercalate " " fields
+
 genModel :: DbModule -> Entity -> String
 genModel db entity = unlines $ [ entityName entity ] 
-                            ++ indent (map (genField db) (entityFields entity))
+                            ++ (indent $ (map (genField db) (entityFields entity))
+                                      ++ (map genUnique (entityUniques entity)))
 
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db = genCommon db 

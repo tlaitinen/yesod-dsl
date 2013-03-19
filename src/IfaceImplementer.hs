@@ -11,25 +11,39 @@ implementInterfaces db' =
         ifaces = dbIfaces db
     in 
         db {
-            dbEntities  = implInEntitys ifaces (dbEntities db)
+            dbEntities  = [ implInEntity db ifaces e | e <- (dbEntities db) ]
         }
 
 ifaceLookup :: [Iface] -> IfaceName -> Maybe Iface
 ifaceLookup ifaces name =  find (\i -> name == ifaceName i) ifaces
 
-implInEntitys :: [Iface] -> [Entity] -> [Entity]
-implInEntitys ifaces entities = map (implInEntity ifaces) entities
+
+expandIfaceField :: DbModule -> Entity ->  Field -> [Field]
+expandIfaceField db e f@(Field _ _ (EntityField iName)) 
+    | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to interface not allowed"
+    | otherwise = [ Field {
+                        fieldOptional = True,
+                        fieldName = fieldName f ++ entityName re,
+                        fieldContent = EntityField (entityName re)
+
+                    } | re <- dbEntities db, iName `elem` (entityImplements re) ]
 
 
-expandIfaceRefFields :: [Iface] -> Field -> [Field]
-expandIfaceRefFields _ f = [f]
+expandIfaceRefFields :: DbModule -> Entity -> Field -> [Field]
+expandIfaceRefFields db e f = expand (fieldContent f)
+    where       
+        expand (EntityField name) = if isJust (ifaceLookup (dbIfaces db) name) 
+                                        then expandIfaceField db e f 
+                                        else [f]
+        expand _ = [f]                           
+            
 
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
-implInEntity :: [Iface] -> Entity -> Entity
-implInEntity ifaces e 
+implInEntity :: DbModule -> [Iface] -> Entity -> Entity
+implInEntity db ifaces e 
     | null invalidIfaceNames = e {
-        entityFields  = concatMap (expandIfaceRefFields ifaces) $ entityFields e ++ extraFields
+        entityFields  = concatMap (expandIfaceRefFields db e) $ entityFields e ++ extraFields
     }
     | otherwise        = entityError e $ "Invalid interfaces " 
                                         ++ show invalidIfaceNames
