@@ -111,12 +111,13 @@ generateModels db =  [("config/generated-models", unlines $ map (genModel db) (d
                       ("Model/Classes.hs", genInterfaces db ),
                       ("Handler/Rest.hs", genHandlers db) ]
 
-genFieldChecker :: EntityName -> Field -> Maybe String
-genFieldChecker name (Field _ fname (NormalField _ opts)) 
+genFieldChecker :: Entity -> Field -> Maybe String
+genFieldChecker e f@(Field _ fname (NormalField _ opts)) 
         | null opts = Nothing
         | otherwise = Just $ join "," $ catMaybes (map maybeCheck opts)
         where
-            maybeCheck (FieldCheck func) = Just $ "if (not . V." ++ func ++ ") $" ++ fname ++ " d then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
+            maybeCheck (FieldCheck func) = Just $ "if (not . V." ++ func 
+                ++ ") $ " ++ entityFieldName e f ++ " d then Just \"" ++ entityName e ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
             maybeCheck _ = Nothing
 genFieldChecker name _ = Nothing
 
@@ -129,7 +130,7 @@ genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "
                        ++ (indent (["validate d = catMaybes ["]
                            ++ fieldChecks ++ genEntityChecker e
                            ++ ["]",""]))
-              where fieldChecks = mapMaybe (genFieldChecker (entityName e)) (entityFields e)
+              where fieldChecks = mapMaybe (genFieldChecker e) (entityFields e)
 
 
 

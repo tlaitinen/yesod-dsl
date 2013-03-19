@@ -134,19 +134,19 @@ instance Validatable ChangeRecord where
     
 instance Validatable File where 
     validate d = catMaybes [
-    if (not . V.nonempty) $name d then Just "File.name nonempty" else Nothing
+    if (not . V.nonempty) $ fileName d then Just "File.name nonempty" else Nothing
     ]
     
 instance Validatable Note where 
     validate d = catMaybes [
-    if (not . V.nonempty) $name d then Just "Note.name nonempty" else Nothing
+    if (not . V.nonempty) $ noteName d then Just "Note.name nonempty" else Nothing
     ]
     
 instance Validatable User where 
     validate d = catMaybes [
-    if (not . V.nonempty) $name d then Just "User.name nonempty" else Nothing
+    if (not . V.nonempty) $ userName d then Just "User.name nonempty" else Nothing
     ]
-```    
+```
 
 #### Model/Classes.hs
 ```haskell
