@@ -25,10 +25,9 @@ entity File {
     implements Named;
 
     owner User;
-    name Text;
     path Text;
 
-    unique UserName user name;
+    unique OwnerName owner name;
 }
 interface Named {
     name Text check nonempty;

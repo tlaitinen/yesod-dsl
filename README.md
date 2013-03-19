@@ -100,15 +100,13 @@ ChangeRecord
 
 File
     path Text 
-    name Text 
     owner UserId 
     name Text 
-    UniqueUserName user name
+    UniqueOwnerName owner name
 
 Note
     created UTCTime 
     body Text 
-    title Text 
     owner UserId 
     version Int64 Maybe 
     name Text 
@@ -125,10 +123,10 @@ User
 #### Model/Validation.hs
 ```haskell
 {-# LANGUAGE OverloadedStrings #-}
-module Model.Validation (
-    Validatable(..) where
+module Model.Validation (Validatable(..)) where
 import Data.Text
 import qualified Model.ValidationFunctions as V
+import Import
 class Validatable a where
     validate :: a -> [Text]
 instance Validatable ChangeRecord where 
@@ -137,18 +135,17 @@ instance Validatable ChangeRecord where
     
 instance Validatable File where 
     validate d = catMaybes [
-    if V.nonempty $ name d == False then Just "File.name nonempty" else Nothing
+    if (not . V.nonempty) $name d then Just "File.name nonempty" else Nothing
     ]
     
 instance Validatable Note where 
     validate d = catMaybes [
-    if V.nonempty $ title d == False then Just "Note.title nonempty" else Nothing
-    if V.nonempty $ name d == False then Just "Note.name nonempty" else Nothing
+    if (not . V.nonempty) $name d then Just "Note.name nonempty" else Nothing
     ]
     
 instance Validatable User where 
     validate d = catMaybes [
-    if V.nonempty $ name d == False then Just "User.name nonempty" else Nothing
+    if (not . V.nonempty) $name d then Just "User.name nonempty" else Nothing
     ]
 ```    
 
@@ -176,5 +173,4 @@ instance Named Note where
 
 instance Named User where 
     namedName = userName
-
 ```

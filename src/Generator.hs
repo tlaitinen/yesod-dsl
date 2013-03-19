@@ -102,8 +102,7 @@ genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "
 genValidation :: DbModule -> String
 genValidation db = unlines $ [
     "{-# LANGUAGE OverloadedStrings #-}",
-    "module Model.Validation (",
-    "    Validatable(..) where",
+    "module Model.Validation (Validatable(..)) where",
     "import Data.Text",
     "import qualified Model.ValidationFunctions as V",
     "import Import",
