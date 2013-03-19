@@ -72,10 +72,26 @@ genModel db entity = unlines $ [ entityName entity ]
                             ++ (indent $ (map (genField db) (entityFields entity))
                                       ++ (map genUnique (entityUniques entity)))
 
+handlerName :: Entity -> String -> String
+handlerName e name =  entityName e ++ name ++ "R"
+
+genRoutes :: DbModule -> Entity -> String
+genRoutes db e = unlines $ ["/" ++ routeName e ++ " " ++ handlerName e "Many" ++ " GET POST",
+                            "/" ++ routeName e ++ "/#String" ++ " " 
+                                                             ++ handlerName e "One" ++ " GET POST PUT DELETE"]
+    where
+        routeName = (map toLower) . entityName
+
+genHandlers :: DbModule -> String
+genHandlers db = unlines $ []
+        
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db =  [("config/generated-models", unlines $ map (genModel db) (dbEntities db)),
+                      ("config/generated-routes", 
+                       unlines $ map (genRoutes db) (dbEntities db)),
                       ("Model/Validation.hs", genValidation db ),
-                      ("Model/Classes.hs", genInterfaces db ) ]
+                      ("Model/Classes.hs", genInterfaces db ),
+                      ("Handler/Rest.hs", genHandlers db) ]
 
 genFieldChecker :: EntityName -> Field -> Maybe String
 genFieldChecker name (Field _ fname (NormalField _ opts)) 

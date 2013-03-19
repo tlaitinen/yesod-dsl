@@ -1,6 +1,6 @@
 -- .dbdef-file can include other .dbdef-files for increased 
 -- reusability
-import "module.dbdef";
+import "module.def";
 
 -- class defines a set of fields that can be inherited by an entity
 class Named {
