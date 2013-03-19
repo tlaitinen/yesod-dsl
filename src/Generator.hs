@@ -75,7 +75,7 @@ genModel db entity = unlines $ [ entityName entity ]
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db =  [("config/generated-models", unlines $ map (genModel db) (dbEntities db)),
                       ("Model/Validation.hs", genValidation db ),
-                      ("Model/Interfaces.hs", genInterfaces db ) ]
+                      ("Model/Classes.hs", genInterfaces db ) ]
 
 genFieldChecker :: EntityName -> Field -> Maybe String
 genFieldChecker name (Field _ fname (NormalField _ opts)) 
@@ -119,7 +119,7 @@ entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
     
 genInterfaces :: DbModule -> String
 genInterfaces db = unlines $ [
-    "module Model.Interfaces where",
+    "module Model.Classes where",
     "import Import"
     ] ++ concatMap genInterface (dbIfaces db)
     where

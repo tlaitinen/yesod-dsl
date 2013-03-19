@@ -83,7 +83,7 @@ entity ChangeRecord {
     $ yesod-generate-rest main.dbdef
 
 At the moment, the code generator writes config/generated-models, Model/Validation.hs,
-   and Model/Interfaces.hs that have the following contents.
+   and Model/Classes.hs that have the following contents.
 
 
 #### config/generated-models
@@ -148,9 +148,9 @@ instance Validatable User where
     ]
 ```    
 
-#### Model/Interfaces.hs
+#### Model/Classes.hs
 ```haskell
-module Model.Interfaces where
+module Model.Classes where
 import Import
 class Versioned a where
     versionedVersion :: a -> Maybe Int64
