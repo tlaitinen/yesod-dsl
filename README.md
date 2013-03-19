@@ -35,6 +35,9 @@ import "module.dbdef";
 
 -- class defines a set of fields that can be inherited by an entity
 class Named {
+    -- a field can have a number of validation functions 
+    -- code generator assumes that nonempty :: Text -> Bool 
+    -- is found at Model/ValidationFunctions.hs
     name Text check nonempty;
 }
 
