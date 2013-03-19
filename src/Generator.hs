@@ -78,7 +78,7 @@ handlerName e name =  entityName e ++ name ++ "R"
 
 genRoutes :: DbModule -> Entity -> String
 genRoutes db e = unlines $ ["/" ++ routeName e ++ " " ++ handlerName e "Many" ++ " GET",
-                            "/" ++ routeName e ++ "/#String" ++ " " 
+                            "/" ++ routeName e ++ "/#" ++ entityName e ++ "Id" ++ " " 
                                                              ++ handlerName e "" ++ " GET POST PUT DELETE"]
     where
         routeName = (map toLower) . entityName
@@ -86,6 +86,12 @@ genRoutes db e = unlines $ ["/" ++ routeName e ++ " " ++ handlerName e "Many" ++
 genHandler :: DbModule -> Entity -> String
 genHandler db e = unlines $ ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
                              "get" ++ handlerName e "Many" ++ " = do"]
+                           ++ (indent [
+                                "Entity userKey user <- requireAuth",
+                                "let filters = [] -- TODO",
+                                "entities <- runDB $ selectList filters",
+                                "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
+                                   ])
                            ++ 
                              ["get" ++ handlerName e "" ++ " :: Handler RepJson",
                              "get" ++ handlerName e "" ++ " = do"]
