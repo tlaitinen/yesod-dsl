@@ -6,16 +6,16 @@ type ImportPath = FilePath
 
 data DbModule = DbModule {
     dbImports   :: [ImportPath],
-    dbDocs  :: [Doc],
+    dbEntities  :: [Entity],
     dbIfaces :: [Iface]
 }
     deriving (Show)
 emptyDbModule = DbModule {
     dbImports = [],
-    dbDocs = [],
+    dbEntities = [],
     dbIfaces = []
 }
-data DbDef = DocDef Doc
+data DbDef = EntityDef Entity
            | IfaceDef Iface
            deriving (Show)
 
@@ -23,11 +23,11 @@ data DbDef = DocDef Doc
  
 isIface (IfaceDef _) = True
 isIface _ = False
-isDoc (DocDef _) = True
-isDoc _ = False
+isEntity (EntityDef _) = True
+isEntity _ = False
 
-getDocs :: [DbDef] -> [Doc]
-getDocs defs = map (\(DocDef e) -> e) $ filter isDoc defs
+getEntities :: [DbDef] -> [Entity]
+getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
 getIfaces :: [DbDef] -> [Iface]
 getIfaces defs = map (\(IfaceDef e) -> e) $ filter isIface defs
 
@@ -38,7 +38,7 @@ type IfaceName = String
 
 type UniqueFlag = Bool
 
-type DocName = String
+type EntityName = String
 type FieldType = TokenType
 type FieldName = String
 type OptionalFlag = Bool
@@ -49,51 +49,48 @@ instance Show Location where
     show (Loc path row col) = path ++ " line " ++ show row ++ " col " ++ show col
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
-data IndexDir = AscIndex | DescIndex deriving (Show)
-type IndexId = [FieldName]
-data Index = Index UniqueFlag IndexDir [IndexId] 
+data Unique = Unique [FieldName]
            deriving (Show)
-data Doc = Doc {
-    docLoc        :: Location,
-    docName       :: String,
-    docImplements :: [IfaceName],
-    docFields     :: [Field],
-    docIndices    :: [Index]
+data Entity = Entity {
+    entityLoc        :: Location,
+    entityName       :: String,
+    entityImplements :: [IfaceName],
+    entityFields     :: [Field],
+    entityUniques    :: [Unique]
 } deriving (Show)
 
 
-
-docPath :: Doc -> String
-docPath e = docName e ++ " in " ++ show (docLoc e)
+entityPath :: Entity -> String
+entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 
 
 data Iface = Iface {
     ifaceLoc     :: Location,
     ifaceName    :: String,
     ifaceFields  :: [Field],
-    ifaceIndices :: [Index]
+    ifaceUniques :: [Unique]
 } deriving (Show)
 
 dbLookup :: DbModule -> String -> DbDef
 dbLookup db name 
-        | isJust docMatch = DocDef $ fromJust docMatch
+        | isJust entityMatch = EntityDef $ fromJust entityMatch
         | isJust ifaceMatch  = IfaceDef $ fromJust ifaceMatch
         | otherwise = error $ "dbLookup failed : " ++ name
     where
-        docMatch = find (\e -> name == docName e) (dbDocs db)
+        entityMatch = find (\e -> name == entityName e) (dbEntities db)
         ifaceMatch  = find (\i -> name == ifaceName i) (dbIfaces db)
 
 dbdefFields :: DbDef -> [Field]
 dbdefFields dbdef = case dbdef of
-    (DocDef doc)     -> docFields doc
+    (EntityDef entity)     -> entityFields entity
     (IfaceDef iface) -> ifaceFields iface
     
 type DefaultValue = String
 type IsListFlag = Bool
-data DocFieldType = SingleField | ListField deriving (Show,Eq)
-data DocFieldEmbedding = EmbedField | RefField deriving (Show,Eq)
+data EntityFieldType = SingleField | ListField deriving (Show,Eq)
+data EntityFieldEmbedding = EmbedField | RefField deriving (Show,Eq)
 data FieldContent = NormalField FieldType [FieldOption]
-                    | DocField DocFieldEmbedding DocFieldType DocName 
+                    | EntityField EntityFieldEmbedding EntityFieldType EntityName 
                 deriving (Show)
    
 

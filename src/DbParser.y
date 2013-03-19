@@ -17,10 +17,9 @@ import System.Exit
 
 %token
     import     { Tk _ TImport }
-    document   { Tk _ TDoc }
+    entity   { Tk _ TEntity }
     iface      { Tk _ TIface }
     implements { Tk _ TImplements }
-    index      { Tk _ TIndex }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
@@ -50,12 +49,10 @@ import System.Exit
     datetime { Tk _ TDateTime }
     zonedtime { Tk _ TZonedTime }
     maybe { Tk _ TMaybe }
-    asc { Tk _ TAsc }
-    desc { Tk _ TDesc }
 
 %%
 
-dbModule : imports dbDefs { DbModule $1 (getDocs $2) 
+dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
                                         (getIfaces $2)}
 
 imports : { [] }
@@ -64,14 +61,14 @@ imports : { [] }
 importStmt : import stringval semicolon { $2 }
 dbDefs : {- empty -}   { [] }
        | dbDefs dbDef  { $2 : $1 }
-dbDef : docDef      { DocDef $1 } 
+dbDef : entityDef      { EntityDef $1 } 
       | ifaceDef      { IfaceDef $1 }
 
-docDef : document upperId lbrace 
+entityDef : entity upperId lbrace 
             implementations 
             fields
-            indices
-            rbrace { Doc (mkLoc $1) $2 $4 $5 $6 }
+            uniques
+            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 }
 
 implementations : { [] }
                 | implementations implementation semicolon { $2 : $1 }
@@ -80,15 +77,15 @@ implementation : implements upperId { $2 }
 
 ifaceDef : iface upperId lbrace
              fields
-             indices
+             uniques
             rbrace { Iface (mkLoc $1) $2 $4 $5 }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
 field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField (tokenType $3) $4) } 
-      | lowerId maybeMaybe maybeRef upperId { Field $2 $1 (DocField $3 SingleField $4) }
-      | lowerId maybeMaybe lbrack maybeRef upperId rbrack { Field $2 $1 (DocField $4 ListField $5) }
+      | lowerId maybeMaybe maybeRef upperId { Field $2 $1 (EntityField $3 SingleField $4) }
+      | lowerId maybeMaybe lbrack maybeRef upperId rbrack { Field $2 $1 (EntityField $4 ListField $5) }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }
@@ -100,20 +97,14 @@ value : stringval { StringValue $1 }
       | intval { IntValue $1 }
       | floatval { FloatValue $1 }
 
-indices : { [] }
-        | indices indexDef semicolon { $2 : $1 }
-indexDef :  maybeUnique indexDir index indexIdList { Index $1 $2 $4 }
-indexDir : asc { AscIndex }
-         | desc { DescIndex }
-maybeUnique : { False }
-            | unique { True }
+uniques : { [] }
+        | uniques uniqueDef semicolon { $2 : $1 }
+uniqueDef :  unique fieldIdList { Unique $2  }
+
 maybeRef : { EmbedField }
          | ref { RefField }
-indexIdList : indexId { [$1] }
-            | indexIdList comma indexId { $3:  $1 }
 
-indexId : lowerId { [$1] }
-        | indexId dot lowerId { $3 : $1 }
+fieldIdList : lowerId { [$1] }
 
 fieldType : word32 { $1 }
           | word64{ $1 }

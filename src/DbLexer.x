@@ -29,14 +29,11 @@ tokens :-
     \. { mkT TDot }
     "ref" { mkT TRef }
     "import" { mkT TImport }
-    "document" { mkT TDoc }
+    "entity" { mkT TEntity }
     "interface" { mkT TIface  }
     "implements" { mkT TImplements }
     "unique" { mkT TUnique }
-    "index" { mkT TIndex }
     "check" { mkT TCheck }
-    "asc" { mkT TAsc }
-    "desc" { mkT TDesc }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -69,9 +66,8 @@ data TokenType = TSemicolon
                | TComma
                | TDot
                | TImport
-               | TDoc
+               | TEntity
                | TImplements
-               | TIndex
                | TUnique
                | TIface
                | TString  String

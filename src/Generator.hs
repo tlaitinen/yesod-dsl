@@ -18,22 +18,22 @@ upperFirst :: String -> String
 upperFirst (a:b) = (toUpper a):b
 upperFirst a = a
 -- ^^^^ Database.Persist.TH        
-docFieldDeps :: DbModule -> String -> [String]
-docFieldDeps db name 
-    | name `elem` [ docName doc | doc <- dbDocs db ] = [name]
+entityFieldDeps :: DbModule -> String -> [String]
+entityFieldDeps db name 
+    | name `elem` [ entityName entity | entity <- dbEntities db ] = [name]
     | otherwise = [name ++ "Inst", name ++ "InstRef"]
 
 getFieldDeps :: DbModule -> Field -> [String]
 getFieldDeps db field = case (fieldContent field) of
     (NormalField _ _) -> []
-    (DocField _ _ docName) -> docFieldDeps db docName
+    (EntityField _ _ entityName) -> entityFieldDeps db entityName
 
 lookupDeps :: DbModule -> String -> [String]
 lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db)) name
 
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db = genCommon db 
-                  ++ map (genDoc db) (dbDocs db) 
+                  ++ map (genEntity db) (dbEntities db) 
                   ++ concatMap (genIface db) (dbIfaces db)
 
 genCommon :: DbModule -> [(FilePath, String)]
@@ -71,7 +71,7 @@ genCommon db = [("Model/Common.hs", unlines $ [
         ifaceNames = map ifaceName ifaces
         ifaceInstNames = map (++"Inst") ifaceNames
         ifaceInstRefNames = map (++"InstRef")  ifaceNames
-        allNames = map ifaceName (dbIfaces db) ++ map docName (dbDocs db) 
+        allNames = map ifaceName (dbIfaces db) ++ map entityName (dbEntities db) 
                  ++ ifaceInstNames ++ ifaceInstRefNames
                    
 
@@ -86,8 +86,8 @@ imports = ["import Database.Persist",
            "import Model.Common"
            ]
 
-mkDocFieldName :: DbModule -> DocFieldEmbedding -> DocFieldType -> DocName -> String
-mkDocFieldName db embed list dName = lbrack ++ dName ++ suffix ++ rbrack
+mkEntityFieldName :: DbModule -> EntityFieldEmbedding -> EntityFieldType -> EntityName -> String
+mkEntityFieldName db embed list dName = lbrack ++ dName ++ suffix ++ rbrack
     where
         (lbrack,rbrack) 
             | list == ListField = ("[","]")
@@ -99,15 +99,15 @@ mkDocFieldName db embed list dName = lbrack ++ dName ++ suffix ++ rbrack
             | embed == EmbedField = "Inst"
             | otherwise = "InstRef"
         suffix
-            | isDocument dName = maybeId
+            | isEntityument dName = maybeId
             | otherwise = maybeInst
-        isDocument dn = dn `elem` [ docName doc | doc <- dbDocs db ]
+        isEntityument dn = dn `elem` [ entityName entity | entity <- dbEntities db ]
 
 
 genFieldType :: DbModule -> Field -> String
 genFieldType db field = case (fieldContent field) of
     (NormalField ftype _)   -> fromTkType ftype
-    (DocField embed list docName) -> mkDocFieldName db embed list docName
+    (EntityField embed list entityName) -> mkEntityFieldName db embed list entityName
     where 
         fromTkType TWord32 = "Word32"
         fromTkType TWord64 = "Word64"
@@ -139,19 +139,19 @@ persistHeader = "share [mkPersist MkPersistSettings { mpsBackend = ConT ''Action
 persistFooter = "|]"
 
 mkIfaceFieldImpl :: [String] -> String -> [String]
-mkIfaceFieldImpl  docNames fname = 
+mkIfaceFieldImpl  entityNames fname = 
          [ 
           fname ++ " d"] ++ indent ([ "| isJust (" ++ lowerFirst name ++ " d)"
                                ++ " = Model." ++ name ++ "." ++ fname 
                                ++ "$ fromJust (" ++ lowerFirst name ++ " d)"
-                               | name <- docNames ] ++ [
+                               | name <- entityNames ] ++ [
                                "| otherwise = throw NoInstance"])
          ++ ["s_" ++ fname ++ " v d"] 
          ++ indent (["| isJust (" ++ lowerFirst name ++ " d)"
                         ++ " = s_" ++ (lowerFirst name) ++ 
                           " (Just $ Model." ++ name ++ ".s_" ++ fname
                            ++ " v $ fromJust (" ++ lowerFirst name ++ " d)) d"
-                             | name <- docNames]
+                             | name <- entityNames]
                           ++ ["| otherwise = throw NoInstance"])
             
 
@@ -159,24 +159,24 @@ mkIfaceFieldImpl  docNames fname =
 
     
 implIfaceInst :: DbModule -> Iface -> [String] -> String
-implIfaceInst db  iface docNames = let
+implIfaceInst db  iface entityNames = let
             name = ifaceName iface
             instName = name ++ "Inst"
             fields = ifaceFields iface
             fieldNames = map fieldName fields
-            fieldImpls = concatMap (mkIfaceFieldImpl docNames) fieldNames
+            fieldImpls = concatMap (mkIfaceFieldImpl entityNames) fieldNames
         in unlines $ ["instance " ++ name ++ "." ++ name ++ " " ++ instName ++ " where"]
                    ++ indent fieldImpls
 
 genIfaceValidate :: DbModule -> Iface -> [String] -> String
-genIfaceValidate db iface docNames = let
+genIfaceValidate db iface entityNames = let
         instName = ifaceName iface ++ "Inst"
         in unlines $ ["instance Validatable " ++ instName ++ " where"]
                      ++ (indent $ ["validate d"] 
                          ++(indent (["| isJust (" ++ lowerFirst name ++ " d) = "
                                  ++ " validate $ fromJust (" 
                                  ++ lowerFirst name ++ " d)" 
-                                 | name <- docNames] 
+                                 | name <- entityNames] 
                                  ++ ["| otherwise = throw NoInstance"])))
                       
 
@@ -184,29 +184,29 @@ mkIfaceInstance :: DbModule -> Iface -> [(FilePath, String)]
 mkIfaceInstance db iface = let
             instName = ifaceName iface ++ "Inst"
             instRefName = ifaceName iface ++ "InstRef"
-            docs = dbDocs db
-            implDocs = [ doc | doc <- docs,
-                               (ifaceName iface) `elem` docImplements doc ]
-            docNames = [ docName doc | doc <- implDocs ]
+            entitys = dbEntities db
+            implEntitys = [ entity | entity <- entitys,
+                               (ifaceName iface) `elem` entityImplements entity ]
+            entityNames = [ entityName entity | entity <- implEntitys ]
             instFields = [ Field True (lowerFirst name) 
-                                 (DocField EmbedField SingleField name)
-                           | name <- docNames ]
+                                 (EntityField EmbedField SingleField name)
+                           | name <- entityNames ]
             instRefFields = [ Field True ((lowerFirst name) ++ "Id")
-                                 (DocField RefField SingleField name)
-                           | name <- docNames ]
-            instDeps = [(instName, docNames)]
-            instRefDeps = [(instRefName,  docNames)]
+                                 (EntityField RefField SingleField name)
+                           | name <- entityNames ]
+            instDeps = [(instName, entityNames)]
+            instRefDeps = [(instRefName,  entityNames)]
             extraImports = ["import qualified Model." ++ifaceName iface ++ " as " ++ ifaceName iface ]
-            instImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ ")" | d <- docNames ] 
-                     ++ ["import qualified Model." ++ d | d <- docNames ]
-            instRefImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ "Id, " ++ d ++ "Generic)" | d <- docNames ]
+            instImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ ")" | d <- entityNames ] 
+                     ++ ["import qualified Model." ++ d | d <- entityNames ]
+            instRefImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ "Id, " ++ d ++ "Generic)" | d <- entityNames ]
 
             (instFileName, instContent) = genPersist db instImports instName instFields
             (instRefFileName, instRefContent) = genPersist db instRefImports instRefName instRefFields
            in
               [ (instFileName, instContent   
-                              ++ implIfaceInst db iface docNames
-                              ++ genIfaceValidate db iface docNames),
+                              ++ implIfaceInst db iface entityNames
+                              ++ genIfaceValidate db iface entityNames),
                 (instRefFileName, instRefContent) ]
 
 
@@ -261,10 +261,10 @@ genPersist db extraImports name fields =
     where 
         genShortFieldName field = fieldName field ++ " = "
                                  ++ recName name (fieldName field) 
-implDocIfaces :: DbModule -> Doc -> String -> [String]
-implDocIfaces db doc implName = 
+implEntityIfaces :: DbModule -> Entity -> String -> [String]
+implEntityIfaces db entity implName = 
     let
-        name = docName doc
+        name = entityName entity
         (IfaceDef iface) = dbLookup db implName
         fields = ifaceFields iface
         fieldNames = map fieldName fields
@@ -279,19 +279,19 @@ implDocIfaces db doc implName =
 
     
 
-genDoc :: DbModule -> Doc -> (FilePath,String)
-genDoc db doc = let
-        extraImports = importDeps db (docName doc) ++ ["import qualified Model." ++ iName ++ " as " ++ iName |
-                         iName <- docImplements doc ]
-        (name, content) = genPersist db extraImports (docName doc) (docFields doc)
+genEntity :: DbModule -> Entity -> (FilePath,String)
+genEntity db entity = let
+        extraImports = importDeps db (entityName entity) ++ ["import qualified Model." ++ iName ++ " as " ++ iName |
+                         iName <- entityImplements entity ]
+        (name, content) = genPersist db extraImports (entityName entity) (entityFields entity)
        
      in 
-        (name, content ++ unlines (concatMap (implDocIfaces db doc) 
-                                     (docImplements doc)
-               ++ ["instance Validatable " ++ (docName doc) ++ " where "])
+        (name, content ++ unlines (concatMap (implEntityIfaces db entity) 
+                                     (entityImplements entity)
+               ++ ["instance Validatable " ++ (entityName entity) ++ " where "])
                ++ (join "" (indent (["validate d = catMaybes ["]
-                    ++ map (genFieldChecker db (docName doc)) 
-                                 (docFields doc)
+                    ++ map (genFieldChecker db (entityName entity)) 
+                                 (entityFields entity)
                     ++ ["]"]))))
 
 

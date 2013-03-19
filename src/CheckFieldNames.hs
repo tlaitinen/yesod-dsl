@@ -8,20 +8,20 @@ checkFieldNames db
                         ++ (unlines $ map formatField unknownFields)
     where
         ifaces = dbIfaces db
-        docs   = dbDocs db
+        entitys   = dbEntities db
 
         allFields :: [(String, Location, String)]
-        allFields = concatMap getIfaceFields ifaces ++ concatMap getDocFields docs
-        allNames = map ifaceName ifaces ++ map docName docs
+        allFields = concatMap getIfaceFields ifaces ++ concatMap getEntityFields entitys
+        allNames = map ifaceName ifaces ++ map entityName entitys
 
         getIfaceFields iface = [ (ifaceName iface, ifaceLoc iface,
                                   getRefName f) | f <- ifaceFields iface,
                                   isRefField f]
-        getDocFields doc = [ (docName doc, docLoc doc, getRefName f) | 
-                             f <- docFields doc, isRefField f ]
-        isRefField (Field _ _ (DocField _ _ _)) = True
+        getEntityFields entity = [ (entityName entity, entityLoc entity, getRefName f) | 
+                             f <- entityFields entity, isRefField f ]
+        isRefField (Field _ _ (EntityField _ _ _)) = True
         isRefField _ = False
-        getRefName (Field _ _ (DocField _ _ name)) = name
+        getRefName (Field _ _ (EntityField _ _ name)) = name
         getRefName _ = ""
         unknownFields = [ (n,l,f) | (n,l,f) <- allFields,
                               not (f `elem` allNames)]
