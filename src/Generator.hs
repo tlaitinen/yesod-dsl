@@ -158,8 +158,8 @@ genEntityChecker e = [ join "," $ [ "if (not . V." ++ func ++ ") d then Just \""
 genEntityValidate :: DbModule -> Entity -> [String]
 genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "]
                        ++ (indent (["validate d = catMaybes ["]
-                           ++ fieldChecks ++ genEntityChecker e
-                           ++ ["]",""]))
+                           ++ (indent $ fieldChecks ++ genEntityChecker e
+                                 ++ ["]"]))) ++ [""]
               where fieldChecks = mapMaybe (genFieldChecker e) (entityFields e)
 
 
@@ -169,6 +169,7 @@ genValidation db = unlines $ [
     "{-# LANGUAGE OverloadedStrings #-}",
     "module Model.Validation (Validatable(..)) where",
     "import Data.Text",
+    "import Data.Maybe",
     "import qualified Model.ValidationFunctions as V",
     "import Import",
     "class Validatable a where",

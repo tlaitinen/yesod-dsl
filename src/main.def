@@ -1,6 +1,6 @@
 -- .dbdef-file can include other .dbdef-files for increased 
 -- reusability
-import "module.def";
+-- import "module.def";
 
 -- class defines a set of fields that can be inherited by an entity
 class Named {
@@ -12,7 +12,7 @@ class Versioned {
 }
 
 -- User-entity is an instance of the classes Named and Versioned
-entity User : Named, Versioned {
+entity User2 : Named, Versioned {
     password Text;
     salt Text;
     language Text;
@@ -20,13 +20,13 @@ entity User : Named, Versioned {
 }
 
 entity Note : Named, Versioned {
-    owner   User;
+    owner   User2;
     body    Text;
     created DateTime;
 }
 
-entity File : Named {
-    owner User;
+entity FileItem : Named {
+    owner User2;
     path Text;
 
     unique OwnerName owner name;
