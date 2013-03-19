@@ -13,14 +13,14 @@ and [Persistent](http://www.yesodweb.com/book/persistent).
  * (triggers for web service events: beforeCreate, afterCreate, beforeModify, afterModify, etc.)
 
 ## License
- * The code generator is distributed under the terms of [Simplified BSD license](enterdsl/blob/master/LICENSE)
+ * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
 
 ## Quick start
 
 ### Step 1: get the source code and compile
 
-    git clone git://github.com/tlaitinen/enterdsl.git
-    cd enterdsl/database
+    git clone git://github.com/tlaitinen/yesod-generate-rest.git
+    cd yesod-generate-rest
     make
 
 ### Step 2: Create scaffolded Yesod site
