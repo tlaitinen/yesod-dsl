@@ -1,16 +1,17 @@
 # enterdsl 
 
 A domain specific language and a code generator desined to create RESTful
-services for managing g a MongoDB database. 
+services for managing a database. 
 
-The generated server-side Haskell code implements a JSON web service that provides:
+The generated server-side Haskell code implements a web service that provides:
  * data versioning
  * data validation
  * per-user-limited-database-views
  * per-document and per-field user rights management
 
 ## Building blocks
-The generated code uses Yesod web framework.
+ * Yesod web framework
+ * A database backend supported by [Persistent](http://hackage.haskell.org/package/yesod-persistent)
 
 ## Status
  * work in progress
