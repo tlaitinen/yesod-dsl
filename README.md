@@ -66,7 +66,7 @@ interface Named {
     name Text check nonempty;
 }
 interface Versioned {
-    version Maybe Int64; -- the most recent entity has version == Nothing
+    version Maybe Int64; 
 }
 
 entity ChangeRecord {
