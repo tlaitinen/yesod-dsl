@@ -6,6 +6,7 @@ import Data.Char
 import Data.List
 import Data.Maybe
 import Data.String.Utils
+
 -- from Database.Persist.TH
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
@@ -76,14 +77,31 @@ handlerName :: Entity -> String -> String
 handlerName e name =  entityName e ++ name ++ "R"
 
 genRoutes :: DbModule -> Entity -> String
-genRoutes db e = unlines $ ["/" ++ routeName e ++ " " ++ handlerName e "Many" ++ " GET POST",
+genRoutes db e = unlines $ ["/" ++ routeName e ++ " " ++ handlerName e "Many" ++ " GET",
                             "/" ++ routeName e ++ "/#String" ++ " " 
-                                                             ++ handlerName e "One" ++ " GET POST PUT DELETE"]
+                                                             ++ handlerName e "" ++ " GET POST PUT DELETE"]
     where
         routeName = (map toLower) . entityName
 
+genHandler :: DbModule -> Entity -> String
+genHandler db e = unlines $ ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
+                             "get" ++ handlerName e "Many" ++ " = do"]
+                           ++ 
+                             ["get" ++ handlerName e "" ++ " :: Handler RepJson",
+                             "get" ++ handlerName e "" ++ " = do"]
+                           ++
+                             ["put" ++ handlerName e "" ++ " :: Handler RepJson",
+                              "put" ++ handlerName e "" ++ " = do"]
+                           ++ 
+                             ["delete" ++ handlerName e "" ++ " :: Handler RepJson",
+                              "delete" ++ handlerName e "" ++ " = do"]
+                         
+
 genHandlers :: DbModule -> String
-genHandlers db = unlines $ []
+genHandlers db = unlines $ ["module Handler.Rest where ",
+                            "import Import",
+                            "import Model.Validation"]
+                           ++ map (genHandler db) (dbEntities db)
         
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db =  [("config/generated-models", unlines $ map (genModel db) (dbEntities db)),
