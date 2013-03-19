@@ -86,7 +86,8 @@ entity ChangeRecord {
 At the moment, the code generator writes config/models and Model/Validation.hs
 that have the following contents.
 
-config/models
+
+#### config/models
 ```
 ChangeRecord
     entityNote NoteId Maybe 
@@ -121,7 +122,7 @@ User
     name Text 
 ```
 
-Model/Validation.hs
+#### Model/Validation.hs
 ```
 {-# LANGUAGE OverloadedStrings #-}
 module Model.Validation (
