@@ -17,7 +17,6 @@ entity Note {
     implements Versioned;
 
     owner   User;
-    title   Text check nonempty;
     body    Text;
     created DateTime;
 }

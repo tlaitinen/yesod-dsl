@@ -52,6 +52,12 @@ genFieldType db field = case (fieldContent field) of
         fromTkType TZonedTime = "ZonedTime"
         fromTkType ft = error $ "Unknown field type: " ++ show ft 
 
+haskellFieldType :: DbModule -> Field -> String
+haskellFieldType db field = (maybeMaybe (fieldOptional field)) ++ genFieldType db field 
+        where
+            maybeMaybe True = "Maybe "
+            maybeMaybe False = ""
+
 persistFieldType :: DbModule -> Field -> String
 persistFieldType db field = genFieldType db field ++ (maybeMaybe (fieldOptional field))
         where
@@ -68,19 +74,20 @@ genModel db entity = unlines $ [ entityName entity ]
 
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db)),
-                      ("Model/Validation.hs", genValidation db )]
+                      ("Model/Validation.hs", genValidation db ),
+                      ("Model/Interfaces.hs", genInterfaces db ) ]
 
 genFieldChecker :: EntityName -> Field -> Maybe String
 genFieldChecker name (Field _ fname (NormalField _ opts)) 
         | null opts = Nothing
         | otherwise = Just $ join "," $ catMaybes (map maybeCheck opts)
         where
-            maybeCheck (FieldCheck func) = Just $ "if V." ++ func ++ " $ " ++ fname ++ " d == False then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
+            maybeCheck (FieldCheck func) = Just $ "if (not . V." ++ func ++ ") $" ++ fname ++ " d then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
             maybeCheck _ = Nothing
 genFieldChecker name _ = Nothing
 
 genEntityChecker :: Entity -> [String]
-genEntityChecker e = [ join "," $ [ "if V." ++ func ++ " d == False then Just \"" ++ 
+genEntityChecker e = [ join "," $ [ "if (not . V." ++ func ++ ") d then Just \"" ++ 
                         entityName e ++ " " ++ func ++ "\" else Nothing" ] 
                        | func <- entityChecks e ]
 genEntityValidate :: DbModule -> Entity -> [String]
@@ -99,10 +106,38 @@ genValidation db = unlines $ [
     "    Validatable(..) where",
     "import Data.Text",
     "import qualified Model.ValidationFunctions as V",
+    "import Import",
     "class Validatable a where",
     "    validate :: a -> [Text]"
     ] ++ concatMap (genEntityValidate db) (dbEntities db)
                    
+ifaceFieldName :: Iface -> Field -> String
+ifaceFieldName i f = (lowerFirst . ifaceName) i ++ (upperFirst . fieldName) f
+
+entityFieldName :: Entity -> Field -> String
+entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
+
+    
+genInterfaces :: DbModule -> String
+genInterfaces db = unlines $ [
+    "module Model.Interfaces where",
+    "import Import"
+    ] ++ concatMap genInterface (dbIfaces db)
+    where
+        genInterface i = [ "class " ++ ifaceName i ++ " a where" ]
+                      ++ (indent $ [ ifaceFieldName i f 
+                                     ++ " :: a -> " ++ haskellFieldType db f 
+                                     | f <- ifaceFields i ] )
+                      ++ [""]
+                      ++ concatMap (genInstance i) [ e | e <- dbEntities db, 
+                                                     (ifaceName i) `elem` entityImplements e ]
+
+        genInstance i e = [ "instance " ++ ifaceName i ++ " " ++ entityName e ++ " where " ]
+                        ++ (indent $ [ ifaceFieldName i f ++ " = " 
+                                        ++ entityFieldName e f | f <- ifaceFields i ])
+                        ++ [""]
+
+                              
 
 indent :: [String] -> [String]
 indent = map (\l -> "    " ++ l)

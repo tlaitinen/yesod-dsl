@@ -151,3 +151,30 @@ instance Validatable User where
     if V.nonempty $ name d == False then Just "User.name nonempty" else Nothing
     ]
 ```    
+
+#### Model/Interfaces.hs
+```haskell
+module Model.Interfaces where
+import Import
+class Versioned a where
+    versionedVersion :: a -> Maybe Int64
+
+instance Versioned Note where 
+    versionedVersion = noteVersion
+
+instance Versioned User where 
+    versionedVersion = userVersion
+
+class Named a where
+    namedName :: a -> Text
+
+instance Named File where 
+    namedName = fileName
+
+instance Named Note where 
+    namedName = noteName
+
+instance Named User where 
+    namedName = userName
+
+```
