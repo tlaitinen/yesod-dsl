@@ -29,6 +29,7 @@ entity Message {
     subject Text;
     body Text;
     dateTime DateTime;
+    check validMessage;
 }
 
 entity File {

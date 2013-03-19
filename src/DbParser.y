@@ -67,7 +67,9 @@ entityDef : entity upperId lbrace
             implementations 
             fields
             uniques
-            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 }
+            checks
+            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 $7 }
+
 
 implementations : { [] }
                 | implementations implementation semicolon { $2 : $1 }
@@ -97,6 +99,11 @@ value : stringval { StringValue $1 }
 uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
 uniqueDef :  unique upperId fieldIdList { Unique $2 $3 }
+
+checks : { [] }
+        | checks checkDef semicolon { $2 : $1 }
+checkDef :  check lowerId { $2 }
+
 
 fieldIdList : { [] }
             | lowerId fieldIdList { $1 : $2 }

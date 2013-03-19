@@ -70,20 +70,26 @@ generateModels :: DbModule -> [(FilePath,String)]
 generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db)),
                       ("Model/Validation.hs", genValidation db )]
 
+genFieldChecker :: EntityName -> Field -> Maybe String
+genFieldChecker name (Field _ fname (NormalField _ opts)) 
+        | null opts = Nothing
+        | otherwise = Just $ join "," $ catMaybes (map maybeCheck opts)
+        where
+            maybeCheck (FieldCheck func) = Just $ "if V." ++ func ++ " $ " ++ fname ++ " d == False then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
+            maybeCheck _ = Nothing
+genFieldChecker name _ = Nothing
+
+genEntityChecker :: Entity -> [String]
+genEntityChecker e = [ join "," $ [ "if V." ++ func ++ " d == False then Just \"" ++ 
+                        entityName e ++ " " ++ func ++ "\" else Nothing" ] 
+                       | func <- entityChecks e ]
 genEntityValidate :: DbModule -> Entity -> [String]
 genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "]
                        ++ (indent (["validate d = catMaybes ["]
-                           ++ [join " " fieldChecks]
+                           ++ fieldChecks ++ genEntityChecker e
                            ++ ["]",""]))
-              where fieldChecks = map (genFieldChecker db (entityName e)) (entityFields e)
+              where fieldChecks = mapMaybe (genFieldChecker (entityName e)) (entityFields e)
 
-genFieldChecker :: DbModule -> String -> Field -> String
-genFieldChecker db name (Field _ fname (NormalField _ opts)) = join ",\n" $ catMaybes (map maybeCheck opts)
-    where
-        maybeCheck (FieldCheck func) = Just $ "if V." ++ func ++ " $ " ++ fname ++ " d == False then Just \"" ++ name ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
-        maybeCheck _ = Nothing
-        
-genFieldChecker db name _ = []        
 
 
 genValidation :: DbModule -> String
@@ -92,7 +98,7 @@ genValidation db = unlines $ [
     "module Model.Validation (",
     "    Validatable(..) where",
     "import Data.Text",
-    "import Model.ValidationFunctions",
+    "import qualified Model.ValidationFunctions as V",
     "class Validatable a where",
     "    validate :: a -> [Text]"
     ] ++ concatMap (genEntityValidate db) (dbEntities db)

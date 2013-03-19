@@ -57,7 +57,8 @@ data Entity = Entity {
     entityName       :: String,
     entityImplements :: [IfaceName],
     entityFields     :: [Field],
-    entityUniques    :: [Unique]
+    entityUniques    :: [Unique],
+    entityChecks     :: [FunctionName]
 } deriving (Show)
 
 
