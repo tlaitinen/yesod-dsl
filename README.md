@@ -33,6 +33,16 @@ and [Persistent](http://www.yesodweb.com/book/persistent).
 -- reusability
 import "module.dbdef";
 
+-- class defines a set of fields that can be inherited by an entity
+class Named {
+    name Text check nonempty;
+}
+
+class Versioned {
+    version Maybe Int64; 
+}
+
+-- User-entity is an instance of the classes Named and Versioned
 entity User : Named, Versioned {
     password Text;
     salt Text;
@@ -52,12 +62,6 @@ entity File : Named {
 
     unique OwnerName owner name;
 }
-class Named {
-    name Text check nonempty;
-}
-class Versioned {
-    version Maybe Int64; -- the most recent entity has version == Nothing
-}
 
 entity ChangeRecord {
     field    Text;
@@ -65,6 +69,8 @@ entity ChangeRecord {
     newValue Text;
     time     DateTime;
     version  Int64;
+    -- a polymorphic relation which will be expanded to a number of fields
+    -- pointing a each possible entity that is an instance of Versioned
     'entity' Maybe Versioned;
 }
 ```
