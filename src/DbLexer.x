@@ -11,12 +11,14 @@ $upper = [A-Z]
 @stringWithoutSpecialChars = ($printable # [\" \\])*
 @specialChars = [\\]$printable
 @string = \" (@stringWithoutSpecialChars | @specialChars)* \"
+@fieldName = \' $lower [$alpha $digit \_ ]* \'
+
 
 tokens :-
 	$white+	;
 	"--".*	;
     \n ;
-    @string { mkTvar (\s -> TString (stripQuotes s)) }
+    @string { mkTvar (TString . stripQuotes) }
     \; { mkT TSemicolon } 
     \: { mkT TColon }
     \{ { mkT TLBrace }
@@ -27,7 +29,6 @@ tokens :-
     \) { mkT TRParen }
     \, { mkT TComma }
     \. { mkT TDot }
-    "ref" { mkT TRef }
     "import" { mkT TImport }
     "entity" { mkT TEntity }
     "interface" { mkT TIface  }
@@ -46,10 +47,12 @@ tokens :-
     "Time" { mkT TTime }
     "DateTime" { mkT TDateTime }
     "ZonedTime" { mkT TZonedTime }
-	$digit+ 		{ mkTvar (\s -> TInt (read s)) }
-    $digit+ "." $digit+ { mkTvar (\s -> TFloat (read s)) }
-	$lower [$alpha $digit \_ ]*  { mkTvar (\s -> TLowerId s) }
-    $upper [$alpha $digit \_ ]*  { mkTvar (\s -> TUpperId s) }
+	$digit+ 		{ mkTvar (TInt . read) }
+    $digit+ "." $digit+ { mkTvar (TFloat . read) }
+	$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
+    $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
+    @fieldName { mkTvar (TLowerId . stripQuotes) }
+    
     
 {
 
@@ -75,7 +78,6 @@ data TokenType = TSemicolon
                | TUpperId String
                | TInt     Int
                | TFloat   Double
-               | TRef 
                | TCheck
                | TWord32
                | TWord64

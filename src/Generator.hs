@@ -26,15 +26,20 @@ entityFieldDeps db name
 getFieldDeps :: DbModule -> Field -> [String]
 getFieldDeps db field = case (fieldContent field) of
     (NormalField _ _) -> []
-    (EntityField _ _ entityName) -> entityFieldDeps db entityName
+    (EntityField entityName) -> entityFieldDeps db entityName
 
 lookupDeps :: DbModule -> String -> [String]
 lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db)) name
 
+genModel :: DbModule -> Entity -> String
+genModel db entity = unlines $ [ entityName entity ] 
+                            ++ indent (map (genField db) (entityFields entity))
+
 generateModels :: DbModule -> [(FilePath,String)]
 generateModels db = genCommon db 
-                  ++ map (genEntity db) (dbEntities db) 
-                  ++ concatMap (genIface db) (dbIfaces db)
+--                  ++ map (genEntity db) (dbEntities db) 
+--                  ++ concatMap (genIface db) (dbIfaces db)
+                  ++ [("config/models", unlines $ map (genModel db) (dbEntities db))]
 
 genCommon :: DbModule -> [(FilePath, String)]
 genCommon db = [("Model/Common.hs", unlines $ [
@@ -86,28 +91,13 @@ imports = ["import Database.Persist",
            "import Model.Common"
            ]
 
-mkEntityFieldName :: DbModule -> EntityFieldEmbedding -> EntityFieldType -> EntityName -> String
-mkEntityFieldName db embed list dName = lbrack ++ dName ++ suffix ++ rbrack
-    where
-        (lbrack,rbrack) 
-            | list == ListField = ("[","]")
-            | otherwise = ("","")
-        maybeId
-            | embed == EmbedField = ""
-            | otherwise = "Id"
-        maybeInst
-            | embed == EmbedField = "Inst"
-            | otherwise = "InstRef"
-        suffix
-            | isEntityument dName = maybeId
-            | otherwise = maybeInst
-        isEntityument dn = dn `elem` [ entityName entity | entity <- dbEntities db ]
+
 
 
 genFieldType :: DbModule -> Field -> String
 genFieldType db field = case (fieldContent field) of
     (NormalField ftype _)   -> fromTkType ftype
-    (EntityField embed list entityName) -> mkEntityFieldName db embed list entityName
+    (EntityField entityName) -> entityName ++ "Id"
     where 
         fromTkType TWord32 = "Word32"
         fromTkType TWord64 = "Word64"
@@ -180,56 +170,7 @@ genIfaceValidate db iface entityNames = let
                                  ++ ["| otherwise = throw NoInstance"])))
                       
 
-mkIfaceInstance :: DbModule -> Iface -> [(FilePath, String)]
-mkIfaceInstance db iface = let
-            instName = ifaceName iface ++ "Inst"
-            instRefName = ifaceName iface ++ "InstRef"
-            entitys = dbEntities db
-            implEntitys = [ entity | entity <- entitys,
-                               (ifaceName iface) `elem` entityImplements entity ]
-            entityNames = [ entityName entity | entity <- implEntitys ]
-            instFields = [ Field True (lowerFirst name) 
-                                 (EntityField EmbedField SingleField name)
-                           | name <- entityNames ]
-            instRefFields = [ Field True ((lowerFirst name) ++ "Id")
-                                 (EntityField RefField SingleField name)
-                           | name <- entityNames ]
-            instDeps = [(instName, entityNames)]
-            instRefDeps = [(instRefName,  entityNames)]
-            extraImports = ["import qualified Model." ++ifaceName iface ++ " as " ++ ifaceName iface ]
-            instImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ ")" | d <- entityNames ] 
-                     ++ ["import qualified Model." ++ d | d <- entityNames ]
-            instRefImports = extraImports ++ ["import Model." ++ d ++ " (" ++ d ++ "Id, " ++ d ++ "Generic)" | d <- entityNames ]
 
-            (instFileName, instContent) = genPersist db instImports instName instFields
-            (instRefFileName, instRefContent) = genPersist db instRefImports instRefName instRefFields
-           in
-              [ (instFileName, instContent   
-                              ++ implIfaceInst db iface entityNames
-                              ++ genIfaceValidate db iface entityNames),
-                (instRefFileName, instRefContent) ]
-
-
-        
-
-genIface :: DbModule -> Iface -> [(FilePath,String)]
-genIface db iface = [("Model/" ++ name ++ ".hs",unlines $[
-        "{-# LANGUAGE QuasiQuotes, TemplateHaskell, TypeFamilies, OverloadedStrings #-}",
-        "{-# LANGUAGE GADTs, FlexibleContexts #-}",
-        "module Model." ++ name ++ "(" ++ exportList ++ ") where ",
-        "import Model.Common"] ++ importDeps db name ++ [
-        "class " ++ name ++ " a where "]
-        ++ indent (map genIfaceFieldGetter fields)
-        ++ indent (map genIfaceFieldSetter fields))]
-        ++ mkIfaceInstance db iface
-    where name = ifaceName iface
-          fields = ifaceFields iface
-          exportList = name ++ "(..)"
-          genIfaceFieldGetter field = (fieldName field)
-                                ++ " :: a ->" ++ haskellFieldType db field
-          genIfaceFieldSetter field = "s_" ++ (fieldName field)
-                                ++ " :: " ++ haskellFieldType db field
-                                ++ " -> a -> a"
 genFieldChecker :: DbModule -> String -> Field -> String
 genFieldChecker db name (Field _ fname (NormalField _ opts)) = join ",\n" $ catMaybes (map maybeCheck opts)
     where

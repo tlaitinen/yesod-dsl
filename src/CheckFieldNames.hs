@@ -19,9 +19,9 @@ checkFieldNames db
                                   isRefField f]
         getEntityFields entity = [ (entityName entity, entityLoc entity, getRefName f) | 
                              f <- entityFields entity, isRefField f ]
-        isRefField (Field _ _ (EntityField _ _ _)) = True
+        isRefField (Field _ _ (EntityField _)) = True
         isRefField _ = False
-        getRefName (Field _ _ (EntityField _ _ name)) = name
+        getRefName (Field _ _ (EntityField name)) = name
         getRefName _ = ""
         unknownFields = [ (n,l,f) | (n,l,f) <- allFields,
                               not (f `elem` allNames)]

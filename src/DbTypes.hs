@@ -67,8 +67,7 @@ entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 data Iface = Iface {
     ifaceLoc     :: Location,
     ifaceName    :: String,
-    ifaceFields  :: [Field],
-    ifaceUniques :: [Unique]
+    ifaceFields  :: [Field]
 } deriving (Show)
 
 dbLookup :: DbModule -> String -> DbDef
@@ -87,10 +86,8 @@ dbdefFields dbdef = case dbdef of
     
 type DefaultValue = String
 type IsListFlag = Bool
-data EntityFieldType = SingleField | ListField deriving (Show,Eq)
-data EntityFieldEmbedding = EmbedField | RefField deriving (Show,Eq)
 data FieldContent = NormalField FieldType [FieldOption]
-                    | EntityField EntityFieldEmbedding EntityFieldType EntityName 
+                    | EntityField EntityName 
                 deriving (Show)
    
 

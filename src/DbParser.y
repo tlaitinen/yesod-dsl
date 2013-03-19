@@ -24,7 +24,6 @@ import System.Exit
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
     upperId    { Tk _ (TUpperId $$)  }
-    ref        { Tk _ TRef }
     intval        { Tk _ (TInt $$)  }
     floatval      { Tk _ (TFloat $$) }
     semicolon  { Tk _ TSemicolon }
@@ -77,15 +76,13 @@ implementation : implements upperId { $2 }
 
 ifaceDef : iface upperId lbrace
              fields
-             uniques
-            rbrace { Iface (mkLoc $1) $2 $4 $5 }
+            rbrace { Iface (mkLoc $1) $2 $4  }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
 field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField (tokenType $3) $4) } 
-      | lowerId maybeMaybe maybeRef upperId { Field $2 $1 (EntityField $3 SingleField $4) }
-      | lowerId maybeMaybe lbrack maybeRef upperId rbrack { Field $2 $1 (EntityField $4 ListField $5) }
+      | lowerId maybeMaybe upperId { Field $2 $1 (EntityField $3) }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }
@@ -101,8 +98,6 @@ uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
 uniqueDef :  unique fieldIdList { Unique $2  }
 
-maybeRef : { EmbedField }
-         | ref { RefField }
 
 fieldIdList : lowerId { [$1] }
 

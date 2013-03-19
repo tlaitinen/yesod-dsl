@@ -21,13 +21,15 @@ implInEntitys :: [Iface] -> [Entity] -> [Entity]
 implInEntitys ifaces entities = map (implInEntity ifaces) entities
 
 
+expandIfaceRefFields :: [Iface] -> Field -> [Field]
+expandIfaceRefFields _ f = [f]
+
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
 implInEntity :: [Iface] -> Entity -> Entity
 implInEntity ifaces e 
     | null invalidIfaceNames = e {
-        entityFields  = entityFields e ++ extraFields,
-        entityUniques = entityUniques e ++ extraUniques
+        entityFields  = concatMap (expandIfaceRefFields ifaces) $ entityFields e ++ extraFields
     }
     | otherwise        = entityError e $ "Invalid interfaces " 
                                         ++ show invalidIfaceNames
@@ -39,6 +41,5 @@ implInEntity ifaces e
         validIfaces = catMaybes implementedIfaces
                                      
         extraFields = concat $ map ifaceFields validIfaces
-        extraUniques = concat $ map ifaceUniques validIfaces
         
     

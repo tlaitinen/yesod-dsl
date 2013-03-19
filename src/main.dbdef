@@ -9,25 +9,23 @@ entity AudioFile {
 }
 
 interface Playable {
+    playlist Maybe PlayList;
 }
 
 entity PlayList {
     implements Named;
-    playables [ref Playable];
 }
 entity User {
     implements Versioned;
     implements Named;
 
-    messages [Message];
 
-    files [ref File];
 
 }
 
 entity Message {
-    from Text;
-    to Text;
+    from User;
+    to User;
     subject Text;
     body Text;
     dateTime DateTime;
@@ -37,6 +35,8 @@ entity File {
     implements Versioned;
     implements Named;
 
+    user User;
+
     contents Maybe Text;
 }
 interface Named {
@@ -44,7 +44,6 @@ interface Named {
 }
 interface Versioned {
     version Maybe Int64;
-    changes [ChangeRecord];
 }
 
 entity ChangeRecord {
@@ -52,4 +51,6 @@ entity ChangeRecord {
     oldValue Text;
     newValue Text;
     time     DateTime;
+    version  Int64;
+    'entity' Versioned;
 }
