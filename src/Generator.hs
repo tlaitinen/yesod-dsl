@@ -87,20 +87,44 @@ genHandler :: DbModule -> Entity -> String
 genHandler db e = unlines $ ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
                              "get" ++ handlerName e "Many" ++ " = do"]
                            ++ (indent [
-                                "Entity userKey user <- requireAuth",
+                                "(Entity userKey user) <- requireAuth",
                                 "let filters = [] -- TODO",
                                 "entities <- runDB $ selectList filters",
                                 "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
                                    ])
                            ++ 
-                             ["get" ++ handlerName e "" ++ " :: Handler RepJson",
-                             "get" ++ handlerName e "" ++ " = do"]
+                             ["", "get" ++ handlerName e "" ++ " :: " 
+                                         ++ entityName e ++ "Id -> Handler RepJson",
+                             "get" ++ handlerName e "" ++ " key = do"]
+                             ++ (indent ["(Entity userKey user) <- requireAuth",
+                                         "entity <- get key",
+                                         "jsonToRepJson $ toJSON entity"])
                            ++
-                             ["put" ++ handlerName e "" ++ " :: Handler RepJson",
-                              "put" ++ handlerName e "" ++ " = do"]
+                             ["","put" ++ handlerName e "" ++ " :: " 
+                                     ++ entityName e ++ "Id -> Handler RepJson",
+                              "put" ++ handlerName e "" ++ " key = do"]
+                          ++ (indent ["(Entity userKey user) <- requireAuth",
+                                      "record <- parseJsonBody",
+                                      "--TODO validation",
+                                      "repsert key record",
+                                      "jsonToRepJson $ object [ ]"])
+                          ++
+                             ["","post" ++ handlerName e "" ++ " :: Handler RepJson" ,
+                              "post" ++ handlerName e "" ++ " = do"]
+                          ++ (indent ["(Entity userKey user) <- requireAuth",
+                                      "record <- parseJsonBody",
+                                      "--TODO validation",
+                                      "key <- insert record",
+                                      "jsonToRepJson $ object [ \"id\" .= toJSON key ]"])
+                          
                            ++ 
-                             ["delete" ++ handlerName e "" ++ " :: Handler RepJson",
-                              "delete" ++ handlerName e "" ++ " = do"]
+                             ["","delete" ++ handlerName e "" ++ " :: "
+                                     ++ entityName e ++ "Id -> Handler RepJson",
+                              "delete" ++ handlerName e "" ++ " key = do"]
+                       ++ (indent ["(Entity userKey user) <- requireAuth",
+                                   "delete key",
+                                   "jsonToRepJson $ object [ ]"])
+                            
                          
 
 genHandlers :: DbModule -> String
