@@ -1,53 +1,41 @@
+-- .dbdef-file can include other .dbdef-files for increased 
+-- reusability
 import "module.dbdef";
 
-entity AudioFile {
-    implements Named;
-    implements Playable;
-
-    -- comment
-    file File;
-}
-
-interface Playable {
-    playlist Maybe PlayList;
-}
-
-entity PlayList {
-    implements Named;
-}
 entity User {
-    implements Versioned;
     implements Named;
+    implements Versioned;
 
-
-
+    password Text;
+    salt Text;
+    language Text;
+    timezone Text;
 }
 
-entity Message {
-    from User;
-    to User;
-    subject Text;
-    body Text;
-    dateTime DateTime;
-    check validMessage;
+entity Note {
+    implements Named;
+    implements Versioned;
+
+    owner   User;
+    title   Text check nonempty;
+    body    Text;
+    created DateTime;
 }
 
 entity File {
-    implements Versioned;
     implements Named;
 
-    user User;
+    owner User;
     name Text;
+    path Text;
 
-    contents Maybe Text;
-
-    unique UserFileName user name;
+    unique UserName user name;
 }
 interface Named {
     name Text check nonempty;
 }
 interface Versioned {
-    version Maybe Int64;
+    version Maybe Int64; -- the most recent entity has version == Nothing
 }
 
 entity ChangeRecord {
