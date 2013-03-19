@@ -18,7 +18,7 @@ main = do
     let impl      = implementInterfaces merged
     let generated = generateModels impl
     syncFiles generated
-    exists <- doesFileExist "Model/Validation.hs"
+    exists <- doesFileExist "Model/ValidationFunctions.hs"
     if not exists 
-        then do writeFile "Model/Validation.hs" "module Model.Validation where"
+        then do writeFile "Model/ValidationFunctions.hs" "module Model.ValidationFunctions where"
         else return ()

@@ -24,7 +24,6 @@ entity User {
 }
 
 entity Message {
-    implements Versioned;
     from User;
     to User;
     subject Text;
