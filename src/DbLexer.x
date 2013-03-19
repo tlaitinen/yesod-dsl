@@ -31,8 +31,7 @@ tokens :-
     \. { mkT TDot }
     "import" { mkT TImport }
     "entity" { mkT TEntity }
-    "interface" { mkT TIface  }
-    "implements" { mkT TImplements }
+    "class" { mkT TIface  }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
     "Word32" { mkT TWord32 }
@@ -70,7 +69,6 @@ data TokenType = TSemicolon
                | TDot
                | TImport
                | TEntity
-               | TImplements
                | TUnique
                | TIface
                | TString  String

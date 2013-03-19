@@ -19,7 +19,6 @@ import System.Exit
     import     { Tk _ TImport }
     entity   { Tk _ TEntity }
     iface      { Tk _ TIface }
-    implements { Tk _ TImplements }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
@@ -34,6 +33,7 @@ import System.Exit
     lbrack { Tk _ TLBrack }
     rbrack { Tk _ TRBrack }
     comma  { Tk _ TComma }
+    colon { Tk _ TColon }
     dot  { Tk _ TDot }
     stringval     { Tk _ (TString $$) }
     word32   { Tk _ TWord32 }
@@ -63,18 +63,17 @@ dbDefs : {- empty -}   { [] }
 dbDef : entityDef      { EntityDef $1 } 
       | ifaceDef      { IfaceDef $1 }
 
-entityDef : entity upperId lbrace 
-            implementations 
+entityDef : entity upperId maybeImplementations lbrace 
             fields
             uniques
             checks
-            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 $7 }
+            rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 }
 
+maybeImplementations : { [] }
+                     | colon implementations { $2 }
 
-implementations : { [] }
-                | implementations implementation semicolon { $2 : $1 }
-
-implementation : implements upperId { $2 }
+implementations : upperId { [$1] }
+            | implementations comma upperId { $3 : $1 }
 
 ifaceDef : iface upperId lbrace
              fields

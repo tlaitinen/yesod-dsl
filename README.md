@@ -33,40 +33,30 @@ and [Persistent](http://www.yesodweb.com/book/persistent).
 -- reusability
 import "module.dbdef";
 
-entity User {
-    implements Named;
-    implements Versioned;
-
+entity User : Named, Versioned {
     password Text;
     salt Text;
     language Text;
     timezone Text;
 }
 
-entity Note {
-    implements Named;
-    implements Versioned;
-
+entity Note : Named, Versioned {
     owner   User;
-    title   Text check nonempty;
     body    Text;
     created DateTime;
 }
 
-entity File {
-    implements Named;
-
+entity File : Named {
     owner User;
-    name Text;
     path Text;
 
-    unique UserName user name;
+    unique OwnerName owner name;
 }
-interface Named {
+class Named {
     name Text check nonempty;
 }
-interface Versioned {
-    version Maybe Int64; 
+class Versioned {
+    version Maybe Int64; -- the most recent entity has version == Nothing
 }
 
 entity ChangeRecord {
