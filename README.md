@@ -164,7 +164,7 @@ Person json
 /validate/person PersonValidateR POST
 ```
 
-TODO: Hmm.. how to add after routes file to Yesod site...
+TODO: Hmm.. how to add another routes file to Yesod site...
 
 #### Model/Validation.hs
 ```haskell
