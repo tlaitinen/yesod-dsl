@@ -235,8 +235,7 @@ action_57 x = happyTcHack x happyReduce_42
 
 action_58 x = happyTcHack x happyReduce_41
 
-action_59 (40#) = happyShift action_75
-action_59 x = happyTcHack x happyFail
+action_59 x = happyTcHack x happyReduce_11
 
 action_60 x = happyTcHack x happyReduce_9
 
@@ -270,7 +269,7 @@ action_69 x = happyTcHack x happyReduce_44
 
 action_70 x = happyTcHack x happyReduce_15
 
-action_71 (13#) = happyGoto action_76
+action_71 (13#) = happyGoto action_75
 action_71 x = happyTcHack x happyReduce_17
 
 action_72 x = happyTcHack x happyReduce_14
@@ -279,21 +278,19 @@ action_73 x = happyTcHack x happyReduce_13
 
 action_74 x = happyTcHack x happyReduce_12
 
-action_75 x = happyTcHack x happyReduce_11
+action_75 (42#) = happyShift action_77
+action_75 (67#) = happyShift action_78
+action_75 (14#) = happyGoto action_76
+action_75 x = happyTcHack x happyFail
 
-action_76 (42#) = happyShift action_78
-action_76 (67#) = happyShift action_79
-action_76 (14#) = happyGoto action_77
+action_76 (40#) = happyShift action_79
 action_76 x = happyTcHack x happyFail
 
-action_77 (40#) = happyShift action_80
-action_77 x = happyTcHack x happyFail
+action_77 x = happyTcHack x happyReduce_16
 
-action_78 x = happyTcHack x happyReduce_16
+action_78 x = happyTcHack x happyReduce_19
 
-action_79 x = happyTcHack x happyReduce_19
-
-action_80 x = happyTcHack x happyReduce_18
+action_79 x = happyTcHack x happyReduce_18
 
 happyReduce_1 = happySpecReduce_2  4# happyReduction_1
 happyReduction_1 (HappyAbsSyn7  happy_var_2)
@@ -373,14 +370,13 @@ happyReduction_10  =  HappyAbsSyn10
 		 ([]
 	)
 
-happyReduce_11 = happySpecReduce_3  10# happyReduction_11
-happyReduction_11 _
-	(HappyAbsSyn11  happy_var_2)
+happyReduce_11 = happySpecReduce_2  10# happyReduction_11
+happyReduction_11 (HappyAbsSyn11  happy_var_2)
 	(HappyAbsSyn10  happy_var_1)
 	 =  HappyAbsSyn10
 		 (happy_var_2 : happy_var_1
 	)
-happyReduction_11 _ _ _  = notHappyAtAll 
+happyReduction_11 _ _  = notHappyAtAll 
 
 happyReduce_12 = happySpecReduce_2  11# happyReduction_12
 happyReduction_12 (HappyAbsSyn12  happy_var_2)

@@ -3,6 +3,7 @@ import DbParser
 import System.Environment
 import ModuleMerger
 import NameFinder
+import CheckServices
 import IfaceImplementer
 import DbTypes
 import Data.List
@@ -14,8 +15,7 @@ main = do
     [ path ] <- getArgs
     dbs <- parse path
     let merged    = mergeModules dbs
-    let names     = findNames merged
-    let impl      = implementInterfaces merged
+    let impl      = (checkServices . implementInterfaces) merged
     let generated = generateModels impl
     syncFiles generated
     exists <- doesFileExist "Model/ValidationFunctions.hs"

@@ -77,7 +77,7 @@ entityDef : entity upperId maybeImplementations lbrace
             rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 $8 }
 
 services : { [] }
-         | services servicedef semicolon { $2 : $1 }
+         | services servicedef { $2 : $1 }
 servicedef : get serviceParamsBlock { Service GetService $2 }
          | put serviceParamsBlock { Service PutService $2 }
          | post serviceParamsBlock { Service PostService $2 }

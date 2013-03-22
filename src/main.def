@@ -20,10 +20,11 @@ entity User2 : Named, Versioned {
 
     get { 
         public;
-    };
-    post {};
-    delete {};
-    put {};
+    }
+    post {}
+
+    delete {}
+    put {}
 }
 
 entity Note : Named, Versioned {
