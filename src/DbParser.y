@@ -56,6 +56,9 @@ import System.Exit
     if { Tk _ TIf }
     then { Tk _ TThen }
     validate { Tk _ TValidate }
+    defaultfiltersort { Tk _ TDefaultFilterSort }
+    filter { Tk _ TFilter }
+    sort {  Tk _ TSort }
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
@@ -92,6 +95,10 @@ serviceParams : { [] }
 serviceParam : public { PublicService }
              | if lowerId { ServiceCond $2 }
              | then lowerId { ServicePostHook $2 }
+             | defaultfiltersort { ServiceDefaultFilterSort }
+             | filter lowerId { ServiceFilter $2 }
+             | sort lowerId { ServiceSort $2 }
+             
               
               
 maybeImplementations : { [] }

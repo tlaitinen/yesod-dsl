@@ -31,5 +31,5 @@ main = do
     syncFiles generated
     createFiles [("Model/ValidationFunctions.hs",
                   "module Model.ValidationFunctions where\nimport Import"),
-                 ("Handler/Triggers.hs",
-                  "module Handler.Triggers where\nimport Import")]
+                 ("Handler/Hooks.hs",
+                  "module Handler.Hooks where\nimport Import")]

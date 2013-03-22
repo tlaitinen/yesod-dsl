@@ -55,6 +55,9 @@ tokens :-
     "Time" { mkT TTime }
     "DateTime" { mkT TDateTime }
     "ZonedTime" { mkT TZonedTime }
+    "default-filter-sort" { mkT TDefaultFilterSort }
+    "filter" { mkT TFilter }
+    "sort" { mkT TSort }
 	$digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
 	$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
@@ -108,7 +111,10 @@ data TokenType = TSemicolon
                | TIf
                | TThen
                | TValidate
-	deriving (Show)
+               | TDefaultFilterSort
+               | TFilter
+               | TSort
+        deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)
 

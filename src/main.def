@@ -22,8 +22,9 @@ entity User2 : Named, Versioned {
         public;
         if allowed;
         then logGet;
+        filter groups;
     }
-    post {}
+    post { }
 
     delete {}
     put {}

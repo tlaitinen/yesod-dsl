@@ -59,8 +59,12 @@ data ServiceType = GetService
                  | DeleteService 
                  | ValidateService  deriving (Show, Eq) 
 data ServiceParam = PublicService 
+                  | ServiceDefaultFilterSort
+                  | ServiceFilter FunctionName
+                  | ServiceSort FunctionName
                   | ServiceCond FunctionName 
                   | ServicePostHook FunctionName  deriving (Show, Eq) 
+                   
 data Service = Service ServiceType [ServiceParam]  deriving (Show)
 
 data Entity = Entity {
