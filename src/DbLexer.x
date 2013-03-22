@@ -37,11 +37,11 @@ tokens :-
     "delete" { mkT TDelete }
     "import" { mkT TImport }
     "entity" { mkT TEntity }
-    "class" { mkT TIface  }
+    "class" { mkT TClass  }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
-    "if" { mkT TIf }
-    "then" { mkT TThen }
+    "pre-hook" { mkT TPreHook }
+    "post-hook" { mkT TPostHook }
     "public" { mkT TPublic }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
@@ -82,7 +82,7 @@ data TokenType = TSemicolon
                | TImport
                | TEntity
                | TUnique
-               | TIface
+               | TClass
                | TString  String
                | TLowerId String
                | TUpperId String
@@ -108,8 +108,8 @@ data TokenType = TSemicolon
                | TPost
                | TDelete
                | TPublic
-               | TIf
-               | TThen
+               | TPreHook
+               | TPostHook
                | TValidate
                | TDefaultFilterSort
                | TFilter

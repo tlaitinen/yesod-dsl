@@ -4,7 +4,7 @@ import System.Environment
 import ModuleMerger
 import NameFinder
 import CheckServices
-import IfaceImplementer
+import ClassImplementer
 import DbTypes
 import Data.List
 import Generator

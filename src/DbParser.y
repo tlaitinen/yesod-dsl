@@ -18,7 +18,7 @@ import System.Exit
 %token
     import     { Tk _ TImport }
     entity   { Tk _ TEntity }
-    iface      { Tk _ TIface }
+    iface      { Tk _ TClass }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
@@ -53,8 +53,8 @@ import System.Exit
     post { Tk _ TPost }
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
-    if { Tk _ TIf }
-    then { Tk _ TThen }
+    prehook { Tk _ TPreHook }
+    posthook { Tk _ TPostHook }
     validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     filter { Tk _ TFilter }
@@ -93,8 +93,8 @@ serviceParamsBlock : lbrace serviceParams rbrace { $2 }
 serviceParams : { [] }
               | serviceParams serviceParam semicolon { $2 : $1 }
 serviceParam : public { PublicService }
-             | if lowerId { ServiceCond $2 }
-             | then lowerId { ServicePostHook $2 }
+             | prehook lowerId { ServicePreHook $2 }
+             | posthook lowerId { ServicePostHook $2 }
              | defaultfiltersort { ServiceDefaultFilterSort }
              | filter lowerId { ServiceFilter $2 }
              | sort lowerId { ServiceSort $2 }

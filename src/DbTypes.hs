@@ -7,34 +7,34 @@ type ImportPath = FilePath
 data DbModule = DbModule {
     dbImports   :: [ImportPath],
     dbEntities  :: [Entity],
-    dbIfaces :: [Iface]
+    dbClasses :: [Class]
 }
     deriving (Show)
 emptyDbModule = DbModule {
     dbImports = [],
     dbEntities = [],
-    dbIfaces = []
+    dbClasses = []
 }
 data DbDef = EntityDef Entity
-           | IfaceDef Iface
+           | ClassDef Class
            deriving (Show)
 
 
  
-isIface (IfaceDef _) = True
-isIface _ = False
+isClass (ClassDef _) = True
+isClass _ = False
 isEntity (EntityDef _) = True
 isEntity _ = False
 
 getEntities :: [DbDef] -> [Entity]
 getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
-getIfaces :: [DbDef] -> [Iface]
-getIfaces defs = map (\(IfaceDef e) -> e) $ filter isIface defs
+getClasses :: [DbDef] -> [Class]
+getClasses defs = map (\(ClassDef e) -> e) $ filter isClass defs
 
    
 
 
-type IfaceName = String
+type ClassName = String
 
 type UniqueFlag = Bool
 
@@ -62,7 +62,7 @@ data ServiceParam = PublicService
                   | ServiceDefaultFilterSort
                   | ServiceFilter FunctionName
                   | ServiceSort FunctionName
-                  | ServiceCond FunctionName 
+                  | ServicePreHook FunctionName 
                   | ServicePostHook FunctionName  deriving (Show, Eq) 
                    
 data Service = Service ServiceType [ServiceParam]  deriving (Show)
@@ -70,7 +70,7 @@ data Service = Service ServiceType [ServiceParam]  deriving (Show)
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
-    entityImplements :: [IfaceName],
+    entityImplements :: [ClassName],
     entityFields     :: [Field],
     entityUniques    :: [Unique],
     entityChecks     :: [FunctionName],
@@ -82,7 +82,7 @@ entityPath :: Entity -> String
 entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 
 
-data Iface = Iface {
+data Class = Class {
     ifaceLoc     :: Location,
     ifaceName    :: String,
     ifaceFields  :: [Field]
@@ -91,16 +91,16 @@ data Iface = Iface {
 dbLookup :: DbModule -> String -> DbDef
 dbLookup db name 
         | isJust entityMatch = EntityDef $ fromJust entityMatch
-        | isJust ifaceMatch  = IfaceDef $ fromJust ifaceMatch
+        | isJust ifaceMatch  = ClassDef $ fromJust ifaceMatch
         | otherwise = error $ "dbLookup failed : " ++ name
     where
         entityMatch = find (\e -> name == entityName e) (dbEntities db)
-        ifaceMatch  = find (\i -> name == ifaceName i) (dbIfaces db)
+        ifaceMatch  = find (\i -> name == ifaceName i) (dbClasses db)
 
 dbdefFields :: DbDef -> [Field]
 dbdefFields dbdef = case dbdef of
     (EntityDef entity)     -> entityFields entity
-    (IfaceDef iface) -> ifaceFields iface
+    (ClassDef iface) -> ifaceFields iface
     
 type DefaultValue = String
 type IsListFlag = Bool

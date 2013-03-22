@@ -331,7 +331,7 @@ happyReduction_1 (HappyAbsSyn7  happy_var_2)
 	(HappyAbsSyn5  happy_var_1)
 	 =  HappyAbsSyn4
 		 (DbModule happy_var_1 (getEntities happy_var_2) 
-                                        (getIfaces happy_var_2)
+                                        (getClasses happy_var_2)
 	)
 happyReduction_1 _ _  = notHappyAtAll 
 
@@ -380,7 +380,7 @@ happyReduction_7 _  = notHappyAtAll
 happyReduce_8 = happySpecReduce_1  8# happyReduction_8
 happyReduction_8 (HappyAbsSyn17  happy_var_1)
 	 =  HappyAbsSyn8
-		 (IfaceDef happy_var_1
+		 (ClassDef happy_var_1
 	)
 happyReduction_8 _  = notHappyAtAll 
 
@@ -485,7 +485,7 @@ happyReduce_21 = happySpecReduce_2  14# happyReduction_21
 happyReduction_21 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	_
 	 =  HappyAbsSyn14
-		 (ServiceCond happy_var_2
+		 (ServicePreHook happy_var_2
 	)
 happyReduction_21 _ _  = notHappyAtAll 
 
@@ -556,7 +556,7 @@ happyReduction_30 (_ `HappyStk`
 	(HappyTerminal happy_var_1) `HappyStk`
 	happyRest)
 	 = HappyAbsSyn17
-		 (Iface (mkLoc happy_var_1) happy_var_2 happy_var_4
+		 (Class (mkLoc happy_var_1) happy_var_2 happy_var_4
 	) `HappyStk` happyRest
 
 happyReduce_31 = happySpecReduce_0  18# happyReduction_31
@@ -795,7 +795,7 @@ happyNewToken action sts stk (tk:tks) =
 	case tk of {
 	Tk _ TImport -> cont 31#;
 	Tk _ TEntity -> cont 32#;
-	Tk _ TIface -> cont 33#;
+	Tk _ TClass -> cont 33#;
 	Tk _ TUnique -> cont 34#;
 	Tk _ TCheck -> cont 35#;
 	Tk _ (TLowerId happy_dollar_dollar) -> cont 36#;
@@ -830,8 +830,8 @@ happyNewToken action sts stk (tk:tks) =
 	Tk _ TPost -> cont 65#;
 	Tk _ TDelete -> cont 66#;
 	Tk _ TPublic -> cont 67#;
-	Tk _ TIf -> cont 68#;
-	Tk _ TThen -> cont 69#;
+	Tk _ TPreHook -> cont 68#;
+	Tk _ TPostHook -> cont 69#;
 	Tk _ TValidate -> cont 70#;
 	Tk _ TDefaultFilterSort -> cont 71#;
 	Tk _ TFilter -> cont 72#;

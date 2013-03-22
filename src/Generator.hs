@@ -221,14 +221,14 @@ genHandler db e = concatMap genService (entityServices e)
                           ++ (indent $ ["then do"] ++ (indent lines))
                           ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
                           
-        matchCond (ServiceCond f) = Just f
-        matchCond _ = Nothing
+        matchPreHook (ServicePreHook f) = Just f
+        matchPreHook _ = Nothing
         formatServiceTrigger extra params f
             | PublicService `elem` params = f ++ " Nothing req" ++ extra
             | otherwise = f ++ " (Just user) req" ++ extra
 
 
-        condFunctions params = mapMaybe matchCond params
+        condFunctions params = mapMaybe matchPreHook params
         cond extra params lines = cond' extra params (condFunctions params) lines
         cond' extra params fs lines 
             | null fs = lines
@@ -324,7 +324,7 @@ genValidation db = unlines $ [
     "    validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]"
     ] ++ concatMap (genEntityValidate db) (dbEntities db)
                    
-ifaceFieldName :: Iface -> Field -> String
+ifaceFieldName :: Class -> Field -> String
 ifaceFieldName i f = (lowerFirst . ifaceName) i ++ (upperFirst . fieldName) f
 
 entityFieldName :: Entity -> Field -> String
@@ -338,7 +338,7 @@ genInterfaces db = unlines $ [
     "import Data.Int",
     "import Data.Word",
     "import Data.Time"
-    ] ++ concatMap genInterface (dbIfaces db)
+    ] ++ concatMap genInterface (dbClasses db)
     where
         genInterface i = [ "class " ++ ifaceName i ++ " a where" ]
                       ++ (indent $ [ ifaceFieldName i f 

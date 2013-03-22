@@ -9,7 +9,7 @@ findNames db
     | otherwise = []
     where
         entityNames  = [(entityLoc e, entityName e) | e <- dbEntities db ]
-        ifaceNames   = [(ifaceLoc i, ifaceName i) | i <- dbIfaces db ]
+        ifaceNames   = [(ifaceLoc i, ifaceName i) | i <- dbClasses db ]
         allNames     = entityNames ++ ifaceNames
 
         sameNameOrd (_,n1) (_,n2) = compare n1 n2

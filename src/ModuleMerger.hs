@@ -16,17 +16,17 @@ merge :: DbModule -> DbModule -> DbModule
 merge db1 db2 = DbModule {
         dbImports = dbImports db1 ++ dbImports db2,
         dbEntities = dbEntities db1 ++ dbEntities db2,
-        dbIfaces = dbIfaces db1 ++ dbIfaces db2
+        dbClasses = dbClasses db1 ++ dbClasses db2
     }
 
 updateLocation :: (FilePath,DbModule) -> DbModule
 updateLocation (path,db) = db {
         dbEntities = map (updateDocLoc path) (dbEntities db),
-        dbIfaces    = map (updateIfaceLoc path) (dbIfaces db)
+        dbClasses    = map (updateClassLoc path) (dbClasses db)
     } 
     where 
         updateDocLoc path e = e { entityLoc = updateLoc path (entityLoc e) }
-        updateIfaceLoc path i = i { ifaceLoc = updateLoc path (ifaceLoc i) }
+        updateClassLoc path i = i { ifaceLoc = updateLoc path (ifaceLoc i) }
  
 updateLoc :: FilePath -> Location -> Location
 updateLoc path (Loc _ l c) = Loc path l c

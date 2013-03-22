@@ -1,6 +1,6 @@
 all: yesod-generate-rest
 
-yesod-generate-rest: yesod-generate-rest.hs DbLexer.hs DbParser.hs ModuleMerger.hs IfaceImplementer.hs NameFinder.hs DbTypes.hs Generator.hs SyncFiles.hs CheckFieldNames.hs CheckServices.hs
+yesod-generate-rest: yesod-generate-rest.hs DbLexer.hs DbParser.hs ModuleMerger.hs ClassImplementer.hs NameFinder.hs DbTypes.hs Generator.hs SyncFiles.hs CheckFieldNames.hs CheckServices.hs
 	ghc --make yesod-generate-rest.hs
 
 DbLexer.hs: DbLexer.x

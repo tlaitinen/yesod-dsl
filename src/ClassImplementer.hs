@@ -1,4 +1,4 @@
-module IfaceImplementer (implementInterfaces) where
+module ClassImplementer (implementInterfaces) where
 import Data.List
 import DbTypes
 import Data.Maybe
@@ -8,18 +8,18 @@ implementInterfaces :: DbModule -> DbModule
 implementInterfaces db' = 
     let
         db = checkFieldNames db'
-        ifaces = dbIfaces db
+        ifaces = dbClasses db
     in 
         db {
             dbEntities  = [ implInEntity db ifaces e | e <- (dbEntities db) ]
         }
 
-ifaceLookup :: [Iface] -> IfaceName -> Maybe Iface
+ifaceLookup :: [Class] -> ClassName -> Maybe Class
 ifaceLookup ifaces name =  find (\i -> name == ifaceName i) ifaces
 
 
-expandIfaceField :: DbModule -> Entity ->  Field -> [Field]
-expandIfaceField db e f@(Field _ _ (EntityField iName)) 
+expandClassField :: DbModule -> Entity ->  Field -> [Field]
+expandClassField db e f@(Field _ _ (EntityField iName)) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to interface not allowed"
     | otherwise = [ Field {
                         fieldOptional = True,
@@ -29,31 +29,31 @@ expandIfaceField db e f@(Field _ _ (EntityField iName))
                     } | re <- dbEntities db, iName `elem` (entityImplements re) ]
 
 
-expandIfaceRefFields :: DbModule -> Entity -> Field -> [Field]
-expandIfaceRefFields db e f = expand (fieldContent f)
+expandClassRefFields :: DbModule -> Entity -> Field -> [Field]
+expandClassRefFields db e f = expand (fieldContent f)
     where       
-        expand (EntityField name) = if isJust (ifaceLookup (dbIfaces db) name) 
-                                        then expandIfaceField db e f 
+        expand (EntityField name) = if isJust (ifaceLookup (dbClasses db) name) 
+                                        then expandClassField db e f 
                                         else [f]
         expand _ = [f]                           
             
 
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
-implInEntity :: DbModule -> [Iface] -> Entity -> Entity
+implInEntity :: DbModule -> [Class] -> Entity -> Entity
 implInEntity db ifaces e 
-    | null invalidIfaceNames = e {
-        entityFields  = concatMap (expandIfaceRefFields db e) $ entityFields e ++ extraFields
+    | null invalidClassNames = e {
+        entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields
     }
     | otherwise        = entityError e $ "Invalid interfaces " 
-                                        ++ show invalidIfaceNames
+                                        ++ show invalidClassNames
     where
         implements = entityImplements e
-        invalidIfaceNames = [ name | name <- implements, 
+        invalidClassNames = [ name | name <- implements, 
                                  isNothing $ ifaceLookup ifaces name ]
-        implementedIfaces = map (ifaceLookup ifaces) implements
-        validIfaces = catMaybes implementedIfaces
+        implementedClasses = map (ifaceLookup ifaces) implements
+        validClasses = catMaybes implementedClasses
                                      
-        extraFields = concat $ map ifaceFields validIfaces
+        extraFields = concat $ map ifaceFields validClasses
         
     
