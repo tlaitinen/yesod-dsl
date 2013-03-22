@@ -115,7 +115,7 @@ genDefaultFilter e = ["do"]
                  ++ (indent $ ["then do"]
                       ++ (indent $ ["case json (fromJust filter) of"]
                              ++ (indent $ ["(Object o) -> do"]
-                                   ++ (indent ["return []"])
+                                   ++ (indent ["return [] -- TODO: filter with o"])
                                    ++ ["_ -> invalidArgs [fromJust filter]"]))
                       ++ ["else return []"]))
 genFilters :: Entity -> [ServiceParam] -> [String]
@@ -147,7 +147,7 @@ genDefaultSelectOpts e = ["do"]
                  ++ (indent $ ["then do"]
                       ++ (indent $ ["case json (fromJust sortParam) of"]
                              ++ (indent $ ["(Object o) -> do"]
-                                   ++ (indent ["return []"])
+                                   ++ (indent ["return [] -- TODO: sort with o"])
                                    ++ ["_ -> invalidArgs [fromJust sortParam]"]))
                       ++ ["else return []"]))
 
