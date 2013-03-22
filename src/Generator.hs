@@ -154,7 +154,7 @@ genDefaultSelectOpts e = ["do"]
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
     | null opts = ["let selectOpts = []"]
-    | otherwise = ["let selectOpts = ["] ++ (indent $ opts ++ ["]"])
+    | otherwise = ["selectOpts <- ["] ++ (indent $ opts ++ ["]"])
     where
         opts = intercalate [","] $ mapMaybe mkOpt params ++ defaultSort
         mkOpt (ServiceSelectOpts f) = Just $ [f]
@@ -304,7 +304,7 @@ genJson db = unlines $  ["{-# LANGUAGE FlexibleInstances #-}",
 genFieldChecker :: Entity -> Field -> Maybe String
 genFieldChecker e f@(Field _ fname (NormalField _ opts)) 
         | null opts = Nothing
-        | otherwise = Just $ join "," $ catMaybes (map maybeCheck opts)
+        | otherwise = Just $ join "," $ mapMaybe maybeCheck opts
         where
             maybeCheck (FieldCheck func) = Just $ "checkResult \"" ++ entityName e ++ "." ++ fname ++ " " ++ func ++ "\" (V." ++ func ++ " $ " ++ entityFieldName e f ++ " e)"
 genFieldChecker name _ = Nothing
@@ -317,8 +317,8 @@ genEntityChecker e
 genEntityValidate :: DbModule -> Entity -> [String]
 genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "]
                        ++ (indent (["validate e = sequence ["]
-                           ++ (indent $ 
-                                   fieldChecks ++ genEntityChecker e
+                           ++ (indent $ commas 
+                                   (fieldChecks ++ genEntityChecker e)
                                  ++ ["]"]))) ++ [""]
               where fieldChecks = mapMaybe (genFieldChecker e) (entityFields e)
 
@@ -374,7 +374,10 @@ genInterfaces db = unlines $ [
 
 indent :: [String] -> [String]
 indent = map (\l -> "    " ++ l)
-        
 
+commas :: [String] -> [String]
+commas (x1:x2:xs) = (x1 ++ ","):commas (x2:xs)
+commas (x:xs) = x : commas xs
+commas _ = []
 
 

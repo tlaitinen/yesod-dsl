@@ -49,7 +49,7 @@ class Versioned {
 -- User-entity is an instance of the classes Named and Versioned
 entity Person : Named, Versioned {
     language Text check validLanguage;
-    timezone Text check validTimeZone;
+    timezone Text check validTimezone;
 
     -- service definitions start here
     get { 
@@ -96,7 +96,11 @@ entity FileItem : Named {
     owner Person;
     path Text;
 
+    -- uniqueness definitions are supported
     unique OwnerName owner name;
+
+    -- entity-wide check functions can be added, too
+    check validFileItem;
 }
 
 entity ChangeRecord {
@@ -105,6 +109,7 @@ entity ChangeRecord {
     newValue Text;
     time     DateTime;
     version  Int64;
+
     -- a polymorphic relation which will be expanded to a number of fields
     -- pointing a each possible entity that is an instance of Versioned
     'entity' Maybe Versioned;
@@ -182,7 +187,8 @@ instance Validatable ChangeRecord where
 
 instance Validatable FileItem where 
     validate e = sequence [
-        checkResult "FileItem.name nonempty" (V.nonempty $ fileItemName e)
+        checkResult "FileItem.name nonempty" (V.nonempty $ fileItemName e),
+        checkResult "FileItem validFileItem" (V.validFileItem e)
         ]
 
 instance Validatable Note where 
@@ -192,11 +198,12 @@ instance Validatable Note where
 
 instance Validatable Person where 
     validate e = sequence [
-        checkResult "Person.timezone validTimeZone" (V.validTimeZone $ personTimezone e)
-        checkResult "Person.language validLanguage" (V.validLanguage $ personLanguage e)
+        checkResult "Person.timezone validTimezone" (V.validTimezone $ personTimezone e),
+        checkResult "Person.language validLanguage" (V.validLanguage $ personLanguage e),
         checkResult "Person.name nonempty" (V.nonempty $ personName e)
         ]
-```
+
+``
 
 #### Model/Classes.hs
 ```haskell
@@ -368,7 +375,7 @@ getPersonManyR = do
                         _ -> invalidArgs [fromJust filter]
                 else return []
         ]
-    let selectOpts = [
+    selectOpts <- [
         sortPersons
         ,
         do
