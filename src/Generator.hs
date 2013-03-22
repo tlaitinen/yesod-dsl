@@ -127,7 +127,7 @@ genFilters e params
         filters :: [String]
         filters = intercalate [","] $ mapMaybe mkFilter params ++ defaultFilter
         mkFilter :: ServiceParam -> Maybe [String]
-        mkFilter (ServiceFilter f) = Just $ [f]
+        mkFilter (ServiceFilter f) = Just $ ["H." ++ f]
         mkFilter _ = Nothing
         hasDefaultFilter = ServiceDefaultFilterSort `elem` params
         defaultFilter 
@@ -157,7 +157,7 @@ genSelectOpts e params
     | otherwise = ["selectOpts <- ["] ++ (indent $ opts ++ ["]"])
     where
         opts = intercalate [","] $ mapMaybe mkOpt params ++ defaultSort
-        mkOpt (ServiceSelectOpts f) = Just $ [f]
+        mkOpt (ServiceSelectOpts f) = Just $ ["H." ++ f]
         mkOpt _ = Nothing
         defaultSort 
             | ServiceDefaultFilterSort `elem` params = [genDefaultSelectOpts e]
@@ -250,7 +250,7 @@ genHandler db e = concatMap genService (entityServices e)
             | otherwise = [
                            "errors <- sequence [" 
                                  ++ (intercalate ", " 
-                                           [ f ++ extra | f <- fs ]) ++ "]",
+                                           [ "H." ++ f ++ extra | f <- fs ]) ++ "]",
                            "if null errors"]
                            ++ (indent $ ["then do"] ++ (indent lines))
                            ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
@@ -262,7 +262,7 @@ genHandler db e = concatMap genService (entityServices e)
             | null fs = []
             | otherwise = ["sequence_ ["
                                  ++ (intercalate ", "   
-                                            [ f ++ extra | f <- fs]) ++ "]"]
+                                            [ "H." ++ f ++ extra | f <- fs]) ++ "]"]
 
 genHandlers :: DbModule -> String
 genHandlers db = unlines $ ["module Handler.Generated where ",
@@ -273,7 +273,7 @@ genHandlers db = unlines $ ["module Handler.Generated where ",
                             "import Data.Aeson (json)",
                             "import Data.Maybe",
                             "import Data.Aeson.Types (emptyObject)",
-                            "import Handler.Hooks"]
+                            "import qualified Handler.Hooks as H"]
                            ++ concatMap (genHandler db) (dbEntities db)
         
 generateModels :: DbModule -> [(FilePath,String)]

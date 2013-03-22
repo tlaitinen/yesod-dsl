@@ -270,7 +270,7 @@ import Model.Json ()
 import Data.Aeson (json)
 import Data.Maybe
 import Data.Aeson.Types (emptyObject)
-import Handler.Hooks
+import qualified Handler.Hooks as H
 
 postNoteValidateR :: Handler RepJson
 postNoteValidateR = do
@@ -363,7 +363,7 @@ postPersonManyR = do
 getPersonManyR :: Handler RepJson
 getPersonManyR = do
     filters <- sequence [
-        filterPersons
+        H.filterPersons
         ,
         do
             filter <- lookupGetParam "filter"
@@ -376,7 +376,7 @@ getPersonManyR = do
                 else return []
         ]
     selectOpts <- [
-        sortPersons
+        H.sortPersons
         ,
         do
             sortParam <- lookupGetParam "sort"
@@ -389,16 +389,16 @@ getPersonManyR = do
                 else return []
         ]
     entities <- runDB $ selectList (concat filters) selectOpts
-    sequence_ [logPersonGet entities]
+    sequence_ [H.logPersonGet entities]
     jsonToRepJson $ object [ "entities" .= toJSON entities ] 
 
 getPersonR :: PersonId -> Handler RepJson
 getPersonR key = do
     entity <- runDB $ get key
-    errors <- sequence [personGetAllowed entity]
+    errors <- sequence [H.personGetAllowed entity]
     if null errors
         then do
-            sequence_ [logPersonGet key entity]
+            sequence_ [H.logPersonGet key entity]
             jsonToRepJson $ toJSON entity
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
 ```
