@@ -52,15 +52,21 @@ mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
 data Unique = Unique UniqueName [FieldName]
            deriving (Show)
+
+data ServiceType = GetService | PutService | PostService | DeleteService deriving (Show)
+data ServiceParam = PublicService deriving (Show)
+data Service = Service ServiceType [ServiceParam]  deriving (Show)
+
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
     entityImplements :: [IfaceName],
     entityFields     :: [Field],
     entityUniques    :: [Unique],
-    entityChecks     :: [FunctionName]
+    entityChecks     :: [FunctionName],
+    entityServices   :: [Service]
 } deriving (Show)
-
+            
 
 entityPath :: Entity -> String
 entityPath e = entityName e ++ " in " ++ show (entityLoc e)

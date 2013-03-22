@@ -167,19 +167,20 @@ genFieldChecker e f@(Field _ fname (NormalField _ opts))
         | null opts = Nothing
         | otherwise = Just $ join "," $ catMaybes (map maybeCheck opts)
         where
-            maybeCheck (FieldCheck func) = Just $ "if (not . V." ++ func 
-                ++ ") $ " ++ entityFieldName e f ++ " d then Just \"" ++ entityName e ++ "." ++ fname ++ " " ++ func ++ "\" else Nothing"
+            maybeCheck (FieldCheck func) = Just $ "checkResult \"" ++ entityName e ++ "." ++ fname ++ " " ++ func ++ "\" (V." ++ func ++ " $ " ++ entityFieldName e f ++ " e)"
             maybeCheck _ = Nothing
 genFieldChecker name _ = Nothing
 
 genEntityChecker :: Entity -> [String]
-genEntityChecker e = [ join "," $ [ "if (not . V." ++ func ++ ") d then Just \"" ++ 
-                        entityName e ++ " " ++ func ++ "\" else Nothing" ] 
-                       | func <- entityChecks e ]
+genEntityChecker e 
+    | (null . entityChecks) e = []
+    | otherwise = [ join "," $ [ "checkResult \"" ++ entityName e ++ " " ++ func ++ "\" (V." ++ func ++ " e)"
+                       | func <- entityChecks e ] ]
 genEntityValidate :: DbModule -> Entity -> [String]
 genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "]
-                       ++ (indent (["validate d = catMaybes ["]
-                           ++ (indent $ fieldChecks ++ genEntityChecker e
+                       ++ (indent (["validate e = sequence ["]
+                           ++ (indent $ 
+                                   fieldChecks ++ genEntityChecker e
                                  ++ ["]"]))) ++ [""]
               where fieldChecks = mapMaybe (genFieldChecker e) (entityFields e)
 
@@ -188,13 +189,18 @@ genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "
 genValidation :: DbModule -> String
 genValidation db = unlines $ [
     "{-# LANGUAGE OverloadedStrings #-}",
+    "{-# LANGUAGE ExistentialQuantification #-}",
     "module Model.Validation (Validatable(..)) where",
     "import Data.Text",
-    "import Data.Maybe",
     "import qualified Model.ValidationFunctions as V",
     "import Import",
+    "checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m Text",
+    "checkResult msg f = do",
+    "   result <- f",
+    "   return $ if result then \"\" else msg",
+    "",
     "class Validatable a where",
-    "    validate :: a -> [Text]"
+    "    validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]"
     ] ++ concatMap (genEntityValidate db) (dbEntities db)
                    
 ifaceFieldName :: Iface -> Field -> String

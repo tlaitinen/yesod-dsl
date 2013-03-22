@@ -29,11 +29,18 @@ tokens :-
     \) { mkT TRParen }
     \, { mkT TComma }
     \. { mkT TDot }
+    "get" { mkT TGet }
+    "put" { mkT TPut }
+    "post" { mkT TPost }
+    "delete" { mkT TDelete }
     "import" { mkT TImport }
     "entity" { mkT TEntity }
     "class" { mkT TIface  }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
+    "before" { mkT TBefore }
+    "after" { mkT TAfter }
+    "public" { mkT TPublic }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -91,6 +98,13 @@ data TokenType = TSemicolon
                | TZonedTime
                | TAsc
                | TDesc
+               | TGet
+               | TPut
+               | TPost
+               | TDelete
+               | TPublic
+               | TBefore
+               | TAfter
 	deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

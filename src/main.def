@@ -17,6 +17,13 @@ entity User2 : Named, Versioned {
     salt Text;
     language Text;
     timezone Text;
+
+    get { 
+        public;
+    };
+    post {};
+    delete {};
+    put {};
 }
 
 entity Note : Named, Versioned {

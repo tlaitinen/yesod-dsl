@@ -20,5 +20,5 @@ main = do
     syncFiles generated
     exists <- doesFileExist "Model/ValidationFunctions.hs"
     if not exists 
-        then do writeFile "Model/ValidationFunctions.hs" "module Model.ValidationFunctions where"
+        then do writeFile "Model/ValidationFunctions.hs" "module Model.ValidationFunctions where\nimport Import"
         else return ()

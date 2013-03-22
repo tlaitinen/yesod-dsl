@@ -48,7 +48,13 @@ import System.Exit
     datetime { Tk _ TDateTime }
     zonedtime { Tk _ TZonedTime }
     maybe { Tk _ TMaybe }
-
+    get { Tk _ TGet }
+    put { Tk _ TPut }
+    post { Tk _ TPost }
+    delete { Tk _ TDelete }
+    public { Tk _ TPublic }
+    before { Tk _ TBefore }
+    after { Tk _ TAfter }
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
@@ -67,8 +73,23 @@ entityDef : entity upperId maybeImplementations lbrace
             fields
             uniques
             checks
-            rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 }
+            services
+            rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 $8 }
 
+services : { [] }
+         | services servicedef semicolon { $2 : $1 }
+servicedef : get serviceParamsBlock { Service GetService $2 }
+         | put serviceParamsBlock { Service PutService $2 }
+         | post serviceParamsBlock { Service PostService $2 }
+         | delete serviceParamsBlock { Service DeleteService $2 }
+           
+serviceParamsBlock : lbrace serviceParams rbrace { $2 }
+
+serviceParams : { [] }
+              | serviceParams serviceParam semicolon { $2 : $1 }
+serviceParam : public { PublicService }
+              
+              
 maybeImplementations : { [] }
                      | colon implementations { $2 }
 
