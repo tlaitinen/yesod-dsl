@@ -1,8 +1,12 @@
 # yesod-generate-rest
 
 A domain specific language and a code generator desined to create RESTful
-services for managing a database with [Yesod web framework](http://www.yesodweb.com/)
+JSON-only web services for managing a database with [Yesod web framework](http://www.yesodweb.com/)
 and [Persistent](http://www.yesodweb.com/book/persistent).
+
+This code generator borrowes some code from
+[yesod-generate](http://github.com/maxcan/yesod-generate/). The original
+yesod-generate supports also non-JSON web services. 
 
 ## Features (parentheses if not yet implemented)
  * splitting database definitions into multiple files

@@ -69,7 +69,7 @@ genField :: DbModule -> Field -> String
 genField db field = fieldName field ++ " " ++ persistFieldType db field
 
 genModel :: DbModule -> Entity -> String
-genModel db entity = unlines $ [ entityName entity ] 
+genModel db entity = unlines $ [ entityName entity ++ " json"] 
                             ++ (indent $ (map (genField db) (entityFields entity))
                                       ++ (map genUnique (entityUniques entity)))
 
@@ -88,8 +88,9 @@ genHandler db e = unlines $ ["get" ++ handlerName e "Many" ++ " :: Handler RepJs
                              "get" ++ handlerName e "Many" ++ " = do"]
                            ++ (indent [
                                 "(Entity userKey user) <- requireAuth",
-                                "let filters = [] -- TODO",
-                                "entities <- runDB $ selectList filters",
+                                "let filters = [] :: [Filter " ++ entityName e ++ "]",
+                                "let selectOpts = [] -- TODO",
+                                "entities <- runDB $ selectList filters selectOpts",
                                 "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
                                    ])
                            ++ 
@@ -97,24 +98,24 @@ genHandler db e = unlines $ ["get" ++ handlerName e "Many" ++ " :: Handler RepJs
                                          ++ entityName e ++ "Id -> Handler RepJson",
                              "get" ++ handlerName e "" ++ " key = do"]
                              ++ (indent ["(Entity userKey user) <- requireAuth",
-                                         "entity <- get key",
+                                         "entity <- runDB $ get key",
                                          "jsonToRepJson $ toJSON entity"])
                            ++
                              ["","put" ++ handlerName e "" ++ " :: " 
                                      ++ entityName e ++ "Id -> Handler RepJson",
                               "put" ++ handlerName e "" ++ " key = do"]
                           ++ (indent ["(Entity userKey user) <- requireAuth",
-                                      "record <- parseJsonBody",
+                                      "record <- parseJsonBody_",
                                       "--TODO validation",
-                                      "repsert key record",
-                                      "jsonToRepJson $ object [ ]"])
+                                      "runDB $ repsert key record",
+                                      "jsonToRepJson $ emptyObject"])
                           ++
                              ["","post" ++ handlerName e "" ++ " :: Handler RepJson" ,
                               "post" ++ handlerName e "" ++ " = do"]
                           ++ (indent ["(Entity userKey user) <- requireAuth",
-                                      "record <- parseJsonBody",
+                                      "record <- parseJsonBody_",
                                       "--TODO validation",
-                                      "key <- insert record",
+                                      "key <- runDB $ insert (record :: " ++ entityName e ++ ")",
                                       "jsonToRepJson $ object [ \"id\" .= toJSON key ]"])
                           
                            ++ 
@@ -122,15 +123,18 @@ genHandler db e = unlines $ ["get" ++ handlerName e "Many" ++ " :: Handler RepJs
                                      ++ entityName e ++ "Id -> Handler RepJson",
                               "delete" ++ handlerName e "" ++ " key = do"]
                        ++ (indent ["(Entity userKey user) <- requireAuth",
-                                   "delete key",
-                                   "jsonToRepJson $ object [ ]"])
+                                   "runDB $ delete key",
+                                   "jsonToRepJson $ emptyObject"])
                             
                          
 
 genHandlers :: DbModule -> String
 genHandlers db = unlines $ ["module Handler.Rest where ",
                             "import Import",
-                            "import Model.Validation"]
+                            "import Yesod.Auth",
+                            "import Model.Validation",
+                            "import Model.Json",
+                            "import Data.Aeson.Types (emptyObject)"]
                            ++ map (genHandler db) (dbEntities db)
         
 generateModels :: DbModule -> [(FilePath,String)]
@@ -139,8 +143,25 @@ generateModels db =  [("config/generated-models", unlines $ map (genModel db) (d
                        unlines $ map (genRoutes db) (dbEntities db)),
                       ("Model/Validation.hs", genValidation db ),
                       ("Model/Classes.hs", genInterfaces db ),
+                      ("Model/Json.hs", genJson db),
                       ("Handler/Rest.hs", genHandlers db) ]
 
+genJson :: DbModule -> String
+genJson db = unlines $  ["{-# LANGUAGE FlexibleInstances #-}",
+                         "module Model.Json where",
+                         "import Import",
+                         "import Data.Aeson",
+                         "import qualified Data.HashMap.Lazy as HML"
+                         ] 
+                         ++ (concatMap genJsonInstance $ dbEntities db)
+    where genJsonInstance e = 
+            [
+            "instance ToJSON (Entity " ++ entityName e ++ ") where"]
+            ++ (indent $ [
+              "toJSON (Entity k v) = case toJSON v of"]
+              ++ (indent [
+                  "Object o -> Object $ HML.insert \"id\" (toJSON k) o",
+                  "_ -> error \"unexpected JS encode error\""]))
 genFieldChecker :: Entity -> Field -> Maybe String
 genFieldChecker e f@(Field _ fname (NormalField _ opts)) 
         | null opts = Nothing
@@ -186,7 +207,10 @@ entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 genInterfaces :: DbModule -> String
 genInterfaces db = unlines $ [
     "module Model.Classes where",
-    "import Import"
+    "import Import",
+    "import Data.Int",
+    "import Data.Word",
+    "import Data.Time"
     ] ++ concatMap genInterface (dbIfaces db)
     where
         genInterface i = [ "class " ++ ifaceName i ++ " a where" ]
