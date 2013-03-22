@@ -20,11 +20,14 @@ entity User2 : Named, Versioned {
 
     get { 
         public;
+        if allowed;
+        then logGet;
     }
     post {}
 
     delete {}
     put {}
+    validate  {}
 }
 
 entity Note : Named, Versioned {

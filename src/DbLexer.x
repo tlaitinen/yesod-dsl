@@ -32,14 +32,16 @@ tokens :-
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
+    "validate" { mkT TValidate }
+
     "delete" { mkT TDelete }
     "import" { mkT TImport }
     "entity" { mkT TEntity }
     "class" { mkT TIface  }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
-    "before" { mkT TBefore }
-    "after" { mkT TAfter }
+    "if" { mkT TIf }
+    "then" { mkT TThen }
     "public" { mkT TPublic }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
@@ -103,8 +105,9 @@ data TokenType = TSemicolon
                | TPost
                | TDelete
                | TPublic
-               | TBefore
-               | TAfter
+               | TIf
+               | TThen
+               | TValidate
 	deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

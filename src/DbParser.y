@@ -53,8 +53,9 @@ import System.Exit
     post { Tk _ TPost }
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
-    before { Tk _ TBefore }
-    after { Tk _ TAfter }
+    if { Tk _ TIf }
+    then { Tk _ TThen }
+    validate { Tk _ TValidate }
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
@@ -82,12 +83,15 @@ servicedef : get serviceParamsBlock { Service GetService $2 }
          | put serviceParamsBlock { Service PutService $2 }
          | post serviceParamsBlock { Service PostService $2 }
          | delete serviceParamsBlock { Service DeleteService $2 }
+         | validate serviceParamsBlock { Service ValidateService $2 }
            
 serviceParamsBlock : lbrace serviceParams rbrace { $2 }
 
 serviceParams : { [] }
               | serviceParams serviceParam semicolon { $2 : $1 }
 serviceParam : public { PublicService }
+             | if lowerId { ServiceCond $2 }
+             | then lowerId { ServicePostHook $2 }
               
               
 maybeImplementations : { [] }

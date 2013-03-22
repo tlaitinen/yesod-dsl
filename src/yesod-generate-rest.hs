@@ -10,6 +10,17 @@ import Data.List
 import Generator
 import SyncFiles
 import System.Directory
+import Control.Monad
+
+createFiles :: [(FilePath, String)] -> IO ()
+createFiles files = mapM_ createFile files
+    where createFile (path,contents) = do
+            exists <- doesFileExist path
+            if exists == False
+                then do
+                    putStrLn $ "Created " ++ path 
+                    writeFile path contents
+                else return ()
 
 main = do
     [ path ] <- getArgs
@@ -18,7 +29,7 @@ main = do
     let impl      = (checkServices . implementInterfaces) merged
     let generated = generateModels impl
     syncFiles generated
-    exists <- doesFileExist "Model/ValidationFunctions.hs"
-    if not exists 
-        then do writeFile "Model/ValidationFunctions.hs" "module Model.ValidationFunctions where\nimport Import"
-        else return ()
+    createFiles [("Model/ValidationFunctions.hs",
+                  "module Model.ValidationFunctions where\nimport Import"),
+                 ("Handler/Triggers.hs",
+                  "module Handler.Triggers where\nimport Import")]

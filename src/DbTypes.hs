@@ -53,8 +53,14 @@ mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 data Unique = Unique UniqueName [FieldName]
            deriving (Show)
 
-data ServiceType = GetService | PutService | PostService | DeleteService deriving (Show, Eq) 
-data ServiceParam = PublicService deriving (Show)
+data ServiceType = GetService 
+                 | PutService 
+                 | PostService 
+                 | DeleteService 
+                 | ValidateService  deriving (Show, Eq) 
+data ServiceParam = PublicService 
+                  | ServiceCond FunctionName 
+                  | ServicePostHook FunctionName  deriving (Show, Eq) 
 data Service = Service ServiceType [ServiceParam]  deriving (Show)
 
 data Entity = Entity {
