@@ -61,7 +61,7 @@ data ServiceType = GetService
 data ServiceParam = PublicService 
                   | ServiceDefaultFilterSort
                   | ServiceFilter FunctionName
-                  | ServiceSort FunctionName
+                  | ServiceSelectOpts FunctionName
                   | ServicePreHook FunctionName 
                   | ServicePostHook FunctionName  deriving (Show, Eq) 
                    

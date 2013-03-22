@@ -515,7 +515,7 @@ happyReduce_25 = happySpecReduce_2  14# happyReduction_25
 happyReduction_25 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	_
 	 =  HappyAbsSyn14
-		 (ServiceSort happy_var_2
+		 (ServiceSelectOpts happy_var_2
 	)
 happyReduction_25 _ _  = notHappyAtAll 
 
@@ -835,7 +835,7 @@ happyNewToken action sts stk (tk:tks) =
 	Tk _ TValidate -> cont 70#;
 	Tk _ TDefaultFilterSort -> cont 71#;
 	Tk _ TFilter -> cont 72#;
-	Tk _ TSort -> cont 73#;
+	Tk _ TSelectOpts -> cont 73#;
 	_ -> happyError' (tk:tks)
 	}
 

@@ -106,21 +106,32 @@ genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
         validateHandler
             | ValidateService `elem` services =  ["/validate/" ++ routeName e ++ " " ++ handlerName e "Validate" ++ " POST"]
             | otherwise = []
- 
+
+genDefaultFilter :: Entity -> [String]
+genDefaultFilter e = ["do"]
+                   ++ (indent $ [
+                  "filter <- lookupGetParam \"filter\"",
+                  "if isJust filter"]
+                 ++ (indent $ ["then do"]
+                      ++ (indent $ ["case json (fromJust filter) of"]
+                             ++ (indent $ ["(Object o) -> do"]
+                                   ++ (indent ["return []"])
+                                   ++ ["_ -> invalidArgs [fromJust filter]"]))
+                      ++ ["else return []"]))
 genFilters :: Entity -> [ServiceParam] -> [String]
 genFilters e params 
-    | null filters = ["let filters = [] :: Filter " ++ entityName e]
-    | otherwise = ["let filters = " ++ (intercalate " ++ " filters) ]
+    | null filters = ["let filters = [] :: [Filter " ++ entityName e ++ "]"]
+    | otherwise =  ["filters <- sequence ["] ++ (indent $ filters ++ ["]"])
                                 
     where
-        maybeUser 
-            | PublicService `elem` params = "Nothing"
-            | otherwise = "(Just user)"
-        filters = mapMaybe mkFilter params ++ defaultFilter
-        mkFilter (ServiceFilter f) = Just $ f ++ " " ++ maybeUser ++ " req"
+        filters :: [String]
+        filters = intercalate [","] $ mapMaybe mkFilter params ++ defaultFilter
+        mkFilter :: ServiceParam -> Maybe [String]
+        mkFilter (ServiceFilter f) = Just $ [f]
         mkFilter _ = Nothing
+        hasDefaultFilter = ServiceDefaultFilterSort `elem` params
         defaultFilter 
-            | ServiceDefaultFilterSort `elem` params = []
+            | ServiceDefaultFilterSort `elem` params = [genDefaultFilter e]
             | otherwise = []  
 
         
@@ -128,21 +139,28 @@ genFilters e params
 
     
     
+genDefaultSelectOpts :: Entity -> [String]
+genDefaultSelectOpts e = ["do"]
+                   ++ (indent $ [
+                  "sortParam <- lookupGetParam \"sort\"",
+                  "if isJust sortParam"]
+                 ++ (indent $ ["then do"]
+                      ++ (indent $ ["case json (fromJust sortParam) of"]
+                             ++ (indent $ ["(Object o) -> do"]
+                                   ++ (indent ["return []"])
+                                   ++ ["_ -> invalidArgs [fromJust sortParam]"]))
+                      ++ ["else return []"]))
 
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
     | null opts = ["let selectOpts = []"]
-    | otherwise = ["let selectOpts = " ++ (intercalate " ++ " opts) ]
-                                
+    | otherwise = ["let selectOpts = ["] ++ (indent $ opts ++ ["]"])
     where
-        maybeUser 
-            | PublicService `elem` params = "Nothing"
-            | otherwise = "(Just user)"
-        opts = mapMaybe mkOpt params ++ defaultSort
-        mkOpt (ServiceSort f) = Just $ f ++ " " ++ maybeUser ++ " req"
+        opts = intercalate [","] $ mapMaybe mkOpt params ++ defaultSort
+        mkOpt (ServiceSelectOpts f) = Just $ [f]
         mkOpt _ = Nothing
         defaultSort 
-            | ServiceDefaultFilterSort `elem` params = []
+            | ServiceDefaultFilterSort `elem` params = [genDefaultSelectOpts e]
             | otherwise = []  
 
 
@@ -153,11 +171,11 @@ genHandler db e = concatMap genService (entityServices e)
         genService (Service GetService params) =
                ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
                 "get" ++ handlerName e "Many" ++ " = do"]
-                ++ (indent $ ["req <- getRequest"] 
-                     ++ maybeRequireAuth params 
+                ++ (indent $ 
+                     maybeRequireAuth params 
                      ++ genFilters e params
                      ++ genSelectOpts e params
-                   ++ ["entities <- runDB $ selectList filters selectOpts"] 
+                   ++ ["entities <- runDB $ selectList (concat filters) selectOpts"] 
                    ++ (postHook " entities" params ++
                    [ "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
                                    ]))
@@ -165,7 +183,7 @@ genHandler db e = concatMap genService (entityServices e)
                              ["", "get" ++ handlerName e "" ++ " :: " 
                                          ++ entityName e ++ "Id -> Handler RepJson",
                              "get" ++ handlerName e "" ++ " key = do"]
-                             ++ (indent $ ["req <- getRequest"]  ++
+                             ++ (indent $ 
                                             maybeRequireAuth params ++ [
                                          "entity <- runDB $ get key"]
                                          ++ (cond " entity" params (
@@ -175,8 +193,8 @@ genHandler db e = concatMap genService (entityServices e)
                              ["","put" ++ handlerName e "" ++ " :: " 
                                      ++ entityName e ++ "Id -> Handler RepJson",
                               "put" ++ handlerName e "" ++ " key = do"]
-                          ++ (indent $ ["req <- getRequest",
-                                      "entity <- parseJsonBody_"]
+                          ++ (indent $ 
+                                      ["entity <- parseJsonBody_"]
                                      ++ 
                                       (maybeRequireAuth params) ++ 
                                        (cond " entity" params 
@@ -187,8 +205,8 @@ genHandler db e = concatMap genService (entityServices e)
         genService (Service PostService params) =                  
                              ["","post" ++ handlerName e "Many" ++ " :: Handler RepJson" ,
                               "post" ++ handlerName e "Many" ++ " = do"]
-                          ++ (indent $ ["req <- getRequest", 
-                                      "entity <- parseJsonBody_"]
+                          ++ (indent $ 
+                                      ["entity <- parseJsonBody_"]
                                       ++ (maybeRequireAuth params) ++
                                           (cond " entity" params 
                                       (validate $ [
@@ -197,8 +215,8 @@ genHandler db e = concatMap genService (entityServices e)
         genService (Service ValidateService params) =                  
                              ["","post" ++ handlerName e "Validate" ++ " :: Handler RepJson" ,
                               "post" ++ handlerName e "Validate" ++ " = do"]
-                          ++ (indent $ ["req <- getRequest", 
-                                      "entity <- parseJsonBody_"]
+                          ++ (indent $ 
+                                      ["entity <- parseJsonBody_"]
                                       ++ (maybeRequireAuth params) ++
                                           (cond " entity" params 
                                       (validate $ (postHook " entity" params) 
@@ -208,14 +226,14 @@ genHandler db e = concatMap genService (entityServices e)
                              ["","delete" ++ handlerName e "" ++ " :: "
                                      ++ entityName e ++ "Id -> Handler RepJson",
                               "delete" ++ handlerName e "" ++ " key = do"]
-                       ++ (indent $ ["req <- getRequest"] 
-                                 ++ (cond " key" params (maybeRequireAuth params ++ 
+                       ++ (indent $ 
+                                  (cond " key" params $ (maybeRequireAuth params ++ 
                                    ["runDB $ delete key"]
                                    ++ (postHook "" params) ++ [
                                    "jsonToRepJson $ emptyObject"])))
         maybeRequireAuth params
             | PublicService `elem` params = []
-            | otherwise = ["user <- requireAuth"]
+            | otherwise = ["_ <- requireAuthId"]
         validate lines = ["errors <- runDB $ validate entity",
                           "if null errors"]
                           ++ (indent $ ["then do"] ++ (indent lines))
@@ -223,9 +241,6 @@ genHandler db e = concatMap genService (entityServices e)
                           
         matchPreHook (ServicePreHook f) = Just f
         matchPreHook _ = Nothing
-        formatServiceTrigger extra params f
-            | PublicService `elem` params = f ++ " Nothing req" ++ extra
-            | otherwise = f ++ " (Just user) req" ++ extra
 
 
         condFunctions params = mapMaybe matchPreHook params
@@ -234,8 +249,8 @@ genHandler db e = concatMap genService (entityServices e)
             | null fs = lines
             | otherwise = [
                            "errors <- sequence [" 
-                                 ++ (intercalate "," $ 
-                                  map (formatServiceTrigger extra params) fs )++ "]",
+                                 ++ (intercalate ", " 
+                                           [ f ++ extra | f <- fs ]) ++ "]",
                            "if null errors"]
                            ++ (indent $ ["then do"] ++ (indent lines))
                            ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
@@ -245,9 +260,9 @@ genHandler db e = concatMap genService (entityServices e)
         postHook extra params = postHook' extra params (postHookFunctions params) 
         postHook' extra params fs 
             | null fs = []
-            | otherwise = ["sequence_ [" 
-                                 ++ (intercalate "," $ 
-                                  map (formatServiceTrigger extra params) fs )++ "]"]
+            | otherwise = ["sequence_ ["
+                                 ++ (intercalate ", "   
+                                            [ f ++ extra | f <- fs]) ++ "]"]
 
 genHandlers :: DbModule -> String
 genHandlers db = unlines $ ["module Handler.Generated where ",
@@ -255,6 +270,8 @@ genHandlers db = unlines $ ["module Handler.Generated where ",
                             "import Yesod.Auth",
                             "import Model.Validation",
                             "import Model.Json ()",
+                            "import Data.Aeson (json)",
+                            "import Data.Maybe",
                             "import Data.Aeson.Types (emptyObject)",
                             "import Handler.Hooks"]
                            ++ concatMap (genHandler db) (dbEntities db)

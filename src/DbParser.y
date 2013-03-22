@@ -58,11 +58,11 @@ import System.Exit
     validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     filter { Tk _ TFilter }
-    sort {  Tk _ TSort }
+    selectopts {  Tk _ TSelectOpts }
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
-                                        (getIfaces $2)}
+                                        (getClasses $2)}
 
 imports : { [] }
         | imports importStmt { $2 : $1 }
@@ -71,7 +71,7 @@ importStmt : import stringval semicolon { $2 }
 dbDefs : {- empty -}   { [] }
        | dbDefs dbDef  { $2 : $1 }
 dbDef : entityDef      { EntityDef $1 } 
-      | ifaceDef      { IfaceDef $1 }
+      | ifaceDef      { ClassDef $1 }
 
 entityDef : entity upperId maybeImplementations lbrace 
             fields
@@ -97,7 +97,7 @@ serviceParam : public { PublicService }
              | posthook lowerId { ServicePostHook $2 }
              | defaultfiltersort { ServiceDefaultFilterSort }
              | filter lowerId { ServiceFilter $2 }
-             | sort lowerId { ServiceSort $2 }
+             | selectopts lowerId { ServiceSelectOpts $2 }
              
               
               
@@ -109,7 +109,7 @@ implementations : upperId { [$1] }
 
 ifaceDef : iface upperId lbrace
              fields
-            rbrace { Iface (mkLoc $1) $2 $4  }
+            rbrace { Class (mkLoc $1) $2 $4  }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }

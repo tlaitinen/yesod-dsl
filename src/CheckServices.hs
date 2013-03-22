@@ -15,7 +15,7 @@ checkServices db
                     "    " ++ show t1 ++ " defined more than once in " ++ show (entityLoc e)
           invalidParam t (ServiceDefaultFilterSort) = t /= GetService
           invalidParam t (ServiceFilter _) = t /= GetService
-          invalidParam t (ServiceSort _) = t /= GetService
+          invalidParam t (ServiceSelectOpts _) = t /= GetService
           invalidParam _ _ = False
                 
           invalidParams = [ (e,t,p) | e <- dbEntities db,

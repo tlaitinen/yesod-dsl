@@ -229,7 +229,7 @@ data TokenType = TSemicolon
                | TValidate
                | TDefaultFilterSort
                | TFilter
-               | TSort
+               | TSelectOpts
         deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)
@@ -290,7 +290,7 @@ alex_action_37 =  mkT TDateTime
 alex_action_38 =  mkT TZonedTime 
 alex_action_39 =  mkT TDefaultFilterSort 
 alex_action_40 =  mkT TFilter 
-alex_action_41 =  mkT TSort 
+alex_action_41 =  mkT TSelectOpts 
 alex_action_42 =  mkTvar (TInt . read) 
 alex_action_43 =  mkTvar (TFloat . read) 
 alex_action_44 =  mkTvar TLowerId  
