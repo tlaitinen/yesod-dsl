@@ -120,8 +120,7 @@ entity ChangeRecord {
 
     $ yesod-generate-rest main.def
 
-At the moment, the code generator writes config/models, config/routes, Model/Json.hs, Model/Validation.hs, Model/Classes.hs, and Handler/Generated.hs have the following contents.
-
+At the moment, the code generator synchronizes the definitions to the files config/models, config/routes, Model/Json.hs, Model/Validation.hs, Model/Classes.hs, and Handler/Generated.hs .
 
 #### config/models
 ```
@@ -166,7 +165,7 @@ Person json
     name Text 
 ```
 
-#### Model/routes
+#### config/routes
 ```
 /static StaticR Static getStatic
 /auth   AuthR   Auth   getAuth
