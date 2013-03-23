@@ -120,7 +120,7 @@ genDefaultFilter e = ["do"]
                       ++ ["else return []"]))
 genFilters :: Entity -> [ServiceParam] -> [String]
 genFilters e params 
-    | null filters = ["let filters = [] :: [Filter " ++ entityName e ++ "]"]
+    | null filters = ["let filters = [] :: [[Filter " ++ entityName e ++ "]]"]
     | otherwise =  ["filters <- sequence ["] ++ (indent $ filters ++ ["]"])
                                 
     where
@@ -153,8 +153,8 @@ genDefaultSelectOpts e = ["do"]
 
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
-    | null opts = ["let selectOpts = []"]
-    | otherwise = ["selectOpts <- ["] ++ (indent $ opts ++ ["]"])
+    | null opts = ["let selectOpts = [] :: [[SelectOpt " ++ entityName e ++ "]]"]
+    | otherwise = ["selectOpts <- sequence ["] ++ (indent $ opts ++ ["]"])
     where
         opts = intercalate [","] $ mapMaybe mkOpt params ++ defaultSort
         mkOpt (ServiceSelectOpts f) = Just $ ["H." ++ f]
@@ -175,7 +175,7 @@ genHandler db e = concatMap genService (entityServices e)
                      maybeRequireAuth params 
                      ++ genFilters e params
                      ++ genSelectOpts e params
-                   ++ ["entities <- runDB $ selectList (concat filters) selectOpts"] 
+                   ++ ["entities <- runDB $ selectList (concat filters) (concat selectOpts)"] 
                    ++ (postHook " entities" params ++
                    [ "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
                                    ]))
@@ -197,8 +197,8 @@ genHandler db e = concatMap genService (entityServices e)
                                       ["entity <- parseJsonBody_"]
                                      ++ 
                                       (maybeRequireAuth params) ++ 
-                                       (cond " entity" params 
-                                        (validate [
+                                       (cond " entity" params $
+                                        (validate e $ [
                                       "runDB $ repsert key entity"]
                                       ++ postHook " key entity" params ++ [
                                       "jsonToRepJson $ emptyObject"])))
@@ -209,17 +209,17 @@ genHandler db e = concatMap genService (entityServices e)
                                       ["entity <- parseJsonBody_"]
                                       ++ (maybeRequireAuth params) ++
                                           (cond " entity" params 
-                                      (validate $ [
+                                      (validate e $ [
                                       "key <- runDB $ insert (entity :: " ++ entityName e ++ ")"] ++ (postHook " key entity" params) ++ [
                                       "jsonToRepJson $ object [ \"id\" .= toJSON key ]"])))
         genService (Service ValidateService params) =                  
                              ["","post" ++ handlerName e "Validate" ++ " :: Handler RepJson" ,
                               "post" ++ handlerName e "Validate" ++ " = do"]
                           ++ (indent $ 
-                                      ["entity <- parseJsonBody_"]
+                                      ["entity <- parseJsonBody_ "]
                                       ++ (maybeRequireAuth params) ++
                                           (cond " entity" params 
-                                      (validate $ (postHook " entity" params) 
+                                      (validate e $ (postHook " entity" params) 
                                        ++ ["jsonToRepJson $ emptyObject"])))
  
         genService (Service DeleteService params) =                  
@@ -234,7 +234,8 @@ genHandler db e = concatMap genService (entityServices e)
         maybeRequireAuth params
             | PublicService `elem` params = []
             | otherwise = ["_ <- requireAuthId"]
-        validate lines = ["errors <- runDB $ validate entity",
+        validate e lines = ["errors <- runDB $ validate (entity :: " 
+                             ++ entityName e ++ ")",
                           "if null errors"]
                           ++ (indent $ ["then do"] ++ (indent lines))
                           ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
