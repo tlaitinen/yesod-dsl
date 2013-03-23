@@ -94,7 +94,7 @@ genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
             | otherwise = "" 
         manyHandler 
             | GetService `elem` services || PostService `elem` services
-             =  ["/" ++ routeName e ++ " " ++ handlerName e "Many" ++ getService ++ postService]
+             =  ["/data/" ++ routeName e ++ " " ++ handlerName e "Many" ++ getService ++ postService]
             | otherwise =  []
         oneServices = getService ++ putService ++ deleteService
         oneHandler
