@@ -277,14 +277,14 @@ genHandlers db = unlines $ ["module Handler.Generated where ",
                             "import qualified Handler.Hooks as H"]
                            ++ concatMap (genHandler db) (dbEntities db)
         
-generateModels :: DbModule -> [(FilePath,String)]
-generateModels db =  [("config/generated-models", unlines $ map (genModel db) (dbEntities db)),
-                      ("config/generated-routes", 
-                       unlines $ concatMap (genRoutes db) (dbEntities db)),
-                      ("Model/Validation.hs", genValidation db ),
-                      ("Model/Classes.hs", genInterfaces db ),
-                      ("Model/Json.hs", genJson db),
-                      ("Handler/Generated.hs", genHandlers db) ]
+generateModels :: DbModule -> [(FilePath,String,Bool)]
+generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db), True),
+                      ("config/routes", 
+                       unlines $ concatMap (genRoutes db) (dbEntities db), True),
+                      ("Model/Validation.hs", genValidation db, False ),
+                      ("Model/Classes.hs", genInterfaces db, False ),
+                      ("Model/Json.hs", genJson db, False),
+                      ("Handler/Generated.hs", genHandlers db, False) ]
 
 genJson :: DbModule -> String
 genJson db = unlines $  ["{-# LANGUAGE FlexibleInstances #-}",
