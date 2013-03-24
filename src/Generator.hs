@@ -111,13 +111,7 @@ genDefaultFilter :: Entity -> [String]
 genDefaultFilter e = ["do"]
                    ++ (indent $ [
                   "filter <- lookupGetParam \"filter\"",
-                  "if isJust filter"]
-                 ++ (indent $ ["then do"]
-                      ++ (indent $ ["case json (fromJust filter) of"]
-                             ++ (indent $ ["(Object o) -> do"]
-                                   ++ (indent ["return [] -- TODO: filter with o"])
-                                   ++ ["_ -> invalidArgs [fromJust filter]"]))
-                      ++ ["else return []"]))
+                  "return []"])
 genFilters :: Entity -> [ServiceParam] -> [String]
 genFilters e params 
     | null filters = ["let filters = [] :: [[Filter " ++ entityName e ++ "]]"]
@@ -143,13 +137,14 @@ genDefaultSelectOpts :: Entity -> [String]
 genDefaultSelectOpts e = ["do"]
                    ++ (indent $ [
                   "sortParam <- lookupGetParam \"sort\"",
+                  "rangeOpts <- getRangeSelectOpts",
                   "if isJust sortParam"]
                  ++ (indent $ ["then do"]
                       ++ (indent $ ["case json (fromJust sortParam) of"]
                              ++ (indent $ ["(Object o) -> do"]
-                                   ++ (indent ["return [] -- TODO: sort with o"])
+                                   ++ (indent ["return rangeOpts -- TODO: sort with o"])
                                    ++ ["_ -> invalidArgs [fromJust sortParam]"]))
-                      ++ ["else return []"]))
+                      ++ ["else return rangeOpts"]))
 
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
@@ -163,90 +158,129 @@ genSelectOpts e params
             | ServiceDefaultFilterSort `elem` params = [genDefaultSelectOpts e]
             | otherwise = []  
 
+filterJsonName :: String
+filterJsonName = "FilterJsonMsg"
+
+filterJsonPrefix :: String
+filterJsonPrefix = "filterJsonMsg_"
+
+sortJsonName :: String
+sortJsonName = "SortJsonMsg"
+
+sortJsonPrefix :: String
+sortJsonPrefix = "sortJsonMsg_"
+
+genFilterSortJson ::  [String]
+genFilterSortJson = ["data FilterJsonMsg = FilterJsonMsg {"]
+                     ++ (commas $ indent [
+                         fprefix ++ "type :: Text",
+                         fprefix ++ "value :: Text",
+                         fprefix ++ "field :: Text"     
+                           ]) 
+                     ++ ["}",
+                        "$(deriveJSON (drop " ++ (show . length $ fprefix)
+                         ++ ") ''" ++ fname ++ ")",
+                        "data SortDirectionJsonMsg = ASC | DESC",
+                        "$(deriveJSON id ''SortDirectionJsonMsg)",
+                         "data " ++ sname ++ " = " ++ sname ++ " {"]
+                     ++ (commas $ indent [
+                         sprefix ++ "property :: Text",
+                         sprefix ++ "direction :: SortDirectionJsonMsg"
+                             ])
+                     ++ ["}",
+                      "$(deriveJSON (drop " ++ (show . length $ sprefix)
+                         ++ ") ''" ++ sname ++ ")"]
+    where fname = filterJsonName
+          fprefix = filterJsonPrefix
+          sname = sortJsonName
+          sprefix = sortJsonPrefix
+          
+
+genService :: DbModule -> Entity -> Service -> [String]
+genService db e (Service GetService params) =
+       ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
+        "get" ++ handlerName e "Many" ++ " = do"]
+        ++ (indent $ 
+             maybeRequireAuth params 
+             ++ genFilters e params
+             ++ genSelectOpts e params
+           ++ ["entities <- runDB $ selectList (concat filters) (concat selectOpts)"] 
+           ++ (postHooks " entities" params ++
+           [ "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
+                           ]))
+        ++ 
+                     ["", "get" ++ handlerName e "" ++ " :: " 
+                                 ++ entityName e ++ "Id -> Handler RepJson",
+                     "get" ++ handlerName e "" ++ " key = do"]
+                     ++ (indent $ 
+                                    maybeRequireAuth params ++ [
+                                 "entity <- runDB $ get key"]
+                                 ++ (preHooks " entity" params (
+                                     postHooks " key entity" params ++ [
+                                 "jsonToRepJson $ toJSON entity"])))
+genService db e (Service PutService params) =                             
+                     ["","put" ++ handlerName e "" ++ " :: " 
+                             ++ entityName e ++ "Id -> Handler RepJson",
+                      "put" ++ handlerName e "" ++ " key = do"]
+                  ++ (indent $ 
+                              ["entity <- parseJsonBody_"]
+                             ++ 
+                              (maybeRequireAuth params) ++ 
+                               (preHooks " entity" params $
+                                (validate e $ [
+                              "runDB $ repsert key entity"]
+                              ++ postHooks " key entity" params ++ [
+                              "jsonToRepJson $ emptyObject"])))
+genService db e (Service PostService params) =                  
+                     ["","post" ++ handlerName e "Many" ++ " :: Handler RepJson" ,
+                      "post" ++ handlerName e "Many" ++ " = do"]
+                  ++ (indent $ 
+                              ["entity <- parseJsonBody_"]
+                              ++ (maybeRequireAuth params) ++
+                                  (preHooks " entity" params 
+                              (validate e $ [
+                              "key <- runDB $ insert (entity :: " ++ entityName e ++ ")"] ++ (postHooks " key entity" params) ++ [
+                              "jsonToRepJson $ object [ \"id\" .= toJSON key ]"])))
+genService db e (Service ValidateService params) =                  
+                     ["","post" ++ handlerName e "Validate" ++ " :: Handler RepJson" ,
+                      "post" ++ handlerName e "Validate" ++ " = do"]
+                  ++ (indent $ 
+                              ["entity <- parseJsonBody_ "]
+                              ++ (maybeRequireAuth params) ++
+                                  (preHooks " entity" params 
+                              (validate e $ (postHooks " entity" params) 
+                               ++ ["jsonToRepJson $ emptyObject"])))
+
+genService db e (Service DeleteService params) =                  
+                     ["","delete" ++ handlerName e "" ++ " :: "
+                             ++ entityName e ++ "Id -> Handler RepJson",
+                      "delete" ++ handlerName e "" ++ " key = do"]
+               ++ (indent $ 
+                          (preHooks " key" params $ (maybeRequireAuth params ++ 
+                           ["runDB $ delete key"]
+                           ++ (postHooks "" params) ++ [
+                           "jsonToRepJson $ emptyObject"])))
+
+maybeRequireAuth :: [ServiceParam] -> [String]               
+maybeRequireAuth params
+    | PublicService `elem` params = []
+    | otherwise = ["_ <- requireAuthId"]
 
 
-genHandler :: DbModule -> Entity -> [String]
-genHandler db e = concatMap genService (entityServices e)
-    where 
-        genService (Service GetService params) =
-               ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
-                "get" ++ handlerName e "Many" ++ " = do"]
-                ++ (indent $ 
-                     maybeRequireAuth params 
-                     ++ genFilters e params
-                     ++ genSelectOpts e params
-                   ++ ["entities <- runDB $ selectList (concat filters) (concat selectOpts)"] 
-                   ++ (postHook " entities" params ++
-                   [ "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
-                                   ]))
-                ++ 
-                             ["", "get" ++ handlerName e "" ++ " :: " 
-                                         ++ entityName e ++ "Id -> Handler RepJson",
-                             "get" ++ handlerName e "" ++ " key = do"]
-                             ++ (indent $ 
-                                            maybeRequireAuth params ++ [
-                                         "entity <- runDB $ get key"]
-                                         ++ (cond " entity" params (
-                                             postHook " key entity" params ++ [
-                                         "jsonToRepJson $ toJSON entity"])))
-        genService (Service PutService params) =                             
-                             ["","put" ++ handlerName e "" ++ " :: " 
-                                     ++ entityName e ++ "Id -> Handler RepJson",
-                              "put" ++ handlerName e "" ++ " key = do"]
-                          ++ (indent $ 
-                                      ["entity <- parseJsonBody_"]
-                                     ++ 
-                                      (maybeRequireAuth params) ++ 
-                                       (cond " entity" params $
-                                        (validate e $ [
-                                      "runDB $ repsert key entity"]
-                                      ++ postHook " key entity" params ++ [
-                                      "jsonToRepJson $ emptyObject"])))
-        genService (Service PostService params) =                  
-                             ["","post" ++ handlerName e "Many" ++ " :: Handler RepJson" ,
-                              "post" ++ handlerName e "Many" ++ " = do"]
-                          ++ (indent $ 
-                                      ["entity <- parseJsonBody_"]
-                                      ++ (maybeRequireAuth params) ++
-                                          (cond " entity" params 
-                                      (validate e $ [
-                                      "key <- runDB $ insert (entity :: " ++ entityName e ++ ")"] ++ (postHook " key entity" params) ++ [
-                                      "jsonToRepJson $ object [ \"id\" .= toJSON key ]"])))
-        genService (Service ValidateService params) =                  
-                             ["","post" ++ handlerName e "Validate" ++ " :: Handler RepJson" ,
-                              "post" ++ handlerName e "Validate" ++ " = do"]
-                          ++ (indent $ 
-                                      ["entity <- parseJsonBody_ "]
-                                      ++ (maybeRequireAuth params) ++
-                                          (cond " entity" params 
-                                      (validate e $ (postHook " entity" params) 
-                                       ++ ["jsonToRepJson $ emptyObject"])))
- 
-        genService (Service DeleteService params) =                  
-                             ["","delete" ++ handlerName e "" ++ " :: "
-                                     ++ entityName e ++ "Id -> Handler RepJson",
-                              "delete" ++ handlerName e "" ++ " key = do"]
-                       ++ (indent $ 
-                                  (cond " key" params $ (maybeRequireAuth params ++ 
-                                   ["runDB $ delete key"]
-                                   ++ (postHook "" params) ++ [
-                                   "jsonToRepJson $ emptyObject"])))
-        maybeRequireAuth params
-            | PublicService `elem` params = []
-            | otherwise = ["_ <- requireAuthId"]
-        validate e lines = ["errors <- runDB $ validate (entity :: " 
-                             ++ entityName e ++ ")",
-                          "if null errors"]
-                          ++ (indent $ ["then do"] ++ (indent lines))
-                          ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
-                          
+validate :: Entity -> [String] -> [String]    
+validate e lines = ["errors <- runDB $ validate (entity :: " 
+                     ++ entityName e ++ ")",
+                  "if null errors"]
+                  ++ (indent $ ["then do"] ++ (indent lines))
+                  ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
+        
+
+preHooks :: String -> [ServiceParam] -> [String] -> [String]
+preHooks extra params lines = preHooks' (mapMaybe matchPreHook params) lines
+    where
         matchPreHook (ServicePreHook f) = Just f
         matchPreHook _ = Nothing
-
-
-        condFunctions params = mapMaybe matchPreHook params
-        cond extra params lines = cond' extra params (condFunctions params) lines
-        cond' extra params fs lines 
+        preHooks' fs lines 
             | null fs = lines
             | otherwise = [
                            "errors <- sequence [" 
@@ -255,27 +289,66 @@ genHandler db e = concatMap genService (entityServices e)
                            "if null errors"]
                            ++ (indent $ ["then do"] ++ (indent lines))
                            ++ (indent $ ["else jsonToRepJson $ object [ \"errors\" .= toJSON errors ]"])
+
+postHooks :: String -> [ServiceParam] -> [String]
+postHooks extra params = postHooks' (mapMaybe matchPostHook params)
+    where
         matchPostHook (ServicePostHook f) = Just f
         matchPostHook _ = Nothing        
-        postHookFunctions params = mapMaybe matchPostHook params
-        postHook extra params = postHook' extra params (postHookFunctions params) 
-        postHook' extra params fs 
+        postHooks'  fs 
             | null fs = []
             | otherwise = ["sequence_ ["
                                  ++ (intercalate ", "   
-                                            [ "H." ++ f ++ extra | f <- fs]) ++ "]"]
+                                        [ "H." ++ f ++ extra | f <- fs]) ++ "]"]
 
 genHandlers :: DbModule -> String
-genHandlers db = unlines $ ["module Handler.Generated where ",
-                            "import Import",
-                            "import Yesod.Auth",
-                            "import Model.Validation",
-                            "import Model.Json ()",
-                            "import Data.Aeson (json)",
-                            "import Data.Maybe",
-                            "import Data.Aeson.Types (emptyObject)",
-                            "import qualified Handler.Hooks as H"]
-                           ++ concatMap (genHandler db) (dbEntities db)
+genHandlers db = unlines $ 
+    ["{-# LANGUAGE RankNTypes #-}",
+    "module Handler.Generated ("]
+    ++ commas (indent (concatMap serviceNames $ dbEntities db))
+    ++ [") where ",
+    "import Import",
+    "import Yesod.Auth",
+    "import Model.Validation",
+    "import Model.Json ()",
+    "import Data.Aeson (json)",
+    "import Data.Aeson.TH",
+    "import Data.Maybe",
+    "import qualified Data.Text.Read",
+    "import Data.Aeson.Types (emptyObject)",
+    "import qualified Handler.Hooks as H",
+    ""]
+    ++ genFilterSortJson
+    ++ ["getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]",
+
+    "getRangeSelectOpts = do"]
+    ++ (indent $ ["start <- lookupGetParam \"start\"",
+                "limit <- lookupGetParam \"limit\"",
+                "return $ mkOpts (parseInt start) (parseInt limit)"
+            ]
+    ++ (indent $ ["where"] ++ 
+        (indent ["parseInt (Just s) = case (Data.Text.Read.decimal s) of",
+                 "  Right (x,_) -> Just x",
+                 "  _ -> Nothing",
+                 "parseInt _ = Nothing",
+                 "mkOpts (Just s) (Just l) = [ OffsetBy s, LimitTo l ]",
+                 "mkOpts _ _ = []"])))
+   ++ concatMap (genHandler db) (dbEntities db)
+    where
+        genHandler db e = concatMap (genService db e) (entityServices e)
+        serviceNames e = concatMap (serviceName e) (entityServices e)
+        serviceName e (Service GetService _) = ["get" ++ entityName e
+                                                ++ "ManyR",
+                                                "get" ++ entityName e ++ "R"]
+        serviceName e (Service PutService _) = ["put" ++ entityName e ++ "R"]
+        serviceName e (Service PostService _) = ["post" ++ entityName e 
+                                                 ++ "ManyR"]
+        serviceName e (Service DeleteService _) = ["delete"++ entityName e++"R"]
+        serviceName e (Service ValidateService _) = ["post" ++ entityName e
+                                                  ++ "ValidateR" ] 
+
+
+
         
 generateModels :: DbModule -> [(FilePath,String,Bool)]
 generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db), True),
