@@ -110,8 +110,10 @@ genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
 genDefaultFilter :: Entity -> [String]
 genDefaultFilter e = ["do"]
                    ++ (indent $ [
-                  "filter <- lookupGetParam \"filter\"",
-                  "return []"])
+                  "f <- lookupGetParam \"filter\"",
+                  "let f' = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) f) :: Maybe [FilterJsonMsg]",
+                  "return $ maybe [] (mapMaybe toDefaultFilter" ++ entityName e 
+                        ++ ") f'"]) 
 genFilters :: Entity -> [ServiceParam] -> [String]
 genFilters e params 
     | null filters = ["let filters = [] :: [[Filter " ++ entityName e ++ "]]"]
@@ -128,9 +130,6 @@ genFilters e params
             | ServiceDefaultFilterSort `elem` params = [genDefaultFilter e]
             | otherwise = []  
 
-        
-            
-
     
     
 genDefaultSelectOpts :: Entity -> [String]
@@ -138,13 +137,7 @@ genDefaultSelectOpts e = ["do"]
                    ++ (indent $ [
                   "sortParam <- lookupGetParam \"sort\"",
                   "rangeOpts <- getRangeSelectOpts",
-                  "if isJust sortParam"]
-                 ++ (indent $ ["then do"]
-                      ++ (indent $ ["case json (fromJust sortParam) of"]
-                             ++ (indent $ ["(Object o) -> do"]
-                                   ++ (indent ["return rangeOpts -- TODO: sort with o"])
-                                   ++ ["_ -> invalidArgs [fromJust sortParam]"]))
-                      ++ ["else return rangeOpts"]))
+                  "return rangeOpts"])
 
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
@@ -175,29 +168,66 @@ genFilterSortJson = ["data FilterJsonMsg = FilterJsonMsg {"]
                      ++ (commas $ indent [
                          fprefix ++ "type :: Text",
                          fprefix ++ "value :: Text",
-                         fprefix ++ "field :: Text"     
+                         fprefix ++ "field :: Text",
+                         fprefix ++ "comparison :: Text"    
                            ]) 
                      ++ ["}",
-                        "$(deriveJSON (drop " ++ (show . length $ fprefix)
-                         ++ ") ''" ++ fname ++ ")",
-                        "data SortDirectionJsonMsg = ASC | DESC",
-                        "$(deriveJSON id ''SortDirectionJsonMsg)",
-                         "data " ++ sname ++ " = " ++ sname ++ " {"]
+                     "instance FromJSON FilterJsonMsg where",
+                     "     parseJSON (Object v) = FilterJsonMsg <$>",
+                     "           v .: \"type\" <*>",
+                     "           v .: \"value\" <*>",
+                     "           v .: \"field\" <*>",
+                     "           v .:? \"comparison\" .!= \"eq\"",
+                    "data SortDirectionJsonMsg = ASC | DESC",
+                    "$(deriveJSON id ''SortDirectionJsonMsg)",
+                     "data " ++ sname ++ " = " ++ sname ++ " {"]
                      ++ (commas $ indent [
                          sprefix ++ "property :: Text",
                          sprefix ++ "direction :: SortDirectionJsonMsg"
                              ])
                      ++ ["}",
                       "$(deriveJSON (drop " ++ (show . length $ sprefix)
-                         ++ ") ''" ++ sname ++ ")"]
+                         ++ ") ''" ++ sname ++ ")",
+                        "defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v",
+                        "defaultFilterOp \"eq\" = (==.)",
+                        "defaultFilterOp \"neq\" = (!=.)",
+                        "defaultFilterOp \"lt\" = (<.)",
+                        "defaultFilterOp \"gt\" = (>.)",
+                        "defaultFilterOp \"le\" = (<=.)",
+                        "defaultFilterOp \"ge\" = (>=.)",
+                        "defaultFilterOp _ = (==.)",
+                        "parseValue :: Read a => Text -> Maybe a",
+                        "parseValue s = case (reads $ T.unpack s) of",
+                        "   [(v,_)] -> Just v",
+                        "   _ -> Nothing"]
     where fname = filterJsonName
           fprefix = filterJsonPrefix
           sname = sortJsonName
           sprefix = sortJsonPrefix
-          
+
+fieldFilterName :: Entity -> Field -> String
+fieldFilterName e f = upperFirst $ entityFieldName e f 
+
+filterField :: Entity -> Field -> String        
+filterField e f@(Field optional name _) =
+    "\"" ++ fieldName f ++ "\" -> case (parseValue $ " ++ filterJsonPrefix ++ "value f) of (Just v) -> Just $ defaultFilterOp " 
+    ++ " ("
+    ++ filterJsonPrefix ++ "comparison f) "
+    ++ fieldFilterName e f  
+              ++ (if optional then " (Just v)" else " v") ++ " ; _ -> Nothing"
+    
+genDefaultFilterSort :: Entity -> [String]
+genDefaultFilterSort e =
+    [fname ++ " :: FilterJsonMsg -> Maybe (Filter " ++ entityName e ++ ")",
+     fname ++ " f = case (" ++ filterJsonPrefix ++ "field f) of"]
+    ++ (indent $ map (filterField e) (entityFields e)
+                ++ ["_ -> Nothing"])
+
+    where fname = "toDefaultFilter" ++ entityName e
 
 genService :: DbModule -> Entity -> Service -> [String]
 genService db e (Service GetService params) =
+    maybeDefaultFilterSort ++ 
        ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
         "get" ++ handlerName e "Many" ++ " = do"]
         ++ (indent $ 
@@ -218,6 +248,9 @@ genService db e (Service GetService params) =
                                  ++ (preHooks " entity" params (
                                      postHooks " key entity" params ++ [
                                  "jsonToRepJson $ toJSON entity"])))
+    where maybeDefaultFilterSort
+                | ServiceDefaultFilterSort `elem` params = genDefaultFilterSort e
+                | otherwise = []
 genService db e (Service PutService params) =                             
                      ["","put" ++ handlerName e "" ++ " :: " 
                              ++ entityName e ++ "Id -> Handler RepJson",
@@ -311,12 +344,15 @@ genHandlers db = unlines $
     "import Yesod.Auth",
     "import Model.Validation",
     "import Model.Json ()",
-    "import Data.Aeson (json)",
+    "import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)",
     "import Data.Aeson.TH",
+    "import Data.Text.Encoding (encodeUtf8)",
+    "import qualified Data.ByteString.Lazy as LBS",
     "import Data.Maybe",
     "import qualified Data.Text.Read",
     "import Data.Aeson.Types (emptyObject)",
     "import qualified Handler.Hooks as H",
+    "import qualified Data.Text as T",
     ""]
     ++ genFilterSortJson
     ++ ["getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]",
