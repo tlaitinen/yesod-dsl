@@ -8,14 +8,14 @@ This code generator borrowes some code from
 [yesod-generate](http://github.com/maxcan/yesod-generate/). The original
 yesod-generate supports also non-JSON web services. 
 
-## Features (parentheses if not yet implemented)
+## Features
  * splitting database definitions into multiple files
  * generates support code for implementing polymorphic relations and accessing common fields
  * generates boilerplate code for entity validation
  * supports following field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
  * generates RESTful JSON web service for managing entities 
  * hooks to user-supplied pre and post service hooks (e.g. checking if user is allowed to retrieve a particular record, or logging changes)
- * (generating default filtering and sorting code)
+ * can generate filtering and sorting code compatible with ExtJS grids
 
 ## License
  * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
@@ -278,21 +278,84 @@ instance ToJSON (Entity Person) where
 
 #### Handler/Generated.hs
 ```haskell
-module Handler.Generated where 
+{-# LANGUAGE RankNTypes #-}
+module Handler.Generated (
+    postNoteValidateR,
+    putNoteR,
+    deleteNoteR,
+    postNoteManyR,
+    getNoteManyR,
+    getNoteR,
+    postPersonValidateR,
+    putPersonR,
+    deletePersonR,
+    postPersonManyR,
+    getPersonManyR,
+    getPersonR
+) where 
 import Import
 import Yesod.Auth
 import Model.Validation
 import Model.Json ()
-import Data.Aeson (json)
+import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
+import Data.Aeson.TH
+import Data.Text.Encoding (encodeUtf8)
+import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
+import qualified Data.Text.Read
 import Data.Aeson.Types (emptyObject)
 import qualified Handler.Hooks as H
+import qualified Data.Text as T
+import Control.Monad (mzero)
+
+data FilterJsonMsg = FilterJsonMsg {
+    filterJsonMsg_type :: Text,
+    filterJsonMsg_value :: Text,
+    filterJsonMsg_field :: Text,
+    filterJsonMsg_comparison :: Text
+}
+instance FromJSON FilterJsonMsg where
+     parseJSON (Object v) = FilterJsonMsg <$>
+           v .: "type" <*>
+           v .: "value" <*>
+           v .: "field" <*>
+           v .:? "comparison" .!= "eq"
+     parseJSON _ = mzero
+data SortJsonMsg = SortJsonMsg {
+    sortJsonMsg_property :: Text,
+    sortJsonMsg_direction :: Text
+}
+$(deriveJSON (drop 12) ''SortJsonMsg)
+defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
+defaultFilterOp "eq" = (==.)
+defaultFilterOp "neq" = (!=.)
+defaultFilterOp "lt" = (<.)
+defaultFilterOp "gt" = (>.)
+defaultFilterOp "le" = (<=.)
+defaultFilterOp "ge" = (>=.)
+defaultFilterOp _ = (==.)
+parseValue :: Read a => Text -> Maybe a
+parseValue s = case (reads $ T.unpack s) of
+   [(v,_)] -> Just v
+   _ -> Nothing
+getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
+getRangeSelectOpts = do
+    start <- lookupGetParam "start"
+    limit <- lookupGetParam "limit"
+    return $ mkOpts (parseInt start) (parseInt limit)
+        where
+            parseInt (Just s) = case (Data.Text.Read.decimal s) of
+              Right (x,_) -> Just x
+              _ -> Nothing
+            parseInt _ = Nothing
+            mkOpts (Just s) (Just l) = [ OffsetBy s, LimitTo l ]
+            mkOpts _ _ = []
 
 postNoteValidateR :: Handler RepJson
 postNoteValidateR = do
-    entity <- parseJsonBody_
+    entity <- parseJsonBody_ 
     _ <- requireAuthId
-    errors <- runDB $ validate entity
+    errors <- runDB $ validate (entity :: Note)
     if null errors
         then do
             jsonToRepJson $ emptyObject
@@ -302,12 +365,12 @@ putNoteR :: NoteId -> Handler RepJson
 putNoteR key = do
     entity <- parseJsonBody_
     _ <- requireAuthId
-    errors <- runDB $ validate entity
+    errors <- runDB $ validate (entity :: Note)
     if null errors
         then do
             runDB $ repsert key entity
+            jsonToRepJson $ emptyObject
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
-    jsonToRepJson $ emptyObject
 
 deleteNoteR :: NoteId -> Handler RepJson
 deleteNoteR key = do
@@ -319,7 +382,7 @@ postNoteManyR :: Handler RepJson
 postNoteManyR = do
     entity <- parseJsonBody_
     _ <- requireAuthId
-    errors <- runDB $ validate entity
+    errors <- runDB $ validate (entity :: Note)
     if null errors
         then do
             key <- runDB $ insert (entity :: Note)
@@ -328,9 +391,9 @@ postNoteManyR = do
 getNoteManyR :: Handler RepJson
 getNoteManyR = do
     _ <- requireAuthId
-    let filters = [] :: [Filter Note]
-    let selectOpts = []
-    entities <- runDB $ selectList (concat filters) selectOpts
+    let filters = [] :: [[Filter Note]]
+    let selectOpts = [] :: [[SelectOpt Note]]
+    entities <- runDB $ selectList (concat filters) (concat selectOpts)
     jsonToRepJson $ object [ "entities" .= toJSON entities ] 
 
 getNoteR :: NoteId -> Handler RepJson
@@ -341,9 +404,9 @@ getNoteR key = do
 
 postPersonValidateR :: Handler RepJson
 postPersonValidateR = do
-    entity <- parseJsonBody_
+    entity <- parseJsonBody_ 
     _ <- requireAuthId
-    errors <- runDB $ validate entity
+    errors <- runDB $ validate (entity :: Person)
     if null errors
         then do
             jsonToRepJson $ emptyObject
@@ -353,12 +416,12 @@ putPersonR :: PersonId -> Handler RepJson
 putPersonR key = do
     entity <- parseJsonBody_
     _ <- requireAuthId
-    errors <- runDB $ validate entity
+    errors <- runDB $ validate (entity :: Person)
     if null errors
         then do
             runDB $ repsert key entity
+            jsonToRepJson $ emptyObject
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
-    jsonToRepJson $ emptyObject
 
 deletePersonR :: PersonId -> Handler RepJson
 deletePersonR key = do
@@ -370,41 +433,46 @@ postPersonManyR :: Handler RepJson
 postPersonManyR = do
     entity <- parseJsonBody_
     _ <- requireAuthId
-    errors <- runDB $ validate entity
+    errors <- runDB $ validate (entity :: Person)
     if null errors
         then do
             key <- runDB $ insert (entity :: Person)
             jsonToRepJson $ object [ "id" .= toJSON key ]
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
+toDefaultFilterPerson :: FilterJsonMsg -> Maybe (Filter Person)
+toDefaultFilterPerson f = case (filterJsonMsg_field f) of
+    "timezone" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonTimezone v ; _ -> Nothing
+    "language" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonLanguage v ; _ -> Nothing
+    "version" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonVersion (Just v) ; _ -> Nothing
+    "name" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonName v ; _ -> Nothing
+    _ -> Nothing
+toDefaultSortPerson :: SortJsonMsg -> Maybe (SelectOpt Person)
+toDefaultSortPerson s = case (sortJsonMsg_property s) of
+    "timezone" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonTimezone; "DESC" -> Just $ Desc PersonTimezone; _ -> Nothing
+    "language" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonLanguage; "DESC" -> Just $ Desc PersonLanguage; _ -> Nothing
+    "version" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonVersion; "DESC" -> Just $ Desc PersonVersion; _ -> Nothing
+    "name" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonName; "DESC" -> Just $ Desc PersonName; _ -> Nothing
+    _ -> Nothing
 getPersonManyR :: Handler RepJson
 getPersonManyR = do
     filters <- sequence [
         H.filterPersons
         ,
         do
-            filter <- lookupGetParam "filter"
-            if isJust filter
-                then do
-                    case json (fromJust filter) of
-                        (Object o) -> do
-                            return [] -- TODO: filter with o
-                        _ -> invalidArgs [fromJust filter]
-                else return []
+            f <- lookupGetParam "filter"
+            let f' = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) f) :: Maybe [FilterJsonMsg]
+            return $ maybe [] (mapMaybe toDefaultFilterPerson) f'
         ]
-    selectOpts <- [
+    selectOpts <- sequence [
         H.sortPersons
         ,
         do
-            sortParam <- lookupGetParam "sort"
-            if isJust sortParam
-                then do
-                    case json (fromJust sortParam) of
-                        (Object o) -> do
-                            return [] -- TODO: sort with o
-                        _ -> invalidArgs [fromJust sortParam]
-                else return []
+            s <- lookupGetParam "sort"
+            rangeOpts <- getRangeSelectOpts
+            let s' = (maybe Nothing (decode . LBS.fromChunks .(:[]) . encodeUtf8) s) :: Maybe [SortJsonMsg]
+            return $ maybe [] (mapMaybe toDefaultSortPerson) s' ++ rangeOpts
         ]
-    entities <- runDB $ selectList (concat filters) selectOpts
+    entities <- runDB $ selectList (concat filters) (concat selectOpts)
     sequence_ [H.logPersonGet entities]
     jsonToRepJson $ object [ "entities" .= toJSON entities ] 
 

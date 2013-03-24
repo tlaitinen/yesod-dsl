@@ -135,9 +135,11 @@ genFilters e params
 genDefaultSelectOpts :: Entity -> [String]
 genDefaultSelectOpts e = ["do"]
                    ++ (indent $ [
-                  "sortParam <- lookupGetParam \"sort\"",
+                  "s <- lookupGetParam \"sort\"",
                   "rangeOpts <- getRangeSelectOpts",
-                  "return rangeOpts"])
+                  "let s' = (maybe Nothing (decode . LBS.fromChunks .(:[]) . encodeUtf8) s) :: Maybe [SortJsonMsg]",
+                  "return $ maybe [] (mapMaybe toDefaultSort"
+                     ++ entityName e ++ ") s' ++ rangeOpts"])
 
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
@@ -178,12 +180,11 @@ genFilterSortJson = ["data FilterJsonMsg = FilterJsonMsg {"]
                      "           v .: \"value\" <*>",
                      "           v .: \"field\" <*>",
                      "           v .:? \"comparison\" .!= \"eq\"",
-                    "data SortDirectionJsonMsg = ASC | DESC",
-                    "$(deriveJSON id ''SortDirectionJsonMsg)",
+                     "     parseJSON _ = mzero",
                      "data " ++ sname ++ " = " ++ sname ++ " {"]
                      ++ (commas $ indent [
                          sprefix ++ "property :: Text",
-                         sprefix ++ "direction :: SortDirectionJsonMsg"
+                         sprefix ++ "direction :: Text"
                              ])
                      ++ ["}",
                       "$(deriveJSON (drop " ++ (show . length $ sprefix)
@@ -205,25 +206,36 @@ genFilterSortJson = ["data FilterJsonMsg = FilterJsonMsg {"]
           sname = sortJsonName
           sprefix = sortJsonPrefix
 
-fieldFilterName :: Entity -> Field -> String
-fieldFilterName e f = upperFirst $ entityFieldName e f 
+entityFieldTypeName :: Entity -> Field -> String
+entityFieldTypeName e f = upperFirst $ entityFieldName e f 
 
 filterField :: Entity -> Field -> String        
 filterField e f@(Field optional name _) =
     "\"" ++ fieldName f ++ "\" -> case (parseValue $ " ++ filterJsonPrefix ++ "value f) of (Just v) -> Just $ defaultFilterOp " 
     ++ " ("
     ++ filterJsonPrefix ++ "comparison f) "
-    ++ fieldFilterName e f  
+    ++ entityFieldTypeName e f  
               ++ (if optional then " (Just v)" else " v") ++ " ; _ -> Nothing"
     
+sortField :: Entity -> Field -> String
+sortField e f = 
+    "\"" ++ fieldName f ++ "\" -> case (" ++ sortJsonPrefix
+    ++ "direction s) of \"ASC\" -> Just $ Asc " ++ entityFieldTypeName e f
+    ++ "; \"DESC\" -> Just $ Desc " ++ entityFieldTypeName e f 
+    ++ "; _ -> Nothing"
+
 genDefaultFilterSort :: Entity -> [String]
 genDefaultFilterSort e =
     [fname ++ " :: FilterJsonMsg -> Maybe (Filter " ++ entityName e ++ ")",
      fname ++ " f = case (" ++ filterJsonPrefix ++ "field f) of"]
     ++ (indent $ map (filterField e) (entityFields e)
                 ++ ["_ -> Nothing"])
-
+    ++ [sname ++ " :: SortJsonMsg -> Maybe (SelectOpt " ++ entityName e ++ ")",
+        sname ++ " s = case (" ++ sortJsonPrefix ++ "property s) of"]
+    ++ (indent $ map (sortField e) (entityFields e)
+                 ++ ["_ -> Nothing"])
     where fname = "toDefaultFilter" ++ entityName e
+          sname = "toDefaultSort" ++ entityName e
 
 genService :: DbModule -> Entity -> Service -> [String]
 genService db e (Service GetService params) =
@@ -353,6 +365,7 @@ genHandlers db = unlines $
     "import Data.Aeson.Types (emptyObject)",
     "import qualified Handler.Hooks as H",
     "import qualified Data.Text as T",
+    "import Control.Monad (mzero)",
     ""]
     ++ genFilterSortJson
     ++ ["getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]",
