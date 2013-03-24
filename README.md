@@ -219,8 +219,7 @@ instance Validatable Person where
         checkResult "Person.language validLanguage" (V.validLanguage $ personLanguage e),
         checkResult "Person.name nonempty" (V.nonempty $ personName e)
         ]
-
-``
+```
 
 #### Model/Classes.hs
 ```haskell
