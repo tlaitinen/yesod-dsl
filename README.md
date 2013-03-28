@@ -8,6 +8,8 @@ This code generator borrowes some code from
 [yesod-generate](http://github.com/maxcan/yesod-generate/). The original
 yesod-generate supports also non-JSON web services. 
 
+See the example at [http://yesod-generate-rest-example.herokuapp.com](http://yesod-generate-rest-example.herokuapp.com).
+
 ## Features
  * splitting database definitions into multiple files
  * generates support code for implementing polymorphic relations and accessing common fields
