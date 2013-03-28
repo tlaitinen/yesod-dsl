@@ -396,7 +396,23 @@ genHandlers db = unlines $
         serviceName e (Service ValidateService _) = ["post" ++ entityName e
                                                   ++ "ValidateR" ] 
 
-
+timeJson :: String 
+timeJson = unlines $ [
+    "module Model.TimeJson where",
+    "import Data.Time",
+    "import Data.Aeson",
+    "import Prelude",
+    "import Control.Monad",
+    "instance ToJSON Day where",
+    "    toJSON = toJSON . show",
+    "",
+    "instance FromJSON Day where",
+    "    parseJSON x = do",
+    "        s <- parseJSON x",
+    "        case reads s of",
+    "            (d, _):_ -> return d",
+    "            [] -> mzero "
+    ]
 
         
 generateModels :: DbModule -> [(FilePath,String,Bool)]
@@ -406,16 +422,19 @@ generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities 
                       ("Model/Validation.hs", genValidation db, False ),
                       ("Model/Classes.hs", genInterfaces db, False ),
                       ("Model/Json.hs", genJson db, False),
+                      ("Model/TimeJson.hs", timeJson, False),
                       ("Handler/Generated.hs", genHandlers db, False) ]
 
 genJson :: DbModule -> String
-genJson db = unlines $  ["{-# LANGUAGE FlexibleInstances #-}",
+genJson db = unlines (  ["{-# LANGUAGE FlexibleInstances #-}",
                          "module Model.Json where",
                          "import Import",
                          "import Data.Aeson",
                          "import qualified Data.HashMap.Lazy as HML"
+
                          ] 
-                         ++ (concatMap genJsonInstance $ dbEntities db)
+                         ++ (concatMap genJsonInstance $ dbEntities db))
+    
     where genJsonInstance e = 
             [
             "instance ToJSON (Entity " ++ entityName e ++ ") where"]

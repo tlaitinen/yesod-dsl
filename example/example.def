@@ -9,6 +9,7 @@ entity Person : Versioned {
     lastName Text check nonEmpty;
     timezone Text check validTimezone;
     email Text check validEmail;
+    birthDate Date;
 
     -- service definitions start here
     get { 

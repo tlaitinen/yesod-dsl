@@ -26,6 +26,7 @@ Note json
     version Int64 
 
 Person json
+    birthDate Day 
     email Text 
     timezone Text 
     lastName Text 

@@ -147,6 +147,7 @@ fieldType : word32 { $1 }
           | bool{ $1 }
           | double{ $1 }
           | time { $1 }
+          | date { $1 }
           | datetime{ $1 }
           | zonedtime{ $1 }
 

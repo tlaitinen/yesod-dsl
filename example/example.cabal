@@ -27,6 +27,7 @@ library
                      Model.Classes
                      Model.EmailRegex
                      Model.Timezones
+                     Model.TimeJson
 
 
     if flag(dev) || flag(library-only)
@@ -79,6 +80,7 @@ library
                  , unordered-containers
                  , time
                  , regex-posix
+                 , old-locale
 
 
 executable         example

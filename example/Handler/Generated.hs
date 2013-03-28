@@ -151,6 +151,7 @@ postPersonManyR = do
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
 toDefaultFilterPerson :: FilterJsonMsg -> Maybe (Filter Person)
 toDefaultFilterPerson f = case (filterJsonMsg_field f) of
+    "birthDate" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonBirthDate v ; _ -> Nothing
     "email" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonEmail v ; _ -> Nothing
     "timezone" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonTimezone v ; _ -> Nothing
     "lastName" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonLastName v ; _ -> Nothing
@@ -159,6 +160,7 @@ toDefaultFilterPerson f = case (filterJsonMsg_field f) of
     _ -> Nothing
 toDefaultSortPerson :: SortJsonMsg -> Maybe (SelectOpt Person)
 toDefaultSortPerson s = case (sortJsonMsg_property s) of
+    "birthDate" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonBirthDate; "DESC" -> Just $ Desc PersonBirthDate; _ -> Nothing
     "email" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonEmail; "DESC" -> Just $ Desc PersonEmail; _ -> Nothing
     "timezone" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonTimezone; "DESC" -> Just $ Desc PersonTimezone; _ -> Nothing
     "lastName" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonLastName; "DESC" -> Just $ Desc PersonLastName; _ -> Nothing
