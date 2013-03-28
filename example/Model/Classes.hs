@@ -9,6 +9,3 @@ class Versioned a where
 instance Versioned Note where 
     versionedVersion = noteVersion
 
-instance Versioned Person where 
-    versionedVersion = personVersion
-

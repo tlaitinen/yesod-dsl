@@ -96,10 +96,10 @@ genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
             | GetService `elem` services || PostService `elem` services
              =  ["/data/" ++ routeName e ++ " " ++ handlerName e "Many" ++ getService ++ postService]
             | otherwise =  []
-        oneServices = getService ++ putService ++ deleteService
+        oneServices = getService ++ putService ++ deleteService ++ postService
         oneHandler
             | (not . null) oneServices =  
-               ["/" ++ routeName e ++ "/#" ++ entityName e ++ "Id" ++ " " 
+               ["/data/" ++ routeName e ++ "/#" ++ entityName e ++ "Id" ++ " " 
                   ++ handlerName e "" ++ oneServices]
             | otherwise = []
         routeName = (map toLower) . entityName
@@ -197,8 +197,38 @@ genFilterSortJson = ["data FilterJsonMsg = FilterJsonMsg {"]
                         "defaultFilterOp \"le\" = (<=.)",
                         "defaultFilterOp \"ge\" = (>=.)",
                         "defaultFilterOp _ = (==.)",
-                        "parseValue :: Read a => Text -> Maybe a",
-                        "parseValue s = case (reads $ T.unpack s) of",
+                        "class MyRead a where",
+                        "    parseValue :: Text -> Maybe a",
+                        "instance MyRead Text where",
+                        "    parseValue t = Just t",
+                        "instance MyRead a => MyRead (Maybe a) where",
+                        "    parseValue \"\" = Nothing",
+                        "    parseValue t = case (parseValue t) of",
+                        "         (Just v) -> Just $ Just v",
+                        "         Nothing -> Nothing",
+                        "instance MyRead Int32 where",
+                        "    parseValue = safeRead",
+                        "instance MyRead Int64 where",
+                        "    parseValue = safeRead",
+                        "instance MyRead Word32 where",
+                        "    parseValue = safeRead",
+                        "instance MyRead Word64 where",
+                        "    parseValue = safeRead",
+                        "instance MyRead Double where",
+                        "    parseValue = safeRead",
+                        "instance MyRead Bool where",
+                        "    parseValue \"true\" = Just True",
+                        "    parseValue \"false\" = Just False",
+                        "    parseValue _ = Nothing",
+                        "instance MyRead TimeOfDay where",
+                        "    parseValue = safeRead",
+                        "instance MyRead Day where",
+                        "    parseValue = safeRead",
+                        "instance MyRead UTCTime where",
+                        "    parseValue = safeRead",
+                        "instance MyRead ZonedTime where",
+                        "    parseValue = safeRead",
+                        "safeRead s = case (reads $ T.unpack s) of",
                         "   [(v,_)] -> Just v",
                         "   _ -> Nothing"]
     where fname = filterJsonName
@@ -286,6 +316,9 @@ genService db e (Service PostService params) =
                               (validate e $ [
                               "key <- runDB $ insert (entity :: " ++ entityName e ++ ")"] ++ (postHooks " key entity" params) ++ [
                               "jsonToRepJson $ object [ \"id\" .= toJSON key ]"])))
+                   ++ ["","post" ++ handlerName e "" ++ " :: " 
+                            ++ entityName e ++ "Id -> Handler RepJson",
+                       "post" ++ handlerName e "" ++ " _ = post" ++ handlerName e "Many"]
 genService db e (Service ValidateService params) =                  
                      ["","post" ++ handlerName e "Validate" ++ " :: Handler RepJson" ,
                       "post" ++ handlerName e "Validate" ++ " = do"]
@@ -349,6 +382,7 @@ postHooks extra params = postHooks' (mapMaybe matchPostHook params)
 genHandlers :: DbModule -> String
 genHandlers db = unlines $ 
     ["{-# LANGUAGE RankNTypes #-}",
+    "{-# LANGUAGE FlexibleInstances #-}",
     "module Handler.Generated ("]
     ++ commas (indent (concatMap serviceNames $ dbEntities db))
     ++ [") where ",
@@ -358,6 +392,9 @@ genHandlers db = unlines $
     "import Model.Json ()",
     "import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)",
     "import Data.Aeson.TH",
+    "import Data.Int",
+    "import Data.Word",
+    "import Data.Time",
     "import Data.Text.Encoding (encodeUtf8)",
     "import qualified Data.ByteString.Lazy as LBS",
     "import Data.Maybe",
@@ -391,7 +428,9 @@ genHandlers db = unlines $
                                                 "get" ++ entityName e ++ "R"]
         serviceName e (Service PutService _) = ["put" ++ entityName e ++ "R"]
         serviceName e (Service PostService _) = ["post" ++ entityName e 
-                                                 ++ "ManyR"]
+                                                 ++ "ManyR",
+                                                 "post" ++ entityName e ++"R"
+                                                 ]
         serviceName e (Service DeleteService _) = ["delete"++ entityName e++"R"]
         serviceName e (Service ValidateService _) = ["post" ++ entityName e
                                                   ++ "ValidateR" ] 
@@ -458,10 +497,13 @@ genEntityChecker e
                        | func <- entityChecks e ] ]
 genEntityValidate :: DbModule -> Entity -> [String]
 genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "]
-                       ++ (indent (["validate e = sequence ["]
+                       ++ (indent (["validate e = do"]
+                                   ++ (indent (["errors <- sequence ["]
                            ++ (indent $ commas 
                                    (fieldChecks ++ genEntityChecker e)
-                                 ++ ["]"]))) ++ [""]
+                                 ++ ["]"])
+                                ++ ["return $ catMaybes errors"]))
+                                   )) ++ [""]
               where fieldChecks = mapMaybe (genFieldChecker e) (entityFields e)
 
 
@@ -472,12 +514,13 @@ genValidation db = unlines $ [
     "{-# LANGUAGE ExistentialQuantification #-}",
     "module Model.Validation (Validatable(..)) where",
     "import Data.Text",
+    "import Data.Maybe",
     "import qualified Model.ValidationFunctions as V",
     "import Import",
-    "checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m Text",
+    "checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m (Maybe Text)",
     "checkResult msg f = do",
     "   result <- f",
-    "   return $ if result then \"\" else msg",
+    "   return $ if result then Nothing else (Just msg)",
     "",
     "class Validatable a where",
     "    validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]"

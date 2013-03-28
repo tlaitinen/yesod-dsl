@@ -4,7 +4,7 @@
 class Versioned {
     version Int64;
 }
-entity Person : Versioned {
+entity Person {
     firstName Text check nonEmpty;
     lastName Text check nonEmpty;
     timezone Text check validTimezone;

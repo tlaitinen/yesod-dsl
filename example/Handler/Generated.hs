@@ -1,15 +1,18 @@
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Handler.Generated (
     postNoteValidateR,
     putNoteR,
     deleteNoteR,
     postNoteManyR,
+    postNoteR,
     getNoteManyR,
     getNoteR,
     postPersonValidateR,
     putPersonR,
     deletePersonR,
     postPersonManyR,
+    postPersonR,
     getPersonManyR,
     getPersonR
 ) where 
@@ -19,6 +22,9 @@ import Model.Validation
 import Model.Json ()
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH
+import Data.Int
+import Data.Word
+import Data.Time
 import Data.Text.Encoding (encodeUtf8)
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
@@ -54,8 +60,38 @@ defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
-parseValue :: Read a => Text -> Maybe a
-parseValue s = case (reads $ T.unpack s) of
+class MyRead a where
+    parseValue :: Text -> Maybe a
+instance MyRead Text where
+    parseValue t = Just t
+instance MyRead a => MyRead (Maybe a) where
+    parseValue "" = Nothing
+    parseValue t = case (parseValue t) of
+         (Just v) -> Just $ Just v
+         Nothing -> Nothing
+instance MyRead Int32 where
+    parseValue = safeRead
+instance MyRead Int64 where
+    parseValue = safeRead
+instance MyRead Word32 where
+    parseValue = safeRead
+instance MyRead Word64 where
+    parseValue = safeRead
+instance MyRead Double where
+    parseValue = safeRead
+instance MyRead Bool where
+    parseValue "true" = Just True
+    parseValue "false" = Just False
+    parseValue _ = Nothing
+instance MyRead TimeOfDay where
+    parseValue = safeRead
+instance MyRead Day where
+    parseValue = safeRead
+instance MyRead UTCTime where
+    parseValue = safeRead
+instance MyRead ZonedTime where
+    parseValue = safeRead
+safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v
    _ -> Nothing
 getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
@@ -104,6 +140,9 @@ postNoteManyR = do
             key <- runDB $ insert (entity :: Note)
             jsonToRepJson $ object [ "id" .= toJSON key ]
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
+
+postNoteR :: NoteId -> Handler RepJson
+postNoteR _ = postNoteManyR
 getNoteManyR :: Handler RepJson
 getNoteManyR = do
     let filters = [] :: [[Filter Note]]
@@ -149,6 +188,9 @@ postPersonManyR = do
             key <- runDB $ insert (entity :: Person)
             jsonToRepJson $ object [ "id" .= toJSON key ]
         else jsonToRepJson $ object [ "errors" .= toJSON errors ]
+
+postPersonR :: PersonId -> Handler RepJson
+postPersonR _ = postPersonManyR
 toDefaultFilterPerson :: FilterJsonMsg -> Maybe (Filter Person)
 toDefaultFilterPerson f = case (filterJsonMsg_field f) of
     "birthDate" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonBirthDate v ; _ -> Nothing
@@ -156,7 +198,6 @@ toDefaultFilterPerson f = case (filterJsonMsg_field f) of
     "timezone" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonTimezone v ; _ -> Nothing
     "lastName" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonLastName v ; _ -> Nothing
     "firstName" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonFirstName v ; _ -> Nothing
-    "version" -> case (parseValue $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp  (filterJsonMsg_comparison f) PersonVersion v ; _ -> Nothing
     _ -> Nothing
 toDefaultSortPerson :: SortJsonMsg -> Maybe (SelectOpt Person)
 toDefaultSortPerson s = case (sortJsonMsg_property s) of
@@ -165,7 +206,6 @@ toDefaultSortPerson s = case (sortJsonMsg_property s) of
     "timezone" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonTimezone; "DESC" -> Just $ Desc PersonTimezone; _ -> Nothing
     "lastName" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonLastName; "DESC" -> Just $ Desc PersonLastName; _ -> Nothing
     "firstName" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonFirstName; "DESC" -> Just $ Desc PersonFirstName; _ -> Nothing
-    "version" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc PersonVersion; "DESC" -> Just $ Desc PersonVersion; _ -> Nothing
     _ -> Nothing
 getPersonManyR :: Handler RepJson
 getPersonManyR = do
