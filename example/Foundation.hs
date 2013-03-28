@@ -19,6 +19,7 @@ import Model
 import Text.Jasmine (minifym)
 import Web.ClientSession (getKey)
 import Text.Hamlet (hamletFile)
+import System.Log.FastLogger (Logger)
 
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -30,6 +31,7 @@ data App = App
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
+    , appLogger :: Logger
     }
 
 -- Set up i18n messages. See the message folder.
@@ -115,6 +117,8 @@ instance Yesod App where
     -- in development, and warnings and errors in production.
     shouldLog _ _source level =
         development || level == LevelWarn || level == LevelError
+
+    getLogger = return . appLogger
 
 -- How to run database actions.
 instance YesodPersist App where
