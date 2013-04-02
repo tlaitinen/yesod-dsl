@@ -50,6 +50,7 @@ defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
 
+safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v
    _ -> Nothing

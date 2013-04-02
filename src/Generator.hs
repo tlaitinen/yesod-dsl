@@ -151,12 +151,8 @@ entityFieldTypeName :: Entity -> Field -> String
 entityFieldTypeName e f = upperFirst $ entityFieldName e f 
 
 filterField :: Entity -> Field -> String        
-filterField e f@(Field optional name _) =
-    "\"" ++ fieldName f ++ "\" -> case (parseValue $ " ++ "filterJsonMsg_" ++ "value f) of (Just v) -> Just $ defaultFilterOp " 
-    ++ " ("
-    ++ "filterJsonMsg_" ++ "comparison f) "
-    ++ entityFieldTypeName e f  
-              ++ (if optional then " (Just v)" else " v") ++ " ; _ -> Nothing"
+filterField e f@(Field optional name _) = T.unpack $ $(codegenFile "codegen/default-filter-field.cg")
+    where dataType = if optional then "(Just v)" else "v"
     
 sortField :: Entity -> Field -> String
 sortField e f = 
