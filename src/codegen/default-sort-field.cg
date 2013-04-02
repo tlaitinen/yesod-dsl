@@ -1,0 +1,1 @@
+"~{fieldName f}" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc ~{entityFieldTypeName e f} ; "DESC" -> Just $ Desc ~{entityFieldTypeName e f} ; _ -> Nothing
