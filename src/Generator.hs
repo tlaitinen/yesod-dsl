@@ -163,20 +163,8 @@ genDefaultFilterSort e = (lines . T.unpack) $(codegenFile "codegen/default-filte
           fieldSorters = unlines $ indent $ map (sortField e) (entityFields e)
 
 genService :: DbModule -> Entity -> Service -> [String]
-genService db e (Service GetService params) =
-    maybeDefaultFilterSort ++ 
-       ["get" ++ handlerName e "Many" ++ " :: Handler RepJson",
-        "get" ++ handlerName e "Many" ++ " = do"]
-        ++ (indent $ 
-             maybeRequireAuth params 
-             ++ genFilters e params
-             ++ genSelectOpts e params
-           ++ ["entities <- runDB $ selectList (concat filters) (concat selectOpts)"] 
-           ++ (postHooks " entities" params ++
-           [ "jsonToRepJson $ object [ \"entities\" .= toJSON entities ] "
-                           ]))
-        ++ 
-                     ["", "get" ++ handlerName e "" ++ " :: " 
+genService db e (Service GetService params) = maybeDefaultFilterSort ++ (lines . T.unpack $ $(codegenFile "codegen/get-many-handler.cg"))
+    ++   ["", "get" ++ handlerName e "" ++ " :: " 
                                  ++ entityName e ++ "Id -> Handler RepJson",
                      "get" ++ handlerName e "" ++ " key = do"]
                      ++ (indent $ 
@@ -294,23 +282,7 @@ genHandlers db = (T.unpack $(codegenFile "codegen/handlers.cg"))
                                                   ++ "ValidateR" ] 
 
 timeJson :: String 
-timeJson = unlines $ [
-    "module Model.TimeJson where",
-    "import Data.Time",
-    "import Data.Aeson",
-    "import Prelude",
-    "import Control.Monad",
-    "instance ToJSON Day where",
-    "    toJSON = toJSON . show",
-    "",
-    "instance FromJSON Day where",
-    "    parseJSON x = do",
-    "        s <- parseJSON x",
-    "        case reads s of",
-    "            (d, _):_ -> return d",
-    "            [] -> mzero "
-    ]
-
+timeJson = T.unpack $(codegenFile "codegen/time-json.cg")
         
 generateModels :: DbModule -> [(FilePath,String,Bool)]
 generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db), True),
@@ -367,29 +339,14 @@ genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "
 
 
 genValidation :: DbModule -> String
-genValidation db = unlines $ [
-    "{-# LANGUAGE OverloadedStrings #-}",
-    "{-# LANGUAGE ExistentialQuantification #-}",
-    "module Model.Validation (Validatable(..)) where",
-    "import Data.Text",
-    "import Data.Maybe",
-    "import qualified Model.ValidationFunctions as V",
-    "import Import",
-    "checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m (Maybe Text)",
-    "checkResult msg f = do",
-    "   result <- f",
-    "   return $ if result then Nothing else (Just msg)",
-    "",
-    "class Validatable a where",
-    "    validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]"
-    ] ++ concatMap (genEntityValidate db) (dbEntities db)
+genValidation db = unlines $ [T.unpack $(codegenFile "codegen/validation.cg")]
+        ++ concatMap (genEntityValidate db) (dbEntities db)
                    
 ifaceFieldName :: Class -> Field -> String
 ifaceFieldName i f = (lowerFirst . ifaceName) i ++ (upperFirst . fieldName) f
 
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
-
     
 genInterfaces :: DbModule -> String
 genInterfaces db = unlines $ [
