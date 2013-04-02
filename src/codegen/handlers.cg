@@ -1,0 +1,103 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+module Handler.Generated(
+~{services}) where
+import Import
+import Yesod.Auth
+import Model.Validation
+import Model.Json ()
+import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
+import Data.Aeson.TH
+import Data.Int
+import Data.Word
+import Data.Time
+import Data.Text.Encoding (encodeUtf8)
+import qualified Data.ByteString.Lazy as LBS
+import Data.Maybe
+import qualified Data.Text.Read
+import Data.Aeson.Types (emptyObject)
+import qualified Handler.Hooks as H
+import qualified Data.Text as T
+import Control.Monad (mzero)
+
+data FilterJsonMsg = FilterJsonMsg {
+    filterJsonMsg_type :: Text,
+    filterJsonMsg_value :: Text,
+    filterJsonMsg_field :: Text,
+    filterJsonMsg_comparison :: Text
+} 
+instance FromJSON FilterJsonMsg where
+    parseJSON (Object v) = FilterJsonMsg <$>
+        v .: "type" <*>
+        v .: "value" <*>
+        v .: "field" <*>
+        v .:? "comparison" .!= "eq"
+    parseJSON _ = mzero
+
+data SortJsonMsg = SortJsonMsg {
+    sortJsonMsg_property :: Text,
+    sortJsonMsg_direction :: Text
+}
+
+$(deriveJSON (drop 12) ''SortJsonMsg)
+
+defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
+defaultFilterOp "eq" = (==.)
+defaultFilterOp "neq" = (!=.)
+defaultFilterOp "lt" = (<.)
+defaultFilterOp "gt" = (>.)
+defaultFilterOp "le" = (<=.)
+defaultFilterOp "ge" = (>=.)
+defaultFilterOp _ = (==.)
+
+safeRead s = case (reads $ T.unpack s) of
+   [(v,_)] -> Just v
+   _ -> Nothing
+
+class SafeRead a where
+    parseValue :: Text -> Maybe a
+
+instance SafeRead Text where
+    parseValue t = Just t
+instance SafeRead a => SafeRead (Maybe a) where
+    parseValue "" = Nothing
+    parseValue t = case (parseValue t) of
+         (Just v) -> Just $ Just v
+         Nothing -> Nothing
+instance SafeRead Int32 where
+    parseValue = safeRead
+instance SafeRead Int64 where
+    parseValue = safeRead
+instance SafeRead Word32 where
+    parseValue = safeRead
+instance SafeRead Word64 where
+    parseValue = safeRead
+instance SafeRead Double where
+    parseValue = safeRead
+instance SafeRead Bool where
+    parseValue "true" = Just True
+    parseValue "false" = Just False
+    parseValue _ = Nothing
+instance SafeRead TimeOfDay where
+    parseValue = safeRead
+instance SafeRead Day where
+    parseValue = safeRead
+instance SafeRead UTCTime where
+    parseValue = safeRead
+instance SafeRead ZonedTime where
+    parseValue = safeRead
+
+getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
+getRangeSelectOpts = do
+    start <- lookupGetParam "start"
+    limit <- lookupGetParam "limit"
+    return $ mkOpts (parseInt start) (parseInt limit)
+        where
+            parseInt (Just s) = case (Data.Text.Read.decimal s) of
+              Right (x,_) -> Just x
+              _ -> Nothing
+            parseInt _ = Nothing
+            mkOpts (Just s) (Just l) = [ OffsetBy s, LimitTo l ]
+            mkOpts _ _ = []
+
+

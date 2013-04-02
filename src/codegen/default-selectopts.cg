@@ -1,0 +1,5 @@
+do
+    s <- lookupGetParam "sort"
+    rangeOpts <- getRangeSelectOpts
+    let s' = (maybe Nothing (decode . LBS.fromChunks .(:[]) . encodeUtf8) s) :: Maybe [SortJsonMsg]
+    return $ maybe [] (mapMaybe toDefaultSort~{entityName e}) s' ++ rangeOpts

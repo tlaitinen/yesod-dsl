@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Generator (generateModels) where
 import System.IO (FilePath)
 import DbTypes
@@ -5,8 +6,9 @@ import DbLexer
 import Data.Char
 import Data.List
 import Data.Maybe
+import qualified Data.Text as T
 import Data.String.Utils
-
+import           Text.Shakespeare.Text hiding (toText)
 -- from Database.Persist.TH
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
@@ -31,6 +33,7 @@ getFieldDeps db field = case (fieldContent field) of
 
 lookupDeps :: DbModule -> String -> [String]
 lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db)) name
+
 
 genUnique :: Unique -> String
 genUnique (Unique name fields) = "Unique" ++ name ++ " " ++ intercalate " " fields
@@ -107,13 +110,10 @@ genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
             | ValidateService `elem` services =  ["/validate/" ++ routeName e ++ " " ++ handlerName e "Validate" ++ " POST"]
             | otherwise = []
 
+
 genDefaultFilter :: Entity -> [String]
-genDefaultFilter e = ["do"]
-                   ++ (indent $ [
-                  "f <- lookupGetParam \"filter\"",
-                  "let f' = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) f) :: Maybe [FilterJsonMsg]",
-                  "return $ maybe [] (mapMaybe toDefaultFilter" ++ entityName e 
-                        ++ ") f'"]) 
+genDefaultFilter e = (indent . lines . T.unpack) $(codegenFile "codegen/default-filter.cg")
+
 genFilters :: Entity -> [ServiceParam] -> [String]
 genFilters e params 
     | null filters = ["let filters = [] :: [[Filter " ++ entityName e ++ "]]"]
@@ -133,13 +133,8 @@ genFilters e params
     
     
 genDefaultSelectOpts :: Entity -> [String]
-genDefaultSelectOpts e = ["do"]
-                   ++ (indent $ [
-                  "s <- lookupGetParam \"sort\"",
-                  "rangeOpts <- getRangeSelectOpts",
-                  "let s' = (maybe Nothing (decode . LBS.fromChunks .(:[]) . encodeUtf8) s) :: Maybe [SortJsonMsg]",
-                  "return $ maybe [] (mapMaybe toDefaultSort"
-                     ++ entityName e ++ ") s' ++ rangeOpts"])
+genDefaultSelectOpts e = (indent . lines . T.unpack) 
+                          $(codegenFile "codegen/default-selectopts.cg")
 
 genSelectOpts :: Entity -> [ServiceParam] -> [String]
 genSelectOpts e params 
@@ -152,104 +147,20 @@ genSelectOpts e params
         defaultSort 
             | ServiceDefaultFilterSort `elem` params = [genDefaultSelectOpts e]
             | otherwise = []  
-
-filterJsonName :: String
-filterJsonName = "FilterJsonMsg"
-
-filterJsonPrefix :: String
-filterJsonPrefix = "filterJsonMsg_"
-
-sortJsonName :: String
-sortJsonName = "SortJsonMsg"
-
-sortJsonPrefix :: String
-sortJsonPrefix = "sortJsonMsg_"
-
-genFilterSortJson ::  [String]
-genFilterSortJson = ["data FilterJsonMsg = FilterJsonMsg {"]
-                     ++ (commas $ indent [
-                         fprefix ++ "type :: Text",
-                         fprefix ++ "value :: Text",
-                         fprefix ++ "field :: Text",
-                         fprefix ++ "comparison :: Text"    
-                           ]) 
-                     ++ ["}",
-                     "instance FromJSON FilterJsonMsg where",
-                     "     parseJSON (Object v) = FilterJsonMsg <$>",
-                     "           v .: \"type\" <*>",
-                     "           v .: \"value\" <*>",
-                     "           v .: \"field\" <*>",
-                     "           v .:? \"comparison\" .!= \"eq\"",
-                     "     parseJSON _ = mzero",
-                     "data " ++ sname ++ " = " ++ sname ++ " {"]
-                     ++ (commas $ indent [
-                         sprefix ++ "property :: Text",
-                         sprefix ++ "direction :: Text"
-                             ])
-                     ++ ["}",
-                      "$(deriveJSON (drop " ++ (show . length $ sprefix)
-                         ++ ") ''" ++ sname ++ ")",
-                        "defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v",
-                        "defaultFilterOp \"eq\" = (==.)",
-                        "defaultFilterOp \"neq\" = (!=.)",
-                        "defaultFilterOp \"lt\" = (<.)",
-                        "defaultFilterOp \"gt\" = (>.)",
-                        "defaultFilterOp \"le\" = (<=.)",
-                        "defaultFilterOp \"ge\" = (>=.)",
-                        "defaultFilterOp _ = (==.)",
-                        "class MyRead a where",
-                        "    parseValue :: Text -> Maybe a",
-                        "instance MyRead Text where",
-                        "    parseValue t = Just t",
-                        "instance MyRead a => MyRead (Maybe a) where",
-                        "    parseValue \"\" = Nothing",
-                        "    parseValue t = case (parseValue t) of",
-                        "         (Just v) -> Just $ Just v",
-                        "         Nothing -> Nothing",
-                        "instance MyRead Int32 where",
-                        "    parseValue = safeRead",
-                        "instance MyRead Int64 where",
-                        "    parseValue = safeRead",
-                        "instance MyRead Word32 where",
-                        "    parseValue = safeRead",
-                        "instance MyRead Word64 where",
-                        "    parseValue = safeRead",
-                        "instance MyRead Double where",
-                        "    parseValue = safeRead",
-                        "instance MyRead Bool where",
-                        "    parseValue \"true\" = Just True",
-                        "    parseValue \"false\" = Just False",
-                        "    parseValue _ = Nothing",
-                        "instance MyRead TimeOfDay where",
-                        "    parseValue = safeRead",
-                        "instance MyRead Day where",
-                        "    parseValue = safeRead",
-                        "instance MyRead UTCTime where",
-                        "    parseValue = safeRead",
-                        "instance MyRead ZonedTime where",
-                        "    parseValue = safeRead",
-                        "safeRead s = case (reads $ T.unpack s) of",
-                        "   [(v,_)] -> Just v",
-                        "   _ -> Nothing"]
-    where fname = filterJsonName
-          fprefix = filterJsonPrefix
-          sname = sortJsonName
-          sprefix = sortJsonPrefix
-
 entityFieldTypeName :: Entity -> Field -> String
 entityFieldTypeName e f = upperFirst $ entityFieldName e f 
 
 filterField :: Entity -> Field -> String        
 filterField e f@(Field optional name _) =
-    "\"" ++ fieldName f ++ "\" -> case (parseValue $ " ++ filterJsonPrefix ++ "value f) of (Just v) -> Just $ defaultFilterOp " 
+    "\"" ++ fieldName f ++ "\" -> case (parseValue $ " ++ "filterJsonMsg_" ++ "value f) of (Just v) -> Just $ defaultFilterOp " 
     ++ " ("
-    ++ filterJsonPrefix ++ "comparison f) "
+    ++ "filterJsonMsg_" ++ "comparison f) "
     ++ entityFieldTypeName e f  
               ++ (if optional then " (Just v)" else " v") ++ " ; _ -> Nothing"
     
 sortField :: Entity -> Field -> String
 sortField e f = 
-    "\"" ++ fieldName f ++ "\" -> case (" ++ sortJsonPrefix
+    "\"" ++ fieldName f ++ "\" -> case (" ++ "sortJsonMsg_"
     ++ "direction s) of \"ASC\" -> Just $ Asc " ++ entityFieldTypeName e f
     ++ "; \"DESC\" -> Just $ Desc " ++ entityFieldTypeName e f 
     ++ "; _ -> Nothing"
@@ -257,11 +168,11 @@ sortField e f =
 genDefaultFilterSort :: Entity -> [String]
 genDefaultFilterSort e =
     [fname ++ " :: FilterJsonMsg -> Maybe (Filter " ++ entityName e ++ ")",
-     fname ++ " f = case (" ++ filterJsonPrefix ++ "field f) of"]
+     fname ++ " f = case (" ++ "filterJsonMsg_" ++ "field f) of"]
     ++ (indent $ map (filterField e) (entityFields e)
                 ++ ["_ -> Nothing"])
     ++ [sname ++ " :: SortJsonMsg -> Maybe (SelectOpt " ++ entityName e ++ ")",
-        sname ++ " s = case (" ++ sortJsonPrefix ++ "property s) of"]
+        sname ++ " s = case (" ++ "sortJsonMsg_" ++ "property s) of"]
     ++ (indent $ map (sortField e) (entityFields e)
                  ++ ["_ -> Nothing"])
     where fname = "toDefaultFilter" ++ entityName e
@@ -380,49 +291,12 @@ postHooks extra params = postHooks' (mapMaybe matchPostHook params)
                                         [ "H." ++ f ++ extra | f <- fs]) ++ "]"]
 
 genHandlers :: DbModule -> String
-genHandlers db = unlines $ 
-    ["{-# LANGUAGE RankNTypes #-}",
-    "{-# LANGUAGE FlexibleInstances #-}",
-    "module Handler.Generated ("]
-    ++ commas (indent (concatMap serviceNames $ dbEntities db))
-    ++ [") where ",
-    "import Import",
-    "import Yesod.Auth",
-    "import Model.Validation",
-    "import Model.Json ()",
-    "import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)",
-    "import Data.Aeson.TH",
-    "import Data.Int",
-    "import Data.Word",
-    "import Data.Time",
-    "import Data.Text.Encoding (encodeUtf8)",
-    "import qualified Data.ByteString.Lazy as LBS",
-    "import Data.Maybe",
-    "import qualified Data.Text.Read",
-    "import Data.Aeson.Types (emptyObject)",
-    "import qualified Handler.Hooks as H",
-    "import qualified Data.Text as T",
-    "import Control.Monad (mzero)",
-    ""]
-    ++ genFilterSortJson
-    ++ ["getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]",
-
-    "getRangeSelectOpts = do"]
-    ++ (indent $ ["start <- lookupGetParam \"start\"",
-                "limit <- lookupGetParam \"limit\"",
-                "return $ mkOpts (parseInt start) (parseInt limit)"
-            ]
-    ++ (indent $ ["where"] ++ 
-        (indent ["parseInt (Just s) = case (Data.Text.Read.decimal s) of",
-                 "  Right (x,_) -> Just x",
-                 "  _ -> Nothing",
-                 "parseInt _ = Nothing",
-                 "mkOpts (Just s) (Just l) = [ OffsetBy s, LimitTo l ]",
-                 "mkOpts _ _ = []"])))
-   ++ concatMap (genHandler db) (dbEntities db)
+genHandlers db = (T.unpack $(codegenFile "codegen/handlers.cg"))
+                 ++ (unlines $ concatMap (genHandler db) (dbEntities db))
     where
         genHandler db e = concatMap (genService db e) (entityServices e)
         serviceNames e = concatMap (serviceName e) (entityServices e)
+        services = (T.pack . unlines) $ commas (indent (concatMap serviceNames $ dbEntities db))
         serviceName e (Service GetService _) = ["get" ++ entityName e
                                                 ++ "ManyR",
                                                 "get" ++ entityName e ++ "R"]
@@ -559,6 +433,7 @@ genInterfaces db = unlines $ [
 
 indent :: [String] -> [String]
 indent = map (\l -> "    " ++ l)
+
 
 commas :: [String] -> [String]
 commas (x1:x2:xs) = (x1 ++ ","):commas (x2:xs)
