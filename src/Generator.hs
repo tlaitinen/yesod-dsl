@@ -155,24 +155,12 @@ filterField e f@(Field optional name _) = T.unpack $ $(codegenFile "codegen/defa
     where dataType = if optional then "(Just v)" else "v"
     
 sortField :: Entity -> Field -> String
-sortField e f = 
-    "\"" ++ fieldName f ++ "\" -> case (" ++ "sortJsonMsg_"
-    ++ "direction s) of \"ASC\" -> Just $ Asc " ++ entityFieldTypeName e f
-    ++ "; \"DESC\" -> Just $ Desc " ++ entityFieldTypeName e f 
-    ++ "; _ -> Nothing"
+sortField e f = T.unpack $ $(codegenFile "codegen/default-sort-field.cg")
 
 genDefaultFilterSort :: Entity -> [String]
-genDefaultFilterSort e =
-    [fname ++ " :: FilterJsonMsg -> Maybe (Filter " ++ entityName e ++ ")",
-     fname ++ " f = case (" ++ "filterJsonMsg_" ++ "field f) of"]
-    ++ (indent $ map (filterField e) (entityFields e)
-                ++ ["_ -> Nothing"])
-    ++ [sname ++ " :: SortJsonMsg -> Maybe (SelectOpt " ++ entityName e ++ ")",
-        sname ++ " s = case (" ++ "sortJsonMsg_" ++ "property s) of"]
-    ++ (indent $ map (sortField e) (entityFields e)
-                 ++ ["_ -> Nothing"])
-    where fname = "toDefaultFilter" ++ entityName e
-          sname = "toDefaultSort" ++ entityName e
+genDefaultFilterSort e = (lines . T.unpack) $(codegenFile "codegen/default-filter-sort.cg")
+    where fieldFilters = unlines $ indent $ map (filterField e) (entityFields e)
+          fieldSorters = unlines $ indent $ map (sortField e) (entityFields e)
 
 genService :: DbModule -> Entity -> Service -> [String]
 genService db e (Service GetService params) =
