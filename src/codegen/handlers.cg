@@ -55,38 +55,57 @@ safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v
    _ -> Nothing
 
-class SafeRead a where
-    parseValue :: Text -> Maybe a
+instance PathPiece Int32 where
+    fromPathPiece s = 
+        case Data.Text.Read.decimal s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+    toPathPiece = T.pack . show
 
-instance SafeRead Text where
-    parseValue t = Just t
-instance SafeRead a => SafeRead (Maybe a) where
-    parseValue "" = Nothing
-    parseValue t = case (parseValue t) of
-         (Just v) -> Just $ Just v
-         Nothing -> Nothing
-instance SafeRead Int32 where
-    parseValue = safeRead
-instance SafeRead Int64 where
-    parseValue = safeRead
-instance SafeRead Word32 where
-    parseValue = safeRead
-instance SafeRead Word64 where
-    parseValue = safeRead
-instance SafeRead Double where
-    parseValue = safeRead
-instance SafeRead Bool where
-    parseValue "true" = Just True
-    parseValue "false" = Just False
-    parseValue _ = Nothing
-instance SafeRead TimeOfDay where
-    parseValue = safeRead
-instance SafeRead Day where
-    parseValue = safeRead
-instance SafeRead UTCTime where
-    parseValue = safeRead
-instance SafeRead ZonedTime where
-    parseValue = safeRead
+instance PathPiece Word32 where
+    fromPathPiece s =
+        case Data.Text.Read.decimal s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+
+    toPathPiece = T.pack . show
+
+instance PathPiece Word64 where
+    fromPathPiece s = 
+        case Data.Text.Read.decimal s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+
+    toPathPiece = T.pack . show
+
+instance PathPiece Double where
+    fromPathPiece s = 
+        case Data.Text.Read.double s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+    toPathPiece = T.pack . show
+
+instance PathPiece Bool where
+    fromPathPiece "true" = Just True
+    fromPathPiece "false" = Just False
+    fromPathPiece "True" = Just True
+    fromPathPiece "False" = Just False
+    fromPathPiece  _ = Nothing
+    toPathPiece = T.pack . show
+
+instance PathPiece TimeOfDay where
+    fromPathPiece = safeRead
+    toPathPiece = T.pack . show
+
+instance PathPiece UTCTime where
+    fromPathPiece = safeRead
+    toPathPiece = T.pack . show
+
+instance PathPiece ZonedTime where
+    fromPathPiece = safeRead
+    toPathPiece = T.pack . show
+
+
 
 getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
 getRangeSelectOpts = do
