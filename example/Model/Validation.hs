@@ -12,6 +12,7 @@ checkResult msg f = do
 
 class Validatable a where
     validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]
+
 instance Validatable ChangeRecord where 
     validate e = do
         errors <- sequence [

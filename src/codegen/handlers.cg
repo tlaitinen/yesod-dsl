@@ -107,7 +107,7 @@ instance PathPiece ZonedTime where
 
 
 
-getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
+-- getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
 getRangeSelectOpts = do
     start <- lookupGetParam "start"
     limit <- lookupGetParam "limit"

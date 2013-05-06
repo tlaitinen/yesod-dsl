@@ -1,4 +1,4 @@
-get~{entityName e}R :: ~{entityName e}Id -> Handler RepJson
+get~{entityName e}R :: ~{entityName e}Id -> Handler Value
 get~{entityName e}R key = do
     ~{maybeRequireAuth params}
 

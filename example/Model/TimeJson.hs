@@ -12,3 +12,4 @@ instance FromJSON Day where
         case reads s of
             (d, _):_ -> return d
             [] -> mzero 
+
