@@ -17,6 +17,8 @@ import System.Exit
 
 %token
     import     { Tk _ TImport }
+    enum       { Tk _ TEnum }
+    pipe       { Tk _ TPipe }
     entity   { Tk _ TEntity }
     iface      { Tk _ TClass }
     unique     { Tk _ TUnique }
@@ -26,6 +28,7 @@ import System.Exit
     intval        { Tk _ (TInt $$)  }
     floatval      { Tk _ (TFloat $$) }
     semicolon  { Tk _ TSemicolon }
+    equals { Tk _ TEquals }
     lbrace { Tk _ TLBrace }
     rbrace { Tk _ TRBrace }
     lparen { Tk _ TLParen }
@@ -63,7 +66,8 @@ import System.Exit
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
-                                        (getClasses $2)}
+                                        (getClasses $2)
+                                        (getEnums $2)}
 
 imports : { [] }
         | imports importStmt { $2 : $1 }
@@ -73,6 +77,14 @@ dbDefs : {- empty -}   { [] }
        | dbDefs dbDef  { $2 : $1 }
 dbDef : entityDef      { EntityDef $1 } 
       | ifaceDef      { ClassDef $1 }
+      | enumDef       { EnumDef $1 }
+
+enumDef : enum upperId equals enumValues semicolon 
+         { DbEnum (mkLoc $1) $2 $4 }
+
+enumValues : upperId { [$1] }
+           | enumValues pipe upperId { $3 : $1 }
+    
 
 entityDef : entity upperId maybeImplementations lbrace 
             fields

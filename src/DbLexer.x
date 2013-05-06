@@ -29,6 +29,8 @@ tokens :-
     \) { mkT TRParen }
     \, { mkT TComma }
     \. { mkT TDot }
+    \= { mkT TEquals }
+    \| { mkT TPipe }
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
@@ -36,6 +38,7 @@ tokens :-
 
     "delete" { mkT TDelete }
     "import" { mkT TImport }
+    "enum" { mkT TEnum }
     "entity" { mkT TEntity }
     "class" { mkT TClass  }
     "unique" { mkT TUnique }
@@ -78,9 +81,12 @@ data TokenType = TSemicolon
                | TRParen
                | TLBrack
                | TRBrack
+               | TEquals
+               | TPipe
                | TComma
                | TDot
                | TImport
+               | TEnum
                | TEntity
                | TUnique
                | TClass

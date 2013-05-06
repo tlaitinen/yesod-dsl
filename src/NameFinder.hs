@@ -10,7 +10,15 @@ findNames db
     where
         entityNames  = [(entityLoc e, entityName e) | e <- dbEntities db ]
         ifaceNames   = [(ifaceLoc i, ifaceName i) | i <- dbClasses db ]
-        allNames     = entityNames ++ ifaceNames
+        enumNames    = [(enumLoc e, enumName e) | e <- dbEnums db ]
+        entityFieldNames = [(entityLoc e, entityName e ++ "." ++ fieldName f)
+                           | e <- dbEntities db, f <- entityFields e ]
+        ifaceFieldNames = [(ifaceLoc i, ifaceName i ++ "." ++ fieldName f)
+                           | i <- dbClasses db, f <- ifaceFields i ]
+        enumValueNames = [(enumLoc e, enumName e ++ "." ++ v) 
+                         | e <- dbEnums db, v <- enumValues e ]
+        allNames     = entityNames ++ ifaceNames ++ enumNames ++ entityFieldNames ++ ifaceFieldNames
+
 
         sameNameOrd (_,n1) (_,n2) = compare n1 n2
         sortedNames = sortBy sameNameOrd allNames

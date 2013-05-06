@@ -289,6 +289,15 @@ genHandlers db = (T.unpack $(codegenFile "codegen/handlers.cg"))
 timeJson :: String 
 timeJson = T.unpack $(codegenFile "codegen/time-json.cg")
         
+genEnums :: DbModule -> String
+genEnums db = (T.unpack $(codegenFile "codegen/enums.cg"))
+             ++ (intercalate "\n" $ map genEnum (dbEnums db))
+    where genEnum e = "data " ++ enumName e ++ " = " 
+                       ++ (intercalate " | " (enumValues e))
+                       ++ " deriving (Show, Read, Eq)\n"
+                       ++ "derivePersistField \"" ++ enumName e ++ "\"\n"
+               
+              
 generateModels :: DbModule -> [(FilePath,String,Bool)]
 generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db), True),
                       ("config/routes", 
@@ -296,6 +305,7 @@ generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities 
                       ("Model/Validation.hs", genValidation db, False ),
                       ("Model/Classes.hs", genInterfaces db, False ),
                       ("Model/TimeJson.hs", timeJson, False),
+                      ("Model/Enums.hs", genEnums db, False),
                       ("Handler/Generated.hs", genHandlers db, False) ]
 
 genFieldChecker :: Entity -> Field -> Maybe String

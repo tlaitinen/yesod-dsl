@@ -16,7 +16,8 @@ merge :: DbModule -> DbModule -> DbModule
 merge db1 db2 = DbModule {
         dbImports = dbImports db1 ++ dbImports db2,
         dbEntities = dbEntities db1 ++ dbEntities db2,
-        dbClasses = dbClasses db1 ++ dbClasses db2
+        dbClasses = dbClasses db1 ++ dbClasses db2,
+        dbEnums = dbEnums db1 ++ dbEnums db2
     }
 
 updateLocation :: (FilePath,DbModule) -> DbModule

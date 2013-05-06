@@ -7,16 +7,19 @@ type ImportPath = FilePath
 data DbModule = DbModule {
     dbImports   :: [ImportPath],
     dbEntities  :: [Entity],
-    dbClasses :: [Class]
+    dbClasses :: [Class],
+    dbEnums :: [DbEnum]
 }
     deriving (Show)
 emptyDbModule = DbModule {
     dbImports = [],
     dbEntities = [],
-    dbClasses = []
+    dbClasses = [],
+    dbEnums = []
 }
 data DbDef = EntityDef Entity
            | ClassDef Class
+           | EnumDef DbEnum
            deriving (Show)
 
 
@@ -25,11 +28,16 @@ isClass (ClassDef _) = True
 isClass _ = False
 isEntity (EntityDef _) = True
 isEntity _ = False
+isEnum (EnumDef _) = True
+isEnum _ = False
 
 getEntities :: [DbDef] -> [Entity]
 getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
 getClasses :: [DbDef] -> [Class]
 getClasses defs = map (\(ClassDef e) -> e) $ filter isClass defs
+
+getEnums :: [DbDef] -> [DbEnum]
+getEnums defs = map (\(EnumDef e) -> e) $ filter isEnum defs
 
    
 
@@ -78,6 +86,11 @@ data Entity = Entity {
     entityServices   :: [Service]
 } deriving (Show)
             
+data DbEnum = DbEnum {
+    enumLoc :: Location,
+    enumName :: String,
+    enumValues :: [String]
+} deriving (Show)
 
 entityPath :: Entity -> String
 entityPath e = entityName e ++ " in " ++ show (entityLoc e)
