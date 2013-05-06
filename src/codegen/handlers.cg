@@ -5,7 +5,6 @@ module Handler.Generated(
 import Import
 import Yesod.Auth
 import Model.Validation
-import Model.Json ()
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH
 import Data.Int

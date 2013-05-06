@@ -59,6 +59,7 @@ import System.Exit
     defaultfiltersort { Tk _ TDefaultFilterSort }
     filter { Tk _ TFilter }
     selectopts {  Tk _ TSelectOpts }
+    deriving { Tk _ TDeriving }
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
@@ -76,9 +77,10 @@ dbDef : entityDef      { EntityDef $1 }
 entityDef : entity upperId maybeImplementations lbrace 
             fields
             uniques
+            derives
             checks
             services
-            rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 $8 }
+            rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 $8 $9 }
 
 services : { [] }
          | services servicedef { $2 : $1 }
@@ -127,9 +129,17 @@ value : stringval { StringValue $1 }
       | intval { IntValue $1 }
       | floatval { FloatValue $1 }
 
+      
 uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
 uniqueDef :  unique upperId fieldIdList { Unique $2 $3 }
+
+derives : { [] }
+        | derives deriveDef semicolon { $2 : $1 }
+deriveDef :  deriving upperId  { $2  }
+
+
+
 
 checks : { [] }
         | checks checkDef semicolon { $2 : $1 }

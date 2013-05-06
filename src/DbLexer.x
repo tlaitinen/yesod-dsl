@@ -58,6 +58,7 @@ tokens :-
     "default-filter-sort" { mkT TDefaultFilterSort }
     "filter" { mkT TFilter }
     "select-opts" { mkT TSelectOpts }
+    "deriving" { mkT TDeriving }
 	$digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
 	$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
@@ -114,6 +115,7 @@ data TokenType = TSemicolon
                | TDefaultFilterSort
                | TFilter
                | TSelectOpts
+               | TDeriving
         deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

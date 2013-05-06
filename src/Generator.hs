@@ -38,6 +38,9 @@ lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db))
 genUnique :: Unique -> String
 genUnique (Unique name fields) = "Unique" ++ name ++ " " ++ intercalate " " fields
 
+genDeriving :: ClassName -> String
+genDeriving name = "deriving " ++ name
+
 genFieldType :: DbModule -> Field -> String
 genFieldType db field = case (fieldContent field) of
     (NormalField ftype _)   -> fromTkType ftype
@@ -74,7 +77,9 @@ genField db field = fieldName field ++ " " ++ persistFieldType db field
 genModel :: DbModule -> Entity -> String
 genModel db entity = unlines $ [ entityName entity ++ " json"] 
                             ++ (indent $ (map (genField db) (entityFields entity))
-                                    ++ (map genUnique (entityUniques entity)))
+                                    ++ (map genUnique (entityUniques entity))
+                                    ++ (map genDeriving (entityDeriving entity)))
+                                    
 
 handlerName :: Entity -> String -> String
 handlerName e name =  entityName e ++ name ++ "R"
@@ -290,28 +295,9 @@ generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities 
                        unlines $ concatMap (genRoutes db) (dbEntities db), True),
                       ("Model/Validation.hs", genValidation db, False ),
                       ("Model/Classes.hs", genInterfaces db, False ),
-                      ("Model/Json.hs", genJson db, False),
                       ("Model/TimeJson.hs", timeJson, False),
                       ("Handler/Generated.hs", genHandlers db, False) ]
 
-genJson :: DbModule -> String
-genJson db = unlines (  ["{-# LANGUAGE FlexibleInstances #-}",
-                         "module Model.Json where",
-                         "import Import",
-                         "import Data.Aeson",
-                         "import qualified Data.HashMap.Lazy as HML"
-
-                         ] 
-                         ++ (concatMap genJsonInstance $ dbEntities db))
-    
-    where genJsonInstance e = 
-            [
-            "instance ToJSON (Entity " ++ entityName e ++ ") where"]
-            ++ (indent $ [
-              "toJSON (Entity k v) = case toJSON v of"]
-              ++ (indent [
-                  "Object o -> Object $ HML.insert \"id\" (toJSON k) o",
-                  "_ -> error \"unexpected JS encode error\""]))
 genFieldChecker :: Entity -> Field -> Maybe String
 genFieldChecker e f@(Field _ fname (NormalField _ opts)) 
         | null opts = Nothing

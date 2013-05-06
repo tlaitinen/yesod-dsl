@@ -73,6 +73,7 @@ data Entity = Entity {
     entityImplements :: [ClassName],
     entityFields     :: [Field],
     entityUniques    :: [Unique],
+    entityDeriving   :: [ClassName],
     entityChecks     :: [FunctionName],
     entityServices   :: [Service]
 } deriving (Show)
