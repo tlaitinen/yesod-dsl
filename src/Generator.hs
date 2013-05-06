@@ -76,7 +76,7 @@ genField db field = fieldName field ++ " " ++ persistFieldType db field
 
 genModel :: DbModule -> Entity -> String
 genModel db entity = unlines $ [ entityName entity ++ " json"] 
-                            ++ (indent $ (map (genField db) (entityFields entity))
+                            ++ (indent $ (map (genField db) (reverse $ entityFields entity))
                                     ++ (map genUnique (entityUniques entity))
                                     ++ (map genDeriving (entityDeriving entity)))
                                     
