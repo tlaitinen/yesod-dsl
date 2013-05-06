@@ -131,6 +131,7 @@ data Field = Field {
 type FunctionName = String
 
 data FieldOption = FieldCheck FunctionName
+                 | FieldDefault String
                  deriving (Show)
 
 data FieldValue = StringValue String
@@ -138,5 +139,16 @@ data FieldValue = StringValue String
                 | FloatValue Double
                 deriving (Show)
 
+fieldOptions :: Field -> [FieldOption]
+fieldOptions f = fieldContentOptions (fieldContent f)
+    where fieldContentOptions (NormalField  _ options) = options
+          fieldContentOptions _ = []
+    
+fieldDefault :: Field -> Maybe String
+fieldDefault f = maybe Nothing (\(FieldDefault d) -> Just d) 
+                      (find isFieldDefault (fieldOptions f))
+    where
+        isFieldDefault (FieldDefault _) = True
+        isFieldDefault _ = False
 
 

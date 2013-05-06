@@ -66,10 +66,12 @@ haskellFieldType db field = (maybeMaybe (fieldOptional field)) ++ genFieldType d
             maybeMaybe False = ""
 
 persistFieldType :: DbModule -> Field -> String
-persistFieldType db field = genFieldType db field ++ (maybeMaybe (fieldOptional field))
+persistFieldType db field = genFieldType db field ++ (maybeMaybe (fieldOptional field)) ++ (maybeDefault (fieldDefault field))
         where
             maybeMaybe True = " Maybe "
             maybeMaybe False = " "
+            maybeDefault (Just d) = " default='" ++ d ++ "'"
+            maybeDefault _ = " "
 
 genField :: DbModule -> Field -> String
 genField db field = fieldName field ++ " " ++ persistFieldType db field
@@ -311,9 +313,12 @@ generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities 
 genFieldChecker :: Entity -> Field -> Maybe String
 genFieldChecker e f@(Field _ fname (NormalField _ opts)) 
         | null opts = Nothing
-        | otherwise = Just $ join "," $ mapMaybe maybeCheck opts
+        | otherwise = maybeList $ mapMaybe maybeCheck opts
         where
             maybeCheck (FieldCheck func) = Just $ "checkResult \"" ++ entityName e ++ "." ++ fname ++ " " ++ func ++ "\" (V." ++ func ++ " $ " ++ entityFieldName e f ++ " e)"
+            maybeCheck _ = Nothing
+            maybeList l@(x:xs) = Just $ join "," l
+            maybeList _ = Nothing
 genFieldChecker name _ = Nothing
 
 genEntityChecker :: Entity -> [String]

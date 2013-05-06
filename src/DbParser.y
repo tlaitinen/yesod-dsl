@@ -63,6 +63,7 @@ import System.Exit
     filter { Tk _ TFilter }
     selectopts {  Tk _ TSelectOpts }
     deriving { Tk _ TDeriving }
+    default  { Tk _ TDefault }
 %%
 
 dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
@@ -136,6 +137,7 @@ fieldOptions : { [] }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
 fieldOption : check lowerId { FieldCheck $2 }
+            | default stringval { FieldDefault $2 }
 
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }
