@@ -43,7 +43,8 @@ entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
 implInEntity :: DbModule -> [Class] -> Entity -> Entity
 implInEntity db ifaces e 
     | null invalidClassNames = e {
-        entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields
+        entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields,
+        entityUniques = entityUniques e ++ concatMap ifaceUniques validClasses
     }
     | otherwise        = entityError e $ "Invalid interfaces " 
                                         ++ show invalidClassNames

@@ -124,7 +124,8 @@ implementations : upperId { [$1] }
 
 ifaceDef : iface upperId lbrace
              fields
-            rbrace { Class (mkLoc $1) $2 $4  }
+            uniques
+            rbrace { Class (mkLoc $1) $2 $4 $5 }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }

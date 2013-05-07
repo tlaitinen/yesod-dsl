@@ -99,7 +99,8 @@ entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 data Class = Class {
     ifaceLoc     :: Location,
     ifaceName    :: String,
-    ifaceFields  :: [Field]
+    ifaceFields  :: [Field],
+    ifaceUniques :: [Unique]
 } deriving (Show)
 
 dbLookup :: DbModule -> String -> DbDef
