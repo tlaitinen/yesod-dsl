@@ -44,7 +44,7 @@ implInEntity :: DbModule -> [Class] -> Entity -> Entity
 implInEntity db ifaces e 
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields,
-        entityUniques = entityUniques e ++ concatMap ifaceUniques validClasses
+        entityUniques = entityUniques e ++ (map (addEntityName e) $ concatMap ifaceUniques validClasses)
     }
     | otherwise        = entityError e $ "Invalid interfaces " 
                                         ++ show invalidClassNames
@@ -56,5 +56,6 @@ implInEntity db ifaces e
         validClasses = catMaybes implementedClasses
                                      
         extraFields = concat $ map ifaceFields validClasses
+        addEntityName e (Unique name fields) = Unique (entityName e ++ name) fields
         
     

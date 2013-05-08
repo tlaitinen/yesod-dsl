@@ -5,4 +5,4 @@ get~{entityName e}ManyR = do
 ~{unlines $ indent $ genSelectOpts e params}
     entities <- runDB $ selectList (concat filters) (concat selectOpts)
 ~{unlines $ indent $ postHooks " entities" params}
-    return $ object [ "entities" .= toJSON entities ]    
+    return $ object [ "entities" .= myToJSON entities ]    

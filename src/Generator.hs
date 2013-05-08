@@ -36,7 +36,7 @@ lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db))
 
 
 genUnique :: Unique -> String
-genUnique (Unique name fields) = "Unique" ++ name ++ " " ++ intercalate " " fields
+genUnique (Unique name fields) = "Unique" ++ name ++ " " ++ intercalate " " fields ++ " !force"
 
 genDeriving :: ClassName -> String
 genDeriving name = "deriving " ++ name
@@ -307,9 +307,31 @@ generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities 
                       ("Model/Validation.hs", genValidation db, False ),
                       ("Model/Classes.hs", genInterfaces db, False ),
                       ("Model/TimeJson.hs", timeJson, False),
+                      ("Model/Json.hs", genJson db, False),
                       ("Model/Enums.hs", genEnums db, False),
                       ("Handler/Generated.hs", genHandlers db, False) ]
+genJson :: DbModule -> String
+genJson db = unlines (  ["{-# LANGUAGE FlexibleInstances #-}",
+                         "module Model.Json where",
+                         "import Import",
+                         "import Data.Aeson",
+                         "import qualified Data.HashMap.Lazy as HML",
+                         "import qualified Data.Vector as V",
+                         "class MyToJSON a where",
+                         "    myToJSON :: a -> Value",
+                         "instance MyToJSON a => MyToJSON [a] where",
+                         "    myToJSON xs = Array $ V.fromList $ map myToJSON xs"
+                         ]
+                         ++ (concatMap genJsonInstance $ dbEntities db))
 
+    where genJsonInstance e =
+            [
+            "instance MyToJSON (Entity " ++ entityName e ++ ") where"]
+            ++ (indent $ [
+              "myToJSON (Entity k v) = case toJSON v of"]
+              ++ (indent [
+                  "Object o -> Object $ HML.insert \"id\" (toJSON k) o",
+                  "_ -> error \"unexpected JS encode error\""]))
 genFieldChecker :: Entity -> Field -> Maybe String
 genFieldChecker e f@(Field _ fname (NormalField _ opts)) 
         | null opts = Nothing
