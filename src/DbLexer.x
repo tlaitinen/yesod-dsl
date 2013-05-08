@@ -35,7 +35,6 @@ tokens :-
     "put" { mkT TPut }
     "post" { mkT TPost }
     "validate" { mkT TValidate }
-
     "delete" { mkT TDelete }
     "import" { mkT TImport }
     "enum" { mkT TEnum }
@@ -43,6 +42,8 @@ tokens :-
     "class" { mkT TClass  }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
+    "pre-transform" { mkT TPreTransform }
+    "post-transform" { mkT TPostTransform }
     "pre-hook" { mkT TPreHook }
     "post-hook" { mkT TPostHook }
     "public" { mkT TPublic }
@@ -59,6 +60,7 @@ tokens :-
     "DateTime" { mkT TDateTime }
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
+    "text-search-filter" { mkT TTextSearchFilter }
     "filter" { mkT TFilter }
     "select-opts" { mkT TSelectOpts }
     "default" { mkT TDefault }
@@ -116,10 +118,13 @@ data TokenType = TSemicolon
                | TPost
                | TDelete
                | TPublic
+               | TPreTransform
+               | TPostTransform
                | TPreHook
                | TPostHook
                | TValidate
                | TDefaultFilterSort
+               | TTextSearchFilter
                | TFilter
                | TSelectOpts
                | TDeriving

@@ -121,6 +121,9 @@ genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
 genDefaultFilter :: Entity -> [String]
 genDefaultFilter e = (indent . lines . T.unpack) $(codegenFile "codegen/default-filter.cg")
 
+genTextSearchFilterInHandler :: Entity -> T.Text -> [String]
+genTextSearchFilterInHandler e paramName = (indent . lines . T.unpack) $(codegenFile "codegen/text-search-filter-in-handler.cg")
+
 genFilters :: Entity -> [ServiceParam] -> [String]
 genFilters e params 
     | null filters = ["let filters = [] :: [[Filter " ++ entityName e ++ "]]"]
@@ -131,7 +134,9 @@ genFilters e params
         filters = intercalate [","] $ mapMaybe mkFilter params ++ defaultFilter
         mkFilter :: ServiceParam -> Maybe [String]
         mkFilter (ServiceFilter f) = Just $ ["H." ++ f]
+        mkFilter (ServiceTextSearchFilter p _) = Just $ genTextSearchFilterInHandler e (T.pack p)
         mkFilter _ = Nothing
+
         hasDefaultFilter = ServiceDefaultFilterSort `elem` params
         defaultFilter 
             | ServiceDefaultFilterSort `elem` params = [genDefaultFilter e]
@@ -169,8 +174,13 @@ genDefaultFilterSort e = (lines . T.unpack) $(codegenFile "codegen/default-filte
     where fieldFilters = unlines $ indent $ map (filterField e) (entityFields e)
           fieldSorters = unlines $ indent $ map (sortField e) (entityFields e)
 
+genTextSearchFilter :: Entity -> T.Text -> [FieldName] -> [String]
+genTextSearchFilter e paramName fieldNames = (lines . T.unpack) $(codegenFile "codegen/text-search-filter.cg")
+    where 
+        fieldFilter f = rstrip $ T.unpack $ $(codegenFile "codegen/text-search-filter-field.cg")
+        fieldFilters = intercalate "] ||. [" $ map (fieldFilter . (entityFieldByName e)) fieldNames
 genService :: DbModule -> Entity -> Service -> [String]
-genService db e (Service GetService params) = maybeDefaultFilterSort ++ (lines . T.unpack $ $(codegenFile "codegen/get-many-handler.cg"))
+genService db e (Service GetService params) = concatMap handleParam params ++ maybeDefaultFilterSort ++ (lines . T.unpack $ $(codegenFile "codegen/get-many-handler.cg"))
     ++   ["", "get" ++ handlerName e "" ++ " :: " 
                                  ++ entityName e ++ "Id -> Handler Value",
                      "get" ++ handlerName e "" ++ " key = do"]
@@ -183,6 +193,8 @@ genService db e (Service GetService params) = maybeDefaultFilterSort ++ (lines .
     where maybeDefaultFilterSort
                 | ServiceDefaultFilterSort `elem` params = genDefaultFilterSort e
                 | otherwise = []
+          handleParam (ServiceTextSearchFilter p fs) = genTextSearchFilter e (T.pack p) fs
+          handleParam _ = []
 genService db e (Service PutService params) =                             
                      ["","put" ++ handlerName e "" ++ " :: " 
                              ++ entityName e ++ "Id -> Handler Value",

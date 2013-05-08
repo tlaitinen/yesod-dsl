@@ -56,10 +56,13 @@ import System.Exit
     post { Tk _ TPost }
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
+    pretransform { Tk _ TPreTransform }
+    posttransform { Tk _ TPostTransform }
     prehook { Tk _ TPreHook }
     posthook { Tk _ TPostHook }
     validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
+    textsearchfilter { Tk _ TTextSearchFilter }
     filter { Tk _ TFilter }
     selectopts {  Tk _ TSelectOpts }
     deriving { Tk _ TDeriving }
@@ -110,7 +113,10 @@ serviceParams : { [] }
 serviceParam : public { PublicService }
              | prehook lowerId { ServicePreHook $2 }
              | posthook lowerId { ServicePostHook $2 }
+             | pretransform lowerId { ServicePreTransform $2 }
+             | posttransform lowerId { ServicePostTransform $2 }
              | defaultfiltersort { ServiceDefaultFilterSort }
+             | textsearchfilter stringval fieldIdList { ServiceTextSearchFilter $2 $3 }
              | filter lowerId { ServiceFilter $2 }
              | selectopts lowerId { ServiceSelectOpts $2 }
              

@@ -1,1 +1,1 @@
-"~{fieldName f}" -> case (fromPathPiece $ filterJsonMsg_value f) of (Just v) -> Just $ defaultFilterOp (filterJsonMsg_comparison f) ~{entityFieldTypeName e f} ~{dataType} ; _ -> Nothing
+"~{fieldName f}" -> case (fromPathPiece $ filterJsonMsg_value f) of (Just v) -> [ defaultFilterOp (filterJsonMsg_comparison f) ~{entityFieldTypeName e f} ~{dataType} ] ; _ -> []

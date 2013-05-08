@@ -45,7 +45,7 @@ getEnums defs = map (\(EnumDef e) -> e) $ filter isEnum defs
 type ClassName = String
 
 type UniqueFlag = Bool
-
+type ParamName = String
 type EntityName = String
 type FieldType = TokenType
 type FieldName = String
@@ -68,8 +68,11 @@ data ServiceType = GetService
                  | ValidateService  deriving (Show, Eq) 
 data ServiceParam = PublicService 
                   | ServiceDefaultFilterSort
+                  | ServiceTextSearchFilter ParamName [FieldName]
                   | ServiceFilter FunctionName
                   | ServiceSelectOpts FunctionName
+                  | ServicePreTransform FunctionName
+                  | ServicePostTransform FunctionName
                   | ServicePreHook FunctionName 
                   | ServicePostHook FunctionName  deriving (Show, Eq) 
                    
@@ -85,7 +88,11 @@ data Entity = Entity {
     entityChecks     :: [FunctionName],
     entityServices   :: [Service]
 } deriving (Show)
-            
+           
+entityFieldByName :: Entity -> FieldName -> Field
+entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
+                               (find (\f -> fieldName f == fn) (entityFields e))
+
 data DbEnum = DbEnum {
     enumLoc :: Location,
     enumName :: String,

@@ -61,7 +61,7 @@ action_2 (6#) = happyGoto action_4
 action_2 (7#) = happyGoto action_5
 action_2 x = happyTcHack x happyReduce_5
 
-action_3 (83#) = happyAccept
+action_3 (86#) = happyAccept
 action_3 x = happyTcHack x happyFail
 
 action_4 x = happyTcHack x happyReduce_3
@@ -103,7 +103,7 @@ action_15 x = happyTcHack x happyFail
 
 action_16 (55#) = happyShift action_21
 action_16 (17#) = happyGoto action_20
-action_16 x = happyTcHack x happyReduce_30
+action_16 x = happyTcHack x happyReduce_33
 
 action_17 (47#) = happyShift action_19
 action_17 x = happyTcHack x happyFail
@@ -122,20 +122,20 @@ action_21 (18#) = happyGoto action_24
 action_21 x = happyTcHack x happyFail
 
 action_22 (20#) = happyGoto action_23
-action_22 x = happyTcHack x happyReduce_35
+action_22 x = happyTcHack x happyReduce_38
 
 action_23 (42#) = happyShift action_35
 action_23 (21#) = happyGoto action_33
 action_23 (26#) = happyGoto action_34
-action_23 x = happyTcHack x happyReduce_48
+action_23 x = happyTcHack x happyReduce_51
 
 action_24 (54#) = happyShift action_32
-action_24 x = happyTcHack x happyReduce_31
+action_24 x = happyTcHack x happyReduce_34
 
-action_25 x = happyTcHack x happyReduce_32
+action_25 x = happyTcHack x happyReduce_35
 
 action_26 (20#) = happyGoto action_31
-action_26 x = happyTcHack x happyReduce_35
+action_26 x = happyTcHack x happyReduce_38
 
 action_27 (37#) = happyShift action_29
 action_27 (46#) = happyShift action_30
@@ -151,7 +151,7 @@ action_30 x = happyTcHack x happyReduce_10
 action_31 (42#) = happyShift action_35
 action_31 (21#) = happyGoto action_33
 action_31 (26#) = happyGoto action_43
-action_31 x = happyTcHack x happyReduce_48
+action_31 x = happyTcHack x happyReduce_51
 
 action_32 (43#) = happyShift action_42
 action_32 x = happyTcHack x happyFail
@@ -166,7 +166,7 @@ action_34 x = happyTcHack x happyFail
 
 action_35 (69#) = happyShift action_37
 action_35 (34#) = happyGoto action_36
-action_35 x = happyTcHack x happyReduce_70
+action_35 x = happyTcHack x happyReduce_73
 
 action_36 (43#) = happyShift action_49
 action_36 (58#) = happyShift action_50
@@ -183,7 +183,7 @@ action_36 (68#) = happyShift action_60
 action_36 (33#) = happyGoto action_48
 action_36 x = happyTcHack x happyFail
 
-action_37 x = happyTcHack x happyReduce_71
+action_37 x = happyTcHack x happyReduce_74
 
 action_38 (46#) = happyShift action_47
 action_38 x = happyTcHack x happyFail
@@ -191,69 +191,69 @@ action_38 x = happyTcHack x happyFail
 action_39 (43#) = happyShift action_46
 action_39 x = happyTcHack x happyFail
 
-action_40 x = happyTcHack x happyReduce_34
+action_40 x = happyTcHack x happyReduce_37
 
-action_41 x = happyTcHack x happyReduce_36
+action_41 x = happyTcHack x happyReduce_39
 
-action_42 x = happyTcHack x happyReduce_33
+action_42 x = happyTcHack x happyReduce_36
 
 action_43 (40#) = happyShift action_39
 action_43 (27#) = happyGoto action_38
 action_43 (28#) = happyGoto action_45
-action_43 x = happyTcHack x happyReduce_51
+action_43 x = happyTcHack x happyReduce_54
 
 action_44 x = happyTcHack x happyReduce_12
 
-action_45 (81#) = happyShift action_70
+action_45 (84#) = happyShift action_70
 action_45 (29#) = happyGoto action_68
 action_45 (30#) = happyGoto action_69
-action_45 x = happyTcHack x happyReduce_54
+action_45 x = happyTcHack x happyReduce_57
 
 action_46 (42#) = happyShift action_67
 action_46 (32#) = happyGoto action_66
-action_46 x = happyTcHack x happyReduce_57
+action_46 x = happyTcHack x happyReduce_60
 
-action_47 x = happyTcHack x happyReduce_49
+action_47 x = happyTcHack x happyReduce_52
 
 action_48 (41#) = happyShift action_64
-action_48 (82#) = happyShift action_65
+action_48 (85#) = happyShift action_65
 action_48 (22#) = happyGoto action_61
 action_48 (23#) = happyGoto action_62
 action_48 (24#) = happyGoto action_63
-action_48 x = happyTcHack x happyReduce_39
+action_48 x = happyTcHack x happyReduce_42
 
-action_49 x = happyTcHack x happyReduce_38
+action_49 x = happyTcHack x happyReduce_41
 
-action_50 x = happyTcHack x happyReduce_59
+action_50 x = happyTcHack x happyReduce_62
 
-action_51 x = happyTcHack x happyReduce_60
+action_51 x = happyTcHack x happyReduce_63
 
-action_52 x = happyTcHack x happyReduce_61
+action_52 x = happyTcHack x happyReduce_64
 
-action_53 x = happyTcHack x happyReduce_62
+action_53 x = happyTcHack x happyReduce_65
 
-action_54 x = happyTcHack x happyReduce_63
+action_54 x = happyTcHack x happyReduce_66
 
-action_55 x = happyTcHack x happyReduce_64
+action_55 x = happyTcHack x happyReduce_67
 
-action_56 x = happyTcHack x happyReduce_65
+action_56 x = happyTcHack x happyReduce_68
 
-action_57 x = happyTcHack x happyReduce_66
+action_57 x = happyTcHack x happyReduce_69
 
-action_58 x = happyTcHack x happyReduce_67
+action_58 x = happyTcHack x happyReduce_70
 
-action_59 x = happyTcHack x happyReduce_68
+action_59 x = happyTcHack x happyReduce_71
 
-action_60 x = happyTcHack x happyReduce_69
+action_60 x = happyTcHack x happyReduce_72
 
-action_61 x = happyTcHack x happyReduce_37
+action_61 x = happyTcHack x happyReduce_40
 
 action_62 (41#) = happyShift action_64
-action_62 (82#) = happyShift action_65
+action_62 (85#) = happyShift action_65
 action_62 (24#) = happyGoto action_79
-action_62 x = happyTcHack x happyReduce_40
+action_62 x = happyTcHack x happyReduce_43
 
-action_63 x = happyTcHack x happyReduce_41
+action_63 x = happyTcHack x happyReduce_44
 
 action_64 (42#) = happyShift action_78
 action_64 x = happyTcHack x happyFail
@@ -261,11 +261,11 @@ action_64 x = happyTcHack x happyFail
 action_65 (57#) = happyShift action_77
 action_65 x = happyTcHack x happyFail
 
-action_66 x = happyTcHack x happyReduce_50
+action_66 x = happyTcHack x happyReduce_53
 
 action_67 (42#) = happyShift action_67
 action_67 (32#) = happyGoto action_76
-action_67 x = happyTcHack x happyReduce_57
+action_67 x = happyTcHack x happyReduce_60
 
 action_68 (46#) = happyShift action_75
 action_68 x = happyTcHack x happyFail
@@ -278,14 +278,14 @@ action_69 x = happyTcHack x happyReduce_14
 action_70 (43#) = happyShift action_71
 action_70 x = happyTcHack x happyFail
 
-action_71 x = happyTcHack x happyReduce_53
+action_71 x = happyTcHack x happyReduce_56
 
 action_72 (49#) = happyShift action_83
 action_72 (70#) = happyShift action_84
 action_72 (71#) = happyShift action_85
 action_72 (72#) = happyShift action_86
 action_72 (73#) = happyShift action_87
-action_72 (77#) = happyShift action_88
+action_72 (79#) = happyShift action_88
 action_72 (13#) = happyGoto action_82
 action_72 x = happyTcHack x happyFail
 
@@ -295,19 +295,19 @@ action_73 x = happyTcHack x happyFail
 action_74 (42#) = happyShift action_80
 action_74 x = happyTcHack x happyFail
 
-action_75 x = happyTcHack x happyReduce_52
+action_75 x = happyTcHack x happyReduce_55
 
-action_76 x = happyTcHack x happyReduce_58
+action_76 x = happyTcHack x happyReduce_61
 
-action_77 x = happyTcHack x happyReduce_44
+action_77 x = happyTcHack x happyReduce_47
 
-action_78 x = happyTcHack x happyReduce_43
+action_78 x = happyTcHack x happyReduce_46
 
-action_79 x = happyTcHack x happyReduce_42
+action_79 x = happyTcHack x happyReduce_45
 
-action_80 x = happyTcHack x happyReduce_56
+action_80 x = happyTcHack x happyReduce_59
 
-action_81 x = happyTcHack x happyReduce_55
+action_81 x = happyTcHack x happyReduce_58
 
 action_82 x = happyTcHack x happyReduce_15
 
@@ -350,42 +350,64 @@ action_95 (49#) = happyShift action_97
 action_95 (74#) = happyShift action_98
 action_95 (75#) = happyShift action_99
 action_95 (76#) = happyShift action_100
-action_95 (78#) = happyShift action_101
-action_95 (79#) = happyShift action_102
+action_95 (77#) = happyShift action_101
+action_95 (78#) = happyShift action_102
 action_95 (80#) = happyShift action_103
+action_95 (81#) = happyShift action_104
+action_95 (82#) = happyShift action_105
+action_95 (83#) = happyShift action_106
 action_95 (16#) = happyGoto action_96
 action_95 x = happyTcHack x happyFail
 
-action_96 (46#) = happyShift action_108
+action_96 (46#) = happyShift action_114
 action_96 x = happyTcHack x happyFail
 
 action_97 x = happyTcHack x happyReduce_21
 
 action_98 x = happyTcHack x happyReduce_24
 
-action_99 (42#) = happyShift action_107
+action_99 (42#) = happyShift action_113
 action_99 x = happyTcHack x happyFail
 
-action_100 (42#) = happyShift action_106
+action_100 (42#) = happyShift action_112
 action_100 x = happyTcHack x happyFail
 
-action_101 x = happyTcHack x happyReduce_27
+action_101 (42#) = happyShift action_111
+action_101 x = happyTcHack x happyFail
 
-action_102 (42#) = happyShift action_105
+action_102 (42#) = happyShift action_110
 action_102 x = happyTcHack x happyFail
 
-action_103 (42#) = happyShift action_104
-action_103 x = happyTcHack x happyFail
+action_103 x = happyTcHack x happyReduce_29
 
-action_104 x = happyTcHack x happyReduce_29
+action_104 (57#) = happyShift action_109
+action_104 x = happyTcHack x happyFail
 
-action_105 x = happyTcHack x happyReduce_28
+action_105 (42#) = happyShift action_108
+action_105 x = happyTcHack x happyFail
 
-action_106 x = happyTcHack x happyReduce_26
+action_106 (42#) = happyShift action_107
+action_106 x = happyTcHack x happyFail
 
-action_107 x = happyTcHack x happyReduce_25
+action_107 x = happyTcHack x happyReduce_32
 
-action_108 x = happyTcHack x happyReduce_23
+action_108 x = happyTcHack x happyReduce_31
+
+action_109 (42#) = happyShift action_67
+action_109 (32#) = happyGoto action_115
+action_109 x = happyTcHack x happyReduce_60
+
+action_110 x = happyTcHack x happyReduce_26
+
+action_111 x = happyTcHack x happyReduce_25
+
+action_112 x = happyTcHack x happyReduce_28
+
+action_113 x = happyTcHack x happyReduce_27
+
+action_114 x = happyTcHack x happyReduce_23
+
+action_115 x = happyTcHack x happyReduce_30
 
 happyReduce_1 = happySpecReduce_2  4# happyReduction_1
 happyReduction_1 (HappyAbsSyn7  happy_var_2)
@@ -594,59 +616,84 @@ happyReduction_26 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	)
 happyReduction_26 _ _  = notHappyAtAll 
 
-happyReduce_27 = happySpecReduce_1  16# happyReduction_27
-happyReduction_27 _
+happyReduce_27 = happySpecReduce_2  16# happyReduction_27
+happyReduction_27 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
+	_
 	 =  HappyAbsSyn16
-		 (ServiceDefaultFilterSort
+		 (ServicePreTransform happy_var_2
 	)
+happyReduction_27 _ _  = notHappyAtAll 
 
 happyReduce_28 = happySpecReduce_2  16# happyReduction_28
 happyReduction_28 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	_
 	 =  HappyAbsSyn16
-		 (ServiceFilter happy_var_2
+		 (ServicePostTransform happy_var_2
 	)
 happyReduction_28 _ _  = notHappyAtAll 
 
-happyReduce_29 = happySpecReduce_2  16# happyReduction_29
-happyReduction_29 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
+happyReduce_29 = happySpecReduce_1  16# happyReduction_29
+happyReduction_29 _
+	 =  HappyAbsSyn16
+		 (ServiceDefaultFilterSort
+	)
+
+happyReduce_30 = happySpecReduce_3  16# happyReduction_30
+happyReduction_30 (HappyAbsSyn32  happy_var_3)
+	(HappyTerminal (Tk _ (TString happy_var_2)))
+	_
+	 =  HappyAbsSyn16
+		 (ServiceTextSearchFilter happy_var_2 happy_var_3
+	)
+happyReduction_30 _ _ _  = notHappyAtAll 
+
+happyReduce_31 = happySpecReduce_2  16# happyReduction_31
+happyReduction_31 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
+	_
+	 =  HappyAbsSyn16
+		 (ServiceFilter happy_var_2
+	)
+happyReduction_31 _ _  = notHappyAtAll 
+
+happyReduce_32 = happySpecReduce_2  16# happyReduction_32
+happyReduction_32 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	_
 	 =  HappyAbsSyn16
 		 (ServiceSelectOpts happy_var_2
 	)
-happyReduction_29 _ _  = notHappyAtAll 
+happyReduction_32 _ _  = notHappyAtAll 
 
-happyReduce_30 = happySpecReduce_0  17# happyReduction_30
-happyReduction_30  =  HappyAbsSyn17
+happyReduce_33 = happySpecReduce_0  17# happyReduction_33
+happyReduction_33  =  HappyAbsSyn17
 		 ([]
 	)
 
-happyReduce_31 = happySpecReduce_2  17# happyReduction_31
-happyReduction_31 (HappyAbsSyn18  happy_var_2)
+happyReduce_34 = happySpecReduce_2  17# happyReduction_34
+happyReduction_34 (HappyAbsSyn18  happy_var_2)
 	_
 	 =  HappyAbsSyn17
 		 (happy_var_2
 	)
-happyReduction_31 _ _  = notHappyAtAll 
+happyReduction_34 _ _  = notHappyAtAll 
 
-happyReduce_32 = happySpecReduce_1  18# happyReduction_32
-happyReduction_32 (HappyTerminal (Tk _ (TUpperId happy_var_1)))
+happyReduce_35 = happySpecReduce_1  18# happyReduction_35
+happyReduction_35 (HappyTerminal (Tk _ (TUpperId happy_var_1)))
 	 =  HappyAbsSyn18
 		 ([happy_var_1]
 	)
-happyReduction_32 _  = notHappyAtAll 
+happyReduction_35 _  = notHappyAtAll 
 
-happyReduce_33 = happySpecReduce_3  18# happyReduction_33
-happyReduction_33 (HappyTerminal (Tk _ (TUpperId happy_var_3)))
+happyReduce_36 = happySpecReduce_3  18# happyReduction_36
+happyReduction_36 (HappyTerminal (Tk _ (TUpperId happy_var_3)))
 	_
 	(HappyAbsSyn18  happy_var_1)
 	 =  HappyAbsSyn18
 		 (happy_var_3 : happy_var_1
 	)
-happyReduction_33 _ _ _  = notHappyAtAll 
+happyReduction_36 _ _ _  = notHappyAtAll 
 
-happyReduce_34 = happyReduce 6# 19# happyReduction_34
-happyReduction_34 (_ `HappyStk`
+happyReduce_37 = happyReduce 6# 19# happyReduction_37
+happyReduction_37 (_ `HappyStk`
 	(HappyAbsSyn26  happy_var_5) `HappyStk`
 	(HappyAbsSyn20  happy_var_4) `HappyStk`
 	_ `HappyStk`
@@ -657,22 +704,22 @@ happyReduction_34 (_ `HappyStk`
 		 (Class (mkLoc happy_var_1) happy_var_2 happy_var_4 happy_var_5
 	) `HappyStk` happyRest
 
-happyReduce_35 = happySpecReduce_0  20# happyReduction_35
-happyReduction_35  =  HappyAbsSyn20
+happyReduce_38 = happySpecReduce_0  20# happyReduction_38
+happyReduction_38  =  HappyAbsSyn20
 		 ([]
 	)
 
-happyReduce_36 = happySpecReduce_3  20# happyReduction_36
-happyReduction_36 _
+happyReduce_39 = happySpecReduce_3  20# happyReduction_39
+happyReduction_39 _
 	(HappyAbsSyn21  happy_var_2)
 	(HappyAbsSyn20  happy_var_1)
 	 =  HappyAbsSyn20
 		 (happy_var_2 : happy_var_1
 	)
-happyReduction_36 _ _ _  = notHappyAtAll 
+happyReduction_39 _ _ _  = notHappyAtAll 
 
-happyReduce_37 = happyReduce 4# 21# happyReduction_37
-happyReduction_37 ((HappyAbsSyn22  happy_var_4) `HappyStk`
+happyReduce_40 = happyReduce 4# 21# happyReduction_40
+happyReduction_40 ((HappyAbsSyn22  happy_var_4) `HappyStk`
 	(HappyAbsSyn33  happy_var_3) `HappyStk`
 	(HappyAbsSyn34  happy_var_2) `HappyStk`
 	(HappyTerminal (Tk _ (TLowerId happy_var_1))) `HappyStk`
@@ -681,179 +728,158 @@ happyReduction_37 ((HappyAbsSyn22  happy_var_4) `HappyStk`
 		 (Field happy_var_2 happy_var_1 (NormalField (tokenType happy_var_3) happy_var_4)
 	) `HappyStk` happyRest
 
-happyReduce_38 = happySpecReduce_3  21# happyReduction_38
-happyReduction_38 (HappyTerminal (Tk _ (TUpperId happy_var_3)))
+happyReduce_41 = happySpecReduce_3  21# happyReduction_41
+happyReduction_41 (HappyTerminal (Tk _ (TUpperId happy_var_3)))
 	(HappyAbsSyn34  happy_var_2)
 	(HappyTerminal (Tk _ (TLowerId happy_var_1)))
 	 =  HappyAbsSyn21
 		 (Field happy_var_2 happy_var_1 (EntityField happy_var_3)
 	)
-happyReduction_38 _ _ _  = notHappyAtAll 
+happyReduction_41 _ _ _  = notHappyAtAll 
 
-happyReduce_39 = happySpecReduce_0  22# happyReduction_39
-happyReduction_39  =  HappyAbsSyn22
+happyReduce_42 = happySpecReduce_0  22# happyReduction_42
+happyReduction_42  =  HappyAbsSyn22
 		 ([]
 	)
 
-happyReduce_40 = happySpecReduce_1  22# happyReduction_40
-happyReduction_40 (HappyAbsSyn23  happy_var_1)
+happyReduce_43 = happySpecReduce_1  22# happyReduction_43
+happyReduction_43 (HappyAbsSyn23  happy_var_1)
 	 =  HappyAbsSyn22
 		 (happy_var_1
 	)
-happyReduction_40 _  = notHappyAtAll 
+happyReduction_43 _  = notHappyAtAll 
 
-happyReduce_41 = happySpecReduce_1  23# happyReduction_41
-happyReduction_41 (HappyAbsSyn24  happy_var_1)
+happyReduce_44 = happySpecReduce_1  23# happyReduction_44
+happyReduction_44 (HappyAbsSyn24  happy_var_1)
 	 =  HappyAbsSyn23
 		 ([happy_var_1]
 	)
-happyReduction_41 _  = notHappyAtAll 
+happyReduction_44 _  = notHappyAtAll 
 
-happyReduce_42 = happySpecReduce_2  23# happyReduction_42
-happyReduction_42 (HappyAbsSyn24  happy_var_2)
+happyReduce_45 = happySpecReduce_2  23# happyReduction_45
+happyReduction_45 (HappyAbsSyn24  happy_var_2)
 	(HappyAbsSyn23  happy_var_1)
 	 =  HappyAbsSyn23
 		 (happy_var_2 : happy_var_1
 	)
-happyReduction_42 _ _  = notHappyAtAll 
+happyReduction_45 _ _  = notHappyAtAll 
 
-happyReduce_43 = happySpecReduce_2  24# happyReduction_43
-happyReduction_43 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
+happyReduce_46 = happySpecReduce_2  24# happyReduction_46
+happyReduction_46 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	_
 	 =  HappyAbsSyn24
 		 (FieldCheck happy_var_2
 	)
-happyReduction_43 _ _  = notHappyAtAll 
+happyReduction_46 _ _  = notHappyAtAll 
 
-happyReduce_44 = happySpecReduce_2  24# happyReduction_44
-happyReduction_44 (HappyTerminal (Tk _ (TString happy_var_2)))
+happyReduce_47 = happySpecReduce_2  24# happyReduction_47
+happyReduction_47 (HappyTerminal (Tk _ (TString happy_var_2)))
 	_
 	 =  HappyAbsSyn24
 		 (FieldDefault happy_var_2
 	)
-happyReduction_44 _ _  = notHappyAtAll 
+happyReduction_47 _ _  = notHappyAtAll 
 
-happyReduce_45 = happySpecReduce_1  25# happyReduction_45
-happyReduction_45 (HappyTerminal (Tk _ (TString happy_var_1)))
+happyReduce_48 = happySpecReduce_1  25# happyReduction_48
+happyReduction_48 (HappyTerminal (Tk _ (TString happy_var_1)))
 	 =  HappyAbsSyn25
 		 (StringValue happy_var_1
 	)
-happyReduction_45 _  = notHappyAtAll 
+happyReduction_48 _  = notHappyAtAll 
 
-happyReduce_46 = happySpecReduce_1  25# happyReduction_46
-happyReduction_46 (HappyTerminal (Tk _ (TInt happy_var_1)))
+happyReduce_49 = happySpecReduce_1  25# happyReduction_49
+happyReduction_49 (HappyTerminal (Tk _ (TInt happy_var_1)))
 	 =  HappyAbsSyn25
 		 (IntValue happy_var_1
 	)
-happyReduction_46 _  = notHappyAtAll 
+happyReduction_49 _  = notHappyAtAll 
 
-happyReduce_47 = happySpecReduce_1  25# happyReduction_47
-happyReduction_47 (HappyTerminal (Tk _ (TFloat happy_var_1)))
+happyReduce_50 = happySpecReduce_1  25# happyReduction_50
+happyReduction_50 (HappyTerminal (Tk _ (TFloat happy_var_1)))
 	 =  HappyAbsSyn25
 		 (FloatValue happy_var_1
 	)
-happyReduction_47 _  = notHappyAtAll 
+happyReduction_50 _  = notHappyAtAll 
 
-happyReduce_48 = happySpecReduce_0  26# happyReduction_48
-happyReduction_48  =  HappyAbsSyn26
+happyReduce_51 = happySpecReduce_0  26# happyReduction_51
+happyReduction_51  =  HappyAbsSyn26
 		 ([]
 	)
 
-happyReduce_49 = happySpecReduce_3  26# happyReduction_49
-happyReduction_49 _
+happyReduce_52 = happySpecReduce_3  26# happyReduction_52
+happyReduction_52 _
 	(HappyAbsSyn27  happy_var_2)
 	(HappyAbsSyn26  happy_var_1)
 	 =  HappyAbsSyn26
 		 (happy_var_2 : happy_var_1
 	)
-happyReduction_49 _ _ _  = notHappyAtAll 
+happyReduction_52 _ _ _  = notHappyAtAll 
 
-happyReduce_50 = happySpecReduce_3  27# happyReduction_50
-happyReduction_50 (HappyAbsSyn32  happy_var_3)
+happyReduce_53 = happySpecReduce_3  27# happyReduction_53
+happyReduction_53 (HappyAbsSyn32  happy_var_3)
 	(HappyTerminal (Tk _ (TUpperId happy_var_2)))
 	_
 	 =  HappyAbsSyn27
 		 (Unique happy_var_2 happy_var_3
 	)
-happyReduction_50 _ _ _  = notHappyAtAll 
+happyReduction_53 _ _ _  = notHappyAtAll 
 
-happyReduce_51 = happySpecReduce_0  28# happyReduction_51
-happyReduction_51  =  HappyAbsSyn28
+happyReduce_54 = happySpecReduce_0  28# happyReduction_54
+happyReduction_54  =  HappyAbsSyn28
 		 ([]
 	)
 
-happyReduce_52 = happySpecReduce_3  28# happyReduction_52
-happyReduction_52 _
+happyReduce_55 = happySpecReduce_3  28# happyReduction_55
+happyReduction_55 _
 	(HappyAbsSyn29  happy_var_2)
 	(HappyAbsSyn28  happy_var_1)
 	 =  HappyAbsSyn28
 		 (happy_var_2 : happy_var_1
 	)
-happyReduction_52 _ _ _  = notHappyAtAll 
+happyReduction_55 _ _ _  = notHappyAtAll 
 
-happyReduce_53 = happySpecReduce_2  29# happyReduction_53
-happyReduction_53 (HappyTerminal (Tk _ (TUpperId happy_var_2)))
+happyReduce_56 = happySpecReduce_2  29# happyReduction_56
+happyReduction_56 (HappyTerminal (Tk _ (TUpperId happy_var_2)))
 	_
 	 =  HappyAbsSyn29
 		 (happy_var_2
 	)
-happyReduction_53 _ _  = notHappyAtAll 
+happyReduction_56 _ _  = notHappyAtAll 
 
-happyReduce_54 = happySpecReduce_0  30# happyReduction_54
-happyReduction_54  =  HappyAbsSyn30
+happyReduce_57 = happySpecReduce_0  30# happyReduction_57
+happyReduction_57  =  HappyAbsSyn30
 		 ([]
 	)
 
-happyReduce_55 = happySpecReduce_3  30# happyReduction_55
-happyReduction_55 _
+happyReduce_58 = happySpecReduce_3  30# happyReduction_58
+happyReduction_58 _
 	(HappyAbsSyn31  happy_var_2)
 	(HappyAbsSyn30  happy_var_1)
 	 =  HappyAbsSyn30
 		 (happy_var_2 : happy_var_1
 	)
-happyReduction_55 _ _ _  = notHappyAtAll 
+happyReduction_58 _ _ _  = notHappyAtAll 
 
-happyReduce_56 = happySpecReduce_2  31# happyReduction_56
-happyReduction_56 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
+happyReduce_59 = happySpecReduce_2  31# happyReduction_59
+happyReduction_59 (HappyTerminal (Tk _ (TLowerId happy_var_2)))
 	_
 	 =  HappyAbsSyn31
 		 (happy_var_2
 	)
-happyReduction_56 _ _  = notHappyAtAll 
+happyReduction_59 _ _  = notHappyAtAll 
 
-happyReduce_57 = happySpecReduce_0  32# happyReduction_57
-happyReduction_57  =  HappyAbsSyn32
+happyReduce_60 = happySpecReduce_0  32# happyReduction_60
+happyReduction_60  =  HappyAbsSyn32
 		 ([]
 	)
 
-happyReduce_58 = happySpecReduce_2  32# happyReduction_58
-happyReduction_58 (HappyAbsSyn32  happy_var_2)
+happyReduce_61 = happySpecReduce_2  32# happyReduction_61
+happyReduction_61 (HappyAbsSyn32  happy_var_2)
 	(HappyTerminal (Tk _ (TLowerId happy_var_1)))
 	 =  HappyAbsSyn32
 		 (happy_var_1 : happy_var_2
 	)
-happyReduction_58 _ _  = notHappyAtAll 
-
-happyReduce_59 = happySpecReduce_1  33# happyReduction_59
-happyReduction_59 (HappyTerminal happy_var_1)
-	 =  HappyAbsSyn33
-		 (happy_var_1
-	)
-happyReduction_59 _  = notHappyAtAll 
-
-happyReduce_60 = happySpecReduce_1  33# happyReduction_60
-happyReduction_60 (HappyTerminal happy_var_1)
-	 =  HappyAbsSyn33
-		 (happy_var_1
-	)
-happyReduction_60 _  = notHappyAtAll 
-
-happyReduce_61 = happySpecReduce_1  33# happyReduction_61
-happyReduction_61 (HappyTerminal happy_var_1)
-	 =  HappyAbsSyn33
-		 (happy_var_1
-	)
-happyReduction_61 _  = notHappyAtAll 
+happyReduction_61 _ _  = notHappyAtAll 
 
 happyReduce_62 = happySpecReduce_1  33# happyReduction_62
 happyReduction_62 (HappyTerminal happy_var_1)
@@ -911,19 +937,40 @@ happyReduction_69 (HappyTerminal happy_var_1)
 	)
 happyReduction_69 _  = notHappyAtAll 
 
-happyReduce_70 = happySpecReduce_0  34# happyReduction_70
-happyReduction_70  =  HappyAbsSyn34
+happyReduce_70 = happySpecReduce_1  33# happyReduction_70
+happyReduction_70 (HappyTerminal happy_var_1)
+	 =  HappyAbsSyn33
+		 (happy_var_1
+	)
+happyReduction_70 _  = notHappyAtAll 
+
+happyReduce_71 = happySpecReduce_1  33# happyReduction_71
+happyReduction_71 (HappyTerminal happy_var_1)
+	 =  HappyAbsSyn33
+		 (happy_var_1
+	)
+happyReduction_71 _  = notHappyAtAll 
+
+happyReduce_72 = happySpecReduce_1  33# happyReduction_72
+happyReduction_72 (HappyTerminal happy_var_1)
+	 =  HappyAbsSyn33
+		 (happy_var_1
+	)
+happyReduction_72 _  = notHappyAtAll 
+
+happyReduce_73 = happySpecReduce_0  34# happyReduction_73
+happyReduction_73  =  HappyAbsSyn34
 		 (False
 	)
 
-happyReduce_71 = happySpecReduce_1  34# happyReduction_71
-happyReduction_71 _
+happyReduce_74 = happySpecReduce_1  34# happyReduction_74
+happyReduction_74 _
 	 =  HappyAbsSyn34
 		 (True
 	)
 
 happyNewToken action sts stk [] =
-	action 83# 83# notHappyAtAll (HappyState action) sts stk []
+	action 86# 86# notHappyAtAll (HappyState action) sts stk []
 
 happyNewToken action sts stk (tk:tks) =
 	let cont i = action i i tk (HappyState action) sts stk tks in
@@ -968,18 +1015,21 @@ happyNewToken action sts stk (tk:tks) =
 	Tk _ TPost -> cont 72#;
 	Tk _ TDelete -> cont 73#;
 	Tk _ TPublic -> cont 74#;
-	Tk _ TPreHook -> cont 75#;
-	Tk _ TPostHook -> cont 76#;
-	Tk _ TValidate -> cont 77#;
-	Tk _ TDefaultFilterSort -> cont 78#;
-	Tk _ TFilter -> cont 79#;
-	Tk _ TSelectOpts -> cont 80#;
-	Tk _ TDeriving -> cont 81#;
-	Tk _ TDefault -> cont 82#;
+	Tk _ TPreTransform -> cont 75#;
+	Tk _ TPostTransform -> cont 76#;
+	Tk _ TPreHook -> cont 77#;
+	Tk _ TPostHook -> cont 78#;
+	Tk _ TValidate -> cont 79#;
+	Tk _ TDefaultFilterSort -> cont 80#;
+	Tk _ TTextSearchFilter -> cont 81#;
+	Tk _ TFilter -> cont 82#;
+	Tk _ TSelectOpts -> cont 83#;
+	Tk _ TDeriving -> cont 84#;
+	Tk _ TDefault -> cont 85#;
 	_ -> happyError' (tk:tks)
 	}
 
-happyError_ 83# tk tks = happyError' tks
+happyError_ 86# tk tks = happyError' tks
 happyError_ _ tk tks = happyError' (tk:tks)
 
 newtype HappyIdentity a = HappyIdentity a
