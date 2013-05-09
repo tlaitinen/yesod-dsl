@@ -5,23 +5,23 @@ import Data.List
 type ImportPath = FilePath
 
 data Module = Module {
-    dbImports   :: [ImportPath],
-    dbEntities  :: [Entity],
-    dbClasses :: [Class],
-    dbEnums :: [DbEnum],
-    dbResources :: [Resource]
+    modImports   :: [ImportPath],
+    modEntities  :: [Entity],
+    modClasses :: [Class],
+    modEnums :: [ModEnum],
+    modResources :: [Resource]
 }
     deriving (Show)
 emptyModule = Module {
-    dbImports = [],
-    dbEntities = [],
-    dbClasses = [],
-    dbEnums = [],
-    dbResources = []
+    modImports = [],
+    modEntities = [],
+    modClasses = [],
+    modEnums = [],
+    modResources = []
 }
-data DbDef = EntityDef Entity
+data ModDef = EntityDef Entity
            | ClassDef Class
-           | EnumDef DbEnum
+           | EnumDef ModEnum
            | ResourceDef Resource
            deriving (Show)
 
@@ -37,15 +37,15 @@ isEnum _ = False
 isResource (ResourceDef _) = True
 isResource _ = False
 
-getEntities :: [DbDef] -> [Entity]
+getEntities :: [ModDef] -> [Entity]
 getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
-getClasses :: [DbDef] -> [Class]
+getClasses :: [ModDef] -> [Class]
 getClasses defs = map (\(ClassDef e) -> e) $ filter isClass defs
 
-getEnums :: [DbDef] -> [DbEnum]
+getEnums :: [ModDef] -> [ModEnum]
 getEnums defs = map (\(EnumDef e) -> e) $ filter isEnum defs
 
-getResources :: [DbDef] -> [Resource]
+getResources :: [ModDef] -> [Resource]
 getResources defs = map (\(ResourceDef e) -> e) $ filter isResource defs
    
 
@@ -132,7 +132,7 @@ entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
                                (find (\f -> fieldName f == fn) (entityFields e))
 
-data DbEnum = DbEnum {
+data ModEnum = ModEnum {
     enumLoc :: Location,
     enumName :: String,
     enumValues :: [String]
@@ -149,17 +149,17 @@ data Class = Class {
     classUniques :: [Unique]
 } deriving (Show)
 
-dbLookup :: Module -> String -> DbDef
-dbLookup db name 
+modLookup :: Module -> String -> ModDef
+modLookup mod name 
         | isJust entityMatch = EntityDef $ fromJust entityMatch
         | isJust classMatch  = ClassDef $ fromJust classMatch
-        | otherwise = error $ "dbLookup failed : " ++ name
+        | otherwise = error $ "modLookup failed : " ++ name
     where
-        entityMatch = find (\e -> name == entityName e) (dbEntities db)
-        classMatch  = find (\i -> name == className i) (dbClasses db)
+        entityMatch = find (\e -> name == entityName e) (modEntities mod)
+        classMatch  = find (\i -> name == className i) (modClasses mod)
 
-dbdefFields :: DbDef -> [Field]
-dbdefFields dbdef = case dbdef of
+moddefFields :: ModDef -> [Field]
+moddefFields moddef = case moddef of
     (EntityDef entity)     -> entityFields entity
     (ClassDef classDef) -> classFields classDef
     
