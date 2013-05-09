@@ -1,9 +1,9 @@
 module NameFinder (findNames) where
-import DbTypes
+import AST
 import Data.List
 
 
-findNames :: DbModule -> [(String,[Location])]
+findNames :: Module -> [(String,[Location])]
 findNames db 
     | checkNames nameGroups = nameGroups
     | otherwise = []

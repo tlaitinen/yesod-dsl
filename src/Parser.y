@@ -1,13 +1,13 @@
 {
-module DbParser (parse) where
-import DbLexer
-import DbTypes
+module Parser (parse) where
+import Lexer
+import AST
 import ModuleMerger
 import System.IO
 import Data.Maybe
 import Data.Typeable
 import Prelude hiding (catch) 
-import Control.Exception
+import Control.Exception hiding (Handler)
 import System.Exit
 }
 
@@ -21,6 +21,7 @@ import System.Exit
     pipe       { Tk _ TPipe }
     entity   { Tk _ TEntity }
     class      { Tk _ TClass }
+    resource    { Tk _ TResource }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
@@ -28,7 +29,16 @@ import System.Exit
     intval        { Tk _ (TInt $$)  }
     floatval      { Tk _ (TFloat $$) }
     semicolon  { Tk _ TSemicolon }
+    hash        { Tk _ THash }
     equals { Tk _ TEquals }
+    ne { Tk _ TNe }
+    lt { Tk _ TLt }
+    gt { Tk _ TGt }
+    le { Tk _ TLe }
+    ge { Tk _ TGe }
+    and { Tk _ TAnd }
+    or { Tk _ TOr }
+    like  { Tk _ TLike }
     lbrace { Tk _ TLBrace }
     rbrace { Tk _ TRBrace }
     lparen { Tk _ TLParen }
@@ -57,35 +67,49 @@ import System.Exit
     post { Tk _ TPost }
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
+    return { Tk _ TReturn }
+    instance { Tk _ TInstance }
+    of { Tk _ TOf }
     pretransform { Tk _ TPreTransform }
     posttransform { Tk _ TPostTransform }
     prehook { Tk _ TPreHook }
     posthook { Tk _ TPostHook }
+    select { Tk _ TSelect }
+    from { Tk _ TFrom }
     join { Tk _ TJoin }
+    inner { Tk _ TInner }
+    outer { Tk _ TOuter }
+    left { Tk _ TLeft }
+    right { Tk _ TRight }
+    full { Tk _ TFull }
+    cross { Tk _ TCross }
     on { Tk _ TOn }
+    as { Tk _ TAs }
     validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     textsearchfilter { Tk _ TTextSearchFilter }
-    sortby { Tk _ TSortBy }
+    order { Tk _ TOrder }
+    by { Tk _ TBy }
     asc { Tk _ TAsc }
     desc { Tk _ TDesc }
-    filter { Tk _ TFilter }
-    selectopts {  Tk _ TSelectOpts }
+    where { Tk _ TWhere }
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
 %%
 
-dbModule : imports dbDefs { DbModule $1 (getEntities $2) 
-                                        (getClasses $2)
-                                        (getEnums $2)}
+dbModule : imports defs { Module $1 (getEntities $2) 
+                                    (getClasses $2)
+                                    (getEnums $2)
+                                    (getResources $2)}
 
 imports : { [] }
         | imports importStmt { $2 : $1 }
 
 importStmt : import stringval semicolon { $2 }
-dbDefs : {- empty -}   { [] }
-       | dbDefs dbDef  { $2 : $1 }
-dbDef : entityDef      { EntityDef $1 } 
+defs : { [] }
+       | defs def  { $2 : $1 }
+def : resourceDef     { ResourceDef $1 }
+      | entityDef      { EntityDef $1 } 
       | classDef      { ClassDef $1 }
       | enumDef       { EnumDef $1 }
 
@@ -95,59 +119,87 @@ enumDef : enum upperId equals enumValues semicolon
 enumValues : upperId { [$1] }
            | enumValues pipe upperId { $3 : $1 }
     
-
-entityDef : entity upperId maybeImplementations lbrace 
+entityDef : entity upperId lbrace 
+            maybeInstances
             fields
             uniques
             derives
             checks
-            services
-            rbrace { Entity (mkLoc $1) $2 $3 $5 $6 $7 $8 $9 }
+            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 $7 $8 }
 
-services : { [] }
-         | services servicedef { $2 : $1 }
+resourceDef : resource pathpieces lbrace handlers rbrace { Resource (mkLoc $1) $2 $4 }
+pathpieces : slash pathpiece { [$2] }
+           | pathpieces pathpiece { $2 : $1 }
 
-servicedef : get serviceParamsBlock { Service GetService $2 }
-         | get slash lowerId joins serviceParamsBlock { Service (GetServiceNested $3 $4) $5 }
-         | put serviceParamsBlock { Service PutService $2 }
-         | post serviceParamsBlock { Service PostService $2 }
-         | delete serviceParamsBlock { Service DeleteService $2 }
-         | validate serviceParamsBlock { Service ValidateService $2 }
+pathpiece : lowerId { PathText $1 } 
+          | hash upperId { PathId $2 }
 
-joins : joinitem { [$1] }
-      | joins joinitem { $2 : $1 }
+handlers : handlerdef  { [$1] }
+         | handlers handlerdef { $2 : $1 }
 
-joinitem : join upperId on fieldPath equals fieldPath { Join $2 $4 $6 }
+handlerdef : get handlerParamsBlock { Handler GetHandler $2 }
+           | put handlerParamsBlock { Handler PutHandler $2 }
+           | post handlerParamsBlock { Handler PostHandler $2 }
+           | delete handlerParamsBlock { Handler DeleteHandler $2 }
 
-fieldPath : upperId { FieldPathId $1 }
-          | upperId dot lowerId { FieldPathNormal $1 $3 } 
+fieldPathList : fieldPath { [$1] }
+              | fieldPathList comma fieldPath { $3 : $1 }
+
+fieldPath : lowerId { FieldPathId $1 }
+          | lowerId dot lowerId { FieldPathNormal $1 $3 } 
     
-serviceParamsBlock : lbrace serviceParams rbrace { $2 }
+handlerParamsBlock : lbrace handlerParams rbrace { $2 }
 
-serviceParams : { [] }
-              | serviceParams serviceParam semicolon { $2 : $1 }
-serviceParam : public { PublicService }
-             | prehook lowerId { ServicePreHook $2 }
-             | posthook lowerId { ServicePostHook $2 }
-             | pretransform lowerId { ServicePreTransform $2 }
-             | posttransform lowerId { ServicePostTransform $2 }
-             | defaultfiltersort { ServiceDefaultFilterSort }
-             | textsearchfilter stringval fieldIdList { ServiceTextSearchFilter $2 $3 }
-             | sortby sortbylist { ServiceSortBy $2 }
-             | filter lowerId { ServiceFilter $2 }
-             | selectopts lowerId { ServiceSelectOpts $2 }
+handlerParams : { [] }
+              | handlerParams handlerParam semicolon { $2 : $1 }
+handlerParam : public { Public }
+             | select from upperId as lowerId { SelectFrom $3 $5 }
+             | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
+             | where expr { Where $2 }
+             | prehook lowerId { PreHook $2 }
+             | posthook lowerId { PostHook $2 }
+             | pretransform lowerId { PreTransform $2 }
+             | posttransform lowerId { PostTransform $2 }
+             | defaultfiltersort { DefaultFilterSort }
+             | textsearchfilter stringval fieldPathList { TextSearchFilter $2 $3 }
+             | order by sortbylist { SortBy $3 }
              
+binop : equals { Eq }
+      | ne { Ne }
+      | lt { Lt }
+      | gt { Gt }
+      | le { Le }
+      | ge { Ge }
+      | like { Like }
+
+expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
+     | lparen expr rparen or lparen expr rparen { OrExpr $2 $6 }
+     | valexpr binop valexpr { BinOpExpr $1 $3 }
+
+valexpr : value { ConstExpr $1 }
+        | fieldPath { FieldExpr $1 }
+
+maybeJoinOn : { Nothing }
+            | on fieldPath binop fieldPath { Just ($2,$3,$4) }
+            
+jointype : join { InnerJoin }
+         | cross join { CrossJoin } 
+         | left outer join { LeftOuterJoin }
+         | right outer join { RightOuterJoin }
+         | full outer join { FullOuterJoin }
+         
 sortbylist : sortbylistitem { [$1] }
         | sortbylist sortbylistitem { $2 : $1 }
-sortbylistitem : lowerId sortdir { ($1, $2) }
+sortbylistitem : fieldPath sortdir { ($1, $2) }
+
 sortdir : asc { SortAsc }
         | desc  { SortDesc }
               
-maybeImplementations : { [] }
-                     | colon implementations { $2 }
+maybeInstances : { [] }
+               | instance of instances { $3 }
 
-implementations : upperId { [$1] }
-            | implementations comma upperId { $3 : $1 }
+instances : upperId { [$1] }
+            | instances comma upperId { $3 : $1 }
 
 classDef : class upperId lbrace
              fields
@@ -180,16 +232,12 @@ derives : { [] }
         | derives deriveDef semicolon { $2 : $1 }
 deriveDef :  deriving upperId  { $2  }
 
-
-
-
 checks : { [] }
         | checks checkDef semicolon { $2 : $1 }
 checkDef :  check lowerId { $2 }
 
-
-fieldIdList : { [] }
-            | lowerId fieldIdList { $1 : $2 }
+fieldIdList : lowerId { [] }
+            | fieldIdList comma lowerId { $3 : $1 }
 
 fieldType : word32 { $1 }
           | word64{ $1 }
@@ -214,7 +262,7 @@ parseError :: [Token] -> a
 parseError (t:ts) = throw (ParseError $ "Parse error : unexpected " ++ show (tokenType t) ++ " at line " ++ show (tokenLineNum t) ++ " col " ++ show (tokenColNum t))
 parseError _ = throw (ParseError $ "Parse error : unexpected end of file")
 
-parseModules :: [ImportPath] -> [FilePath] -> IO [(FilePath,DbModule)]
+parseModules :: [ImportPath] -> [FilePath] -> IO [(FilePath,Module)]
 parseModules handled (path:paths)
     | path `elem` handled = return []
     | otherwise = do

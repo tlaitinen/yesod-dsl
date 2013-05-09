@@ -1,7 +1,7 @@
 module CheckFieldNames (checkFieldNames) where
-import DbTypes
+import AST
 
-checkFieldNames :: DbModule -> DbModule
+checkFieldNames :: Module -> Module
 checkFieldNames db
     | null unknownFields = db
     | otherwise = error $ "Unknown fields:\n" 

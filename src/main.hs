@@ -1,11 +1,11 @@
-import DbLexer
-import DbParser
+import Lexer
+import Parser
 import System.Environment
 import ModuleMerger
 import NameFinder
 import CheckServices
 import ClassImplementer
-import DbTypes
+import AST
 import Data.List
 import Generator
 import SyncFiles

@@ -1,5 +1,5 @@
 {
-module DbLexer (lexer, tokenType, tokenLineNum, tokenColNum, Token(..), TokenType(..) ) where
+module Lexer (lexer, tokenType, tokenLineNum, tokenColNum, Token(..), TokenType(..) ) where
 }
 
 %wrapper "posn"
@@ -30,8 +30,15 @@ tokens :-
     \, { mkT TComma }
     \. { mkT TDot }
     \= { mkT TEquals }
+    \!\= { mkT TNe }
+    \< { mkT TLt }
+    \> { mkT TGt }
+    \<\= { mkT TLe }
+    \>\= { mkT TGe }
+    "like" { mkT TLike }
     \| { mkT TPipe }
     \/ { mkT TSlash }
+    \# { mkT THash }
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
@@ -41,15 +48,25 @@ tokens :-
     "enum" { mkT TEnum }
     "entity" { mkT TEntity }
     "class" { mkT TClass  }
+    "resource" { mkT TResource }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
     "pre-transform" { mkT TPreTransform }
     "post-transform" { mkT TPostTransform }
     "pre-hook" { mkT TPreHook }
     "post-hook" { mkT TPostHook }
+    "inner" { mkT TInner }
+    "outer" { mkT TOuter }
+    "left" { mkT TLeft }
+    "right" { mkT TRight }
     "join" { mkT TJoin }
+    "full" { mkT TFull }
+    "cross" { mkT TCross }
     "on" { mkT TOn }
+    "as" { mkT TAs }
     "public" { mkT TPublic }
+    "select" { mkT TSelect }
+    "from" { mkT TFrom }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -64,12 +81,18 @@ tokens :-
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
     "text-search-filter" { mkT TTextSearchFilter }
-    "filter" { mkT TFilter }
-    "sort-by" { mkT TSortBy }
+    "order" { mkT TOrder }
+    "by" { mkT TBy }
+    "and" { mkT TAnd }
+    "or" { mkT TOr }
     "asc" { mkT TAsc }
     "desc" { mkT TDesc }
-    "select-opts" { mkT TSelectOpts }
+    "limit" { mkT TLimit }
+    "where" { mkT TWhere }
+    "return" { mkT TReturn }
     "default" { mkT TDefault }
+    "instance" { mkT TInstance }
+    "of" { mkT TOf }
     "deriving" { mkT TDeriving }
 	$digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
@@ -91,6 +114,12 @@ data TokenType = TSemicolon
                | TLBrack
                | TRBrack
                | TEquals
+               | TNe 
+               | TLt
+               | TGt
+               | TLe
+               | TGe
+               | TLike
                | TPipe
                | TComma
                | TDot
@@ -99,13 +128,17 @@ data TokenType = TSemicolon
                | TEntity
                | TUnique
                | TClass
+               | TResource
+               | THash
+               | TLimit 
                | TString  String
                | TLowerId String
                | TUpperId String
                | TInt     Int
                | TFloat   Double
                | TSlash
-               | TSortBy
+               | TOrder
+               | TBy
                | TAsc
                | TDesc
                | TCheck
@@ -122,21 +155,34 @@ data TokenType = TSemicolon
                | TDateTime
                | TZonedTime
                | TJoin
+               | TLeft
+               | TRight
+               | TInner
+               | TOuter
+               | TFull
+               | TCross
                | TOn
                | TGet
                | TPut
                | TPost
+               | TInstance 
+               | TOf 
                | TDelete
                | TPublic
                | TPreTransform
                | TPostTransform
+               | TSelect
+               | TAnd
+               | TOr
+               | TFrom
                | TPreHook
                | TPostHook
                | TValidate
                | TDefaultFilterSort
                | TTextSearchFilter
-               | TFilter
-               | TSelectOpts
+               | TWhere
+               | TAs
+               | TReturn
                | TDeriving
                | TDefault
         deriving (Show)

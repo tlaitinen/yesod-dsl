@@ -1,8 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Generator (generateModels) where
 import System.IO (FilePath)
-import DbTypes
-import DbLexer
+import AST
 import Data.Char
 import Data.List
 import Data.Maybe
@@ -21,17 +20,17 @@ upperFirst :: String -> String
 upperFirst (a:b) = (toUpper a):b
 upperFirst a = a
 -- ^^^^ Database.Persist.TH        
-entityFieldDeps :: DbModule -> String -> [String]
+entityFieldDeps :: Module -> String -> [String]
 entityFieldDeps db name 
     | name `elem` [ entityName entity | entity <- dbEntities db ] = [name]
     | otherwise = [name ++ "Inst", name ++ "InstRef"]
 
-getFieldDeps :: DbModule -> Field -> [String]
+getFieldDeps :: Module -> Field -> [String]
 getFieldDeps db field = case (fieldContent field) of
     (NormalField _ _) -> []
     (EntityField entityName) -> entityFieldDeps db entityName
 
-lookupDeps :: DbModule -> String -> [String]
+lookupDeps :: Module -> String -> [String]
 lookupDeps db name = concatMap (getFieldDeps db) $ (dbdefFields . (dbLookup db)) name
 
 
@@ -41,7 +40,7 @@ genUnique (Unique name fields) = "Unique" ++ name ++ " " ++ intercalate " " fiel
 genDeriving :: ClassName -> String
 genDeriving name = "deriving " ++ name
 
-genFieldType :: DbModule -> Field -> String
+genFieldType :: Module -> Field -> String
 genFieldType db field = case (fieldContent field) of
     (NormalField ftype _)   -> fromTkType ftype
     (EntityField entityName) -> entityName ++ "Id"
@@ -59,13 +58,13 @@ genFieldType db field = case (fieldContent field) of
         fromTkType TZonedTime = "ZonedTime"
         fromTkType ft = error $ "Unknown field type: " ++ show ft 
 
-haskellFieldType :: DbModule -> Field -> String
+haskellFieldType :: Module -> Field -> String
 haskellFieldType db field = (maybeMaybe (fieldOptional field)) ++ genFieldType db field 
         where
             maybeMaybe True = "Maybe "
             maybeMaybe False = ""
 
-persistFieldType :: DbModule -> Field -> String
+persistFieldType :: Module -> Field -> String
 persistFieldType db field = genFieldType db field ++ (maybeMaybe (fieldOptional field)) ++ (maybeDefault (fieldDefault field))
         where
             maybeMaybe True = " Maybe "
@@ -73,10 +72,10 @@ persistFieldType db field = genFieldType db field ++ (maybeMaybe (fieldOptional 
             maybeDefault (Just d) = " default='" ++ d ++ "'"
             maybeDefault _ = " "
 
-genField :: DbModule -> Field -> String
+genField :: Module -> Field -> String
 genField db field = fieldName field ++ " " ++ persistFieldType db field
 
-genModel :: DbModule -> Entity -> String
+genModel :: Module -> Entity -> String
 genModel db entity = unlines $ [ entityName entity ++ " json"] 
                             ++ (indent $ (map (genField db) (reverse $ entityFields entity))
                                     ++ (map genUnique (entityUniques entity))
@@ -86,7 +85,7 @@ genModel db entity = unlines $ [ entityName entity ++ " json"]
 handlerName :: Entity -> String -> String
 handlerName e name =  entityName e ++ name ++ "R"
 
-genRoutes :: DbModule -> Entity -> [String]
+genRoutes :: Module -> Entity -> [String]
 genRoutes db e = manyHandler ++ oneHandler ++ validateHandler
     where
         services = [ t | (Service t _) <- entityServices e ] 
@@ -185,7 +184,7 @@ genTextSearchFilter e paramName fieldNames = (lines . T.unpack) $(codegenFile "c
     where 
         fieldFilter f = rstrip $ T.unpack $ $(codegenFile "codegen/text-search-filter-field.cg")
         fieldFilters = intercalate "] ||. [" $ map (fieldFilter . (entityFieldByName e)) fieldNames
-genService :: DbModule -> Entity -> Service -> [String]
+genService :: Module -> Entity -> Service -> [String]
 genService db e (Service GetService params) = concatMap handleParam params ++ maybeDefaultFilterSort ++ (lines . T.unpack $ $(codegenFile "codegen/get-many-handler.cg"))
     ++   ["", "get" ++ handlerName e "" ++ " :: " 
                                  ++ entityName e ++ "Id -> Handler Value",
@@ -287,7 +286,7 @@ postHooks extra params = postHooks' (mapMaybe matchPostHook params)
                                  ++ (intercalate ", "   
                                         [ "H." ++ f ++ extra | f <- fs]) ++ "]"]
 
-genHandlers :: DbModule -> String
+genHandlers :: Module -> String
 genHandlers db = (T.unpack $(codegenFile "codegen/handlers.cg"))
                  ++ (unlines $ concatMap (genHandler db) (dbEntities db))
     where
@@ -309,7 +308,7 @@ genHandlers db = (T.unpack $(codegenFile "codegen/handlers.cg"))
 timeJson :: String 
 timeJson = T.unpack $(codegenFile "codegen/time-json.cg")
         
-genEnums :: DbModule -> String
+genEnums :: Module -> String
 genEnums db = (T.unpack $(codegenFile "codegen/enums.cg"))
              ++ (intercalate "\n" $ map genEnum (dbEnums db))
     where genEnum e = "data " ++ enumName e ++ " = " 
@@ -318,7 +317,7 @@ genEnums db = (T.unpack $(codegenFile "codegen/enums.cg"))
                        ++ "derivePersistField \"" ++ enumName e ++ "\"\n"
                
               
-generateModels :: DbModule -> [(FilePath,String,Bool)]
+generateModels :: Module -> [(FilePath,String,Bool)]
 generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities db), True),
                       ("config/routes", 
                        unlines $ concatMap (genRoutes db) (dbEntities db), True),
@@ -328,7 +327,7 @@ generateModels db =  [("config/models", unlines $ map (genModel db) (dbEntities 
                       ("Model/Json.hs", genJson db, False),
                       ("Model/Enums.hs", genEnums db, False),
                       ("Handler/Generated.hs", genHandlers db, False) ]
-genJson :: DbModule -> String
+genJson :: Module -> String
 genJson db = unlines (  ["{-# LANGUAGE FlexibleInstances #-}",
                          "module Model.Json where",
                          "import Import",
@@ -366,7 +365,7 @@ genEntityChecker e
     | (null . entityChecks) e = []
     | otherwise = [ join "," $ [ "checkResult \"" ++ entityName e ++ " " ++ func ++ "\" (V." ++ func ++ " e)"
                        | func <- entityChecks e ] ]
-genEntityValidate :: DbModule -> Entity -> [String]
+genEntityValidate :: Module -> Entity -> [String]
 genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "]
                        ++ (indent (["validate e = do"]
                                    ++ (indent (["errors <- sequence ["]
@@ -379,7 +378,7 @@ genEntityValidate db e = ["instance Validatable " ++ (entityName e) ++ " where "
 
 
 
-genValidation :: DbModule -> String
+genValidation :: Module -> String
 genValidation db = unlines $ [T.unpack $(codegenFile "codegen/validation.cg")]
         ++ concatMap (genEntityValidate db) (dbEntities db)
                    
@@ -389,7 +388,7 @@ classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
     
-genInterfaces :: DbModule -> String
+genInterfaces :: Module -> String
 genInterfaces db = unlines $ [
     "module Model.Classes where",
     "import Import",

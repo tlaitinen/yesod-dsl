@@ -2,7 +2,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Handler.Generated(
 ~{services}) where
-import Import
+import Import hiding ( (==.), (>=.), (>.), (<=.), (<.), (!=.), (||.) )
+import Database.Esqueleto
 import Yesod.Auth
 import Model.Validation
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
@@ -41,7 +42,7 @@ data SortJsonMsg = SortJsonMsg {
 
 $(deriveJSON (drop 12) ''SortJsonMsg)
 
-defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
+-- defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
 defaultFilterOp "eq" = (==.)
 defaultFilterOp "neq" = (!=.)
 defaultFilterOp "lt" = (<.)
@@ -49,8 +50,10 @@ defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
-defaultContainsFilterOp :: forall v. EntityField v Text -> Text -> Filter v
-defaultContainsFilterOp field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ILIKE")
+defaultContainsFilterOp = like
+
+--defaultContainsFilterOp :: forall v. EntityField v Text -> Text -> Filter v
+--defaultContainsFilterOp field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ILIKE")
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v

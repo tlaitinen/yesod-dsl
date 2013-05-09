@@ -1,26 +1,27 @@
 module ModuleMerger (mergeModules) where
-import DbTypes
+import AST
 import Data.List
 
     
-mergeModules :: [(FilePath,DbModule)] -> DbModule
-mergeModules dbs = removeDuplicates $ foldl merge emptyDbModule dbs'
+mergeModules :: [(FilePath,Module)] -> Module
+mergeModules dbs = removeDuplicates $ foldl merge emptyModule dbs'
     where dbs' = map updateLocation dbs
 
-removeDuplicates :: DbModule -> DbModule
+removeDuplicates :: Module -> Module
 removeDuplicates db = db {
         dbImports = nub $ dbImports db
     }
 
-merge :: DbModule -> DbModule -> DbModule
-merge db1 db2 = DbModule {
+merge :: Module -> Module -> Module
+merge db1 db2 = Module {
         dbImports = dbImports db1 ++ dbImports db2,
         dbEntities = dbEntities db1 ++ dbEntities db2,
         dbClasses = dbClasses db1 ++ dbClasses db2,
-        dbEnums = dbEnums db1 ++ dbEnums db2
+        dbEnums = dbEnums db1 ++ dbEnums db2,
+        dbResources = dbResources db1 ++ dbResources db2
     }
 
-updateLocation :: (FilePath,DbModule) -> DbModule
+updateLocation :: (FilePath,Module) -> Module
 updateLocation (path,db) = db {
         dbEntities = map (updateDocLoc path) (dbEntities db),
         dbClasses    = map (updateClassLoc path) (dbClasses db)

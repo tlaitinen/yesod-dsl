@@ -1,10 +1,10 @@
 module ClassImplementer (implementInterfaces) where
 import Data.List
-import DbTypes
+import AST
 import Data.Maybe
 import CheckFieldNames
 
-implementInterfaces :: DbModule -> DbModule
+implementInterfaces :: Module -> Module
 implementInterfaces db' = 
     let
         db = checkFieldNames db'
@@ -18,7 +18,7 @@ classLookup :: [Class] -> ClassName -> Maybe Class
 classLookup classes name =  find (\i -> name == className i) classes
 
 
-expandClassField :: DbModule -> Entity ->  Field -> [Field]
+expandClassField :: Module -> Entity ->  Field -> [Field]
 expandClassField db e f@(Field _ _ (EntityField iName)) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to interface not allowed"
     | otherwise = [ Field {
@@ -29,7 +29,7 @@ expandClassField db e f@(Field _ _ (EntityField iName))
                     } | re <- dbEntities db, iName `elem` (entityImplements re) ]
 
 
-expandClassRefFields :: DbModule -> Entity -> Field -> [Field]
+expandClassRefFields :: Module -> Entity -> Field -> [Field]
 expandClassRefFields db e f = expand (fieldContent f)
     where       
         expand (EntityField name) = if isJust (classLookup (dbClasses db) name) 
@@ -40,7 +40,7 @@ expandClassRefFields db e f = expand (fieldContent f)
 
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
-implInEntity :: DbModule -> [Class] -> Entity -> Entity
+implInEntity :: Module -> [Class] -> Entity -> Entity
 implInEntity db classes e 
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields,

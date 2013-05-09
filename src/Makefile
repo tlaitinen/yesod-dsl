@@ -1,13 +1,13 @@
 all: yesod-generate-rest
 
-yesod-generate-rest: yesod-generate-rest.hs DbLexer.hs DbParser.hs ModuleMerger.hs ClassImplementer.hs NameFinder.hs DbTypes.hs Generator.hs SyncFiles.hs CheckFieldNames.hs CheckServices.hs
-	ghc --make yesod-generate-rest.hs
+yesod-generate-rest: main.hs Lexer.hs Parser.hs ModuleMerger.hs ClassImplementer.hs NameFinder.hs AST.hs Generator.hs SyncFiles.hs CheckFieldNames.hs CheckServices.hs
+	ghc --make main.hs -o yesod-generate-rest
 
-DbLexer.hs: DbLexer.x
-	alex -g DbLexer.x
+Lexer.hs: Lexer.x
+	alex -g Lexer.x
 
-DbParser.hs: DbParser.y
-	happy -g DbParser.y
+Parser.hs: Parser.y
+	happy -g Parser.y
 
 clean:
 	rm -f *.o *.hi yesod-generate-rest

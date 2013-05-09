@@ -1,6 +1,6 @@
 module CheckServices (checkServices) where
-import DbTypes
-checkServices :: DbModule -> DbModule
+import AST
+checkServices :: Module -> Module
 checkServices db 
     | null duplicateServices && null invalidParams = db
     | otherwise = error $ "Invalid service definitions:\n" 
