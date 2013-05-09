@@ -155,7 +155,13 @@ genSelectOpts e params
     where
         opts = intercalate [","] $ mapMaybe mkOpt params ++ defaultSort
         mkOpt (ServiceSelectOpts f) = Just $ ["H." ++ f]
+        mkOpt (ServiceSortBy sb) = Just $ ["return [" ++ 
+                (intercalate "," $ [ mkSortDir dir ++ " " 
+                                     ++ entityFieldTypeName e (entityFieldByName e f)
+                                     | (f,dir) <- sb ]) ++ "]"]
         mkOpt _ = Nothing
+        mkSortDir SortAsc = "Asc"
+        mkSortDir SortDesc = "Desc"
         defaultSort 
             | ServiceDefaultFilterSort `elem` params = [genDefaultSelectOpts e]
             | otherwise = []  

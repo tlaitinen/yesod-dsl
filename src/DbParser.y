@@ -63,6 +63,9 @@ import System.Exit
     validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     textsearchfilter { Tk _ TTextSearchFilter }
+    sortby { Tk _ TSortBy }
+    asc { Tk _ TAsc }
+    desc { Tk _ TDesc }
     filter { Tk _ TFilter }
     selectopts {  Tk _ TSelectOpts }
     deriving { Tk _ TDeriving }
@@ -117,10 +120,15 @@ serviceParam : public { PublicService }
              | posttransform lowerId { ServicePostTransform $2 }
              | defaultfiltersort { ServiceDefaultFilterSort }
              | textsearchfilter stringval fieldIdList { ServiceTextSearchFilter $2 $3 }
+             | sortby sortbylist { ServiceSortBy $2 }
              | filter lowerId { ServiceFilter $2 }
              | selectopts lowerId { ServiceSelectOpts $2 }
              
-              
+sortbylist : sortbylistitem { [$1] }
+        | sortbylist sortbylistitem { $2 : $1 }
+sortbylistitem : lowerId sortdir { ($1, $2) }
+sortdir : asc { SortAsc }
+        | desc  { SortDesc }
               
 maybeImplementations : { [] }
                      | colon implementations { $2 }

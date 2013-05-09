@@ -107,8 +107,7 @@ instance PathPiece ZonedTime where
     toPathPiece = T.pack . show
 
 
-
--- getRangeSelectOpts :: forall s m v. GHandler s m [SelectOpt v]
+getRangeSelectOpts :: forall (m :: * -> *) v. MonadHandler m => m [SelectOpt v]
 getRangeSelectOpts = do
     start <- lookupGetParam "start"
     limit <- lookupGetParam "limit"

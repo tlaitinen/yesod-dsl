@@ -62,6 +62,9 @@ tokens :-
     "default-filter-sort" { mkT TDefaultFilterSort }
     "text-search-filter" { mkT TTextSearchFilter }
     "filter" { mkT TFilter }
+    "sort-by" { mkT TSortBy }
+    "asc" { mkT TAsc }
+    "desc" { mkT TDesc }
     "select-opts" { mkT TSelectOpts }
     "default" { mkT TDefault }
     "deriving" { mkT TDeriving }
@@ -98,6 +101,9 @@ data TokenType = TSemicolon
                | TUpperId String
                | TInt     Int
                | TFloat   Double
+               | TSortBy
+               | TAsc
+               | TDesc
                | TCheck
                | TWord32
                | TWord64
@@ -111,8 +117,6 @@ data TokenType = TSemicolon
                | TDate
                | TDateTime
                | TZonedTime
-               | TAsc
-               | TDesc
                | TGet
                | TPut
                | TPost

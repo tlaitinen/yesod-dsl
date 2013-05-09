@@ -73,9 +73,11 @@ data ServiceParam = PublicService
                   | ServiceSelectOpts FunctionName
                   | ServicePreTransform FunctionName
                   | ServicePostTransform FunctionName
+                  | ServiceSortBy [(FieldName,SortDir)]
                   | ServicePreHook FunctionName 
                   | ServicePostHook FunctionName  deriving (Show, Eq) 
-                   
+data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
+
 data Service = Service ServiceType [ServiceParam]  deriving (Show)
 
 data Entity = Entity {
