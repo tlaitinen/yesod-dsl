@@ -49,6 +49,7 @@ type ParamName = String
 type EntityName = String
 type FieldType = TokenType
 type FieldName = String
+type PathName = String
 type OptionalFlag = Bool
 type UniqueName = String
 
@@ -62,6 +63,7 @@ data Unique = Unique UniqueName [FieldName]
            deriving (Show)
 
 data ServiceType = GetService 
+                 | GetServiceNested PathName [Join]
                  | PutService 
                  | PostService 
                  | DeleteService 
@@ -90,7 +92,12 @@ data Entity = Entity {
     entityChecks     :: [FunctionName],
     entityServices   :: [Service]
 } deriving (Show)
-           
+
+data Join = Join EntityName FieldPath FieldPath deriving (Show, Eq)
+
+data FieldPath = FieldPathId EntityName 
+               | FieldPathNormal EntityName FieldName deriving (Show, Eq)
+
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
                                (find (\f -> fieldName f == fn) (entityFields e))

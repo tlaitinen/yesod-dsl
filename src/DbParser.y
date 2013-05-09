@@ -38,6 +38,7 @@ import System.Exit
     comma  { Tk _ TComma }
     colon { Tk _ TColon }
     dot  { Tk _ TDot }
+    slash { Tk _ TSlash }
     stringval     { Tk _ (TString $$) }
     word32   { Tk _ TWord32 }
     word64   { Tk _ TWord64 }
@@ -60,6 +61,8 @@ import System.Exit
     posttransform { Tk _ TPostTransform }
     prehook { Tk _ TPreHook }
     posthook { Tk _ TPostHook }
+    join { Tk _ TJoin }
+    on { Tk _ TOn }
     validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     textsearchfilter { Tk _ TTextSearchFilter }
@@ -103,12 +106,22 @@ entityDef : entity upperId maybeImplementations lbrace
 
 services : { [] }
          | services servicedef { $2 : $1 }
+
 servicedef : get serviceParamsBlock { Service GetService $2 }
+         | get slash lowerId joins serviceParamsBlock { Service (GetServiceNested $3 $4) $5 }
          | put serviceParamsBlock { Service PutService $2 }
          | post serviceParamsBlock { Service PostService $2 }
          | delete serviceParamsBlock { Service DeleteService $2 }
          | validate serviceParamsBlock { Service ValidateService $2 }
-           
+
+joins : joinitem { [$1] }
+      | joins joinitem { $2 : $1 }
+
+joinitem : join upperId on fieldPath equals fieldPath { Join $2 $4 $6 }
+
+fieldPath : upperId { FieldPathId $1 }
+          | upperId dot lowerId { FieldPathNormal $1 $3 } 
+    
 serviceParamsBlock : lbrace serviceParams rbrace { $2 }
 
 serviceParams : { [] }

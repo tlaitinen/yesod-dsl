@@ -31,6 +31,7 @@ tokens :-
     \. { mkT TDot }
     \= { mkT TEquals }
     \| { mkT TPipe }
+    \/ { mkT TSlash }
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
@@ -46,6 +47,8 @@ tokens :-
     "post-transform" { mkT TPostTransform }
     "pre-hook" { mkT TPreHook }
     "post-hook" { mkT TPostHook }
+    "join" { mkT TJoin }
+    "on" { mkT TOn }
     "public" { mkT TPublic }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
@@ -101,6 +104,7 @@ data TokenType = TSemicolon
                | TUpperId String
                | TInt     Int
                | TFloat   Double
+               | TSlash
                | TSortBy
                | TAsc
                | TDesc
@@ -117,6 +121,8 @@ data TokenType = TSemicolon
                | TDate
                | TDateTime
                | TZonedTime
+               | TJoin
+               | TOn
                | TGet
                | TPut
                | TPost
