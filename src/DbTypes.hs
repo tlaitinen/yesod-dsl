@@ -113,25 +113,25 @@ entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 
 
 data Class = Class {
-    ifaceLoc     :: Location,
-    ifaceName    :: String,
-    ifaceFields  :: [Field],
-    ifaceUniques :: [Unique]
+    classLoc     :: Location,
+    className    :: String,
+    classFields  :: [Field],
+    classUniques :: [Unique]
 } deriving (Show)
 
 dbLookup :: DbModule -> String -> DbDef
 dbLookup db name 
         | isJust entityMatch = EntityDef $ fromJust entityMatch
-        | isJust ifaceMatch  = ClassDef $ fromJust ifaceMatch
+        | isJust classMatch  = ClassDef $ fromJust classMatch
         | otherwise = error $ "dbLookup failed : " ++ name
     where
         entityMatch = find (\e -> name == entityName e) (dbEntities db)
-        ifaceMatch  = find (\i -> name == ifaceName i) (dbClasses db)
+        classMatch  = find (\i -> name == className i) (dbClasses db)
 
 dbdefFields :: DbDef -> [Field]
 dbdefFields dbdef = case dbdef of
     (EntityDef entity)     -> entityFields entity
-    (ClassDef iface) -> ifaceFields iface
+    (ClassDef classDef) -> classFields classDef
     
 type DefaultValue = String
 type IsListFlag = Bool

@@ -7,15 +7,15 @@ checkFieldNames db
     | otherwise = error $ "Unknown fields:\n" 
                         ++ (unlines $ map formatField unknownFields)
     where
-        ifaces = dbClasses db
+        classes = dbClasses db
         entitys   = dbEntities db
 
         allFields :: [(String, Location, String)]
-        allFields = concatMap getClassFields ifaces ++ concatMap getEntityFields entitys
-        allNames = map ifaceName ifaces ++ map entityName entitys
+        allFields = concatMap getClassFields classes ++ concatMap getEntityFields entitys
+        allNames = map className classes ++ map entityName entitys
 
-        getClassFields iface = [ (ifaceName iface, ifaceLoc iface,
-                                  getRefName f) | f <- ifaceFields iface,
+        getClassFields classDef = [ (className classDef, classLoc classDef,
+                                  getRefName f) | f <- classFields classDef,
                                   isRefField f]
         getEntityFields entity = [ (entityName entity, entityLoc entity, getRefName f) | 
                              f <- entityFields entity, isRefField f ]

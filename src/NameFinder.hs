@@ -9,15 +9,15 @@ findNames db
     | otherwise = []
     where
         entityNames  = [(entityLoc e, entityName e) | e <- dbEntities db ]
-        ifaceNames   = [(ifaceLoc i, ifaceName i) | i <- dbClasses db ]
+        classNames   = [(classLoc i, className i) | i <- dbClasses db ]
         enumNames    = [(enumLoc e, enumName e) | e <- dbEnums db ]
         entityFieldNames = [(entityLoc e, entityName e ++ "." ++ fieldName f)
                            | e <- dbEntities db, f <- entityFields e ]
-        ifaceFieldNames = [(ifaceLoc i, ifaceName i ++ "." ++ fieldName f)
-                           | i <- dbClasses db, f <- ifaceFields i ]
+        classFieldNames = [(classLoc i, className i ++ "." ++ fieldName f)
+                           | i <- dbClasses db, f <- classFields i ]
         enumValueNames = [(enumLoc e, enumName e ++ "." ++ v) 
                          | e <- dbEnums db, v <- enumValues e ]
-        allNames     = entityNames ++ ifaceNames ++ enumNames ++ entityFieldNames ++ ifaceFieldNames
+        allNames     = entityNames ++ classNames ++ enumNames ++ entityFieldNames ++ classFieldNames
 
 
         sameNameOrd (_,n1) (_,n2) = compare n1 n2

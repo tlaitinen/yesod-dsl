@@ -20,7 +20,7 @@ import System.Exit
     enum       { Tk _ TEnum }
     pipe       { Tk _ TPipe }
     entity   { Tk _ TEntity }
-    iface      { Tk _ TClass }
+    class      { Tk _ TClass }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
@@ -86,7 +86,7 @@ importStmt : import stringval semicolon { $2 }
 dbDefs : {- empty -}   { [] }
        | dbDefs dbDef  { $2 : $1 }
 dbDef : entityDef      { EntityDef $1 } 
-      | ifaceDef      { ClassDef $1 }
+      | classDef      { ClassDef $1 }
       | enumDef       { EnumDef $1 }
 
 enumDef : enum upperId equals enumValues semicolon 
@@ -149,7 +149,7 @@ maybeImplementations : { [] }
 implementations : upperId { [$1] }
             | implementations comma upperId { $3 : $1 }
 
-ifaceDef : iface upperId lbrace
+classDef : class upperId lbrace
              fields
             uniques
             rbrace { Class (mkLoc $1) $2 $4 $5 }

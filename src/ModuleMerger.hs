@@ -27,7 +27,7 @@ updateLocation (path,db) = db {
     } 
     where 
         updateDocLoc path e = e { entityLoc = updateLoc path (entityLoc e) }
-        updateClassLoc path i = i { ifaceLoc = updateLoc path (ifaceLoc i) }
+        updateClassLoc path i = i { classLoc = updateLoc path (classLoc i) }
  
 updateLoc :: FilePath -> Location -> Location
 updateLoc path (Loc _ l c) = Loc path l c

@@ -383,8 +383,8 @@ genValidation :: DbModule -> String
 genValidation db = unlines $ [T.unpack $(codegenFile "codegen/validation.cg")]
         ++ concatMap (genEntityValidate db) (dbEntities db)
                    
-ifaceFieldName :: Class -> Field -> String
-ifaceFieldName i f = (lowerFirst . ifaceName) i ++ (upperFirst . fieldName) f
+classFieldName :: Class -> Field -> String
+classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
@@ -398,17 +398,17 @@ genInterfaces db = unlines $ [
     "import Data.Time"
     ] ++ concatMap genInterface (dbClasses db)
     where
-        genInterface i = [ "class " ++ ifaceName i ++ " a where" ]
-                      ++ (indent $ [ ifaceFieldName i f 
+        genInterface i = [ "class " ++ className i ++ " a where" ]
+                      ++ (indent $ [ classFieldName i f 
                                      ++ " :: a -> " ++ haskellFieldType db f 
-                                     | f <- ifaceFields i ] )
+                                     | f <- classFields i ] )
                       ++ [""]
                       ++ concatMap (genInstance i) [ e | e <- dbEntities db, 
-                                                     (ifaceName i) `elem` entityImplements e ]
+                                                     (className i) `elem` entityImplements e ]
 
-        genInstance i e = [ "instance " ++ ifaceName i ++ " " ++ entityName e ++ " where " ]
-                        ++ (indent $ [ ifaceFieldName i f ++ " = " 
-                                        ++ entityFieldName e f | f <- ifaceFields i ])
+        genInstance i e = [ "instance " ++ className i ++ " " ++ entityName e ++ " where " ]
+                        ++ (indent $ [ classFieldName i f ++ " = " 
+                                        ++ entityFieldName e f | f <- classFields i ])
                         ++ [""]
 
                               

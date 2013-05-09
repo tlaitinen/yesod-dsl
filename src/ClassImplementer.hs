@@ -8,14 +8,14 @@ implementInterfaces :: DbModule -> DbModule
 implementInterfaces db' = 
     let
         db = checkFieldNames db'
-        ifaces = dbClasses db
+        classes = dbClasses db
     in 
         db {
-            dbEntities  = [ implInEntity db ifaces e | e <- (dbEntities db) ]
+            dbEntities  = [ implInEntity db classes e | e <- (dbEntities db) ]
         }
 
-ifaceLookup :: [Class] -> ClassName -> Maybe Class
-ifaceLookup ifaces name =  find (\i -> name == ifaceName i) ifaces
+classLookup :: [Class] -> ClassName -> Maybe Class
+classLookup classes name =  find (\i -> name == className i) classes
 
 
 expandClassField :: DbModule -> Entity ->  Field -> [Field]
@@ -32,7 +32,7 @@ expandClassField db e f@(Field _ _ (EntityField iName))
 expandClassRefFields :: DbModule -> Entity -> Field -> [Field]
 expandClassRefFields db e f = expand (fieldContent f)
     where       
-        expand (EntityField name) = if isJust (ifaceLookup (dbClasses db) name) 
+        expand (EntityField name) = if isJust (classLookup (dbClasses db) name) 
                                         then expandClassField db e f 
                                         else [f]
         expand _ = [f]                           
@@ -41,21 +41,21 @@ expandClassRefFields db e f = expand (fieldContent f)
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
 implInEntity :: DbModule -> [Class] -> Entity -> Entity
-implInEntity db ifaces e 
+implInEntity db classes e 
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields,
-        entityUniques = entityUniques e ++ (map (addEntityName e) $ concatMap ifaceUniques validClasses)
+        entityUniques = entityUniques e ++ (map (addEntityName e) $ concatMap classUniques validClasses)
     }
     | otherwise        = entityError e $ "Invalid interfaces " 
                                         ++ show invalidClassNames
     where
         implements = entityImplements e
         invalidClassNames = [ name | name <- implements, 
-                                 isNothing $ ifaceLookup ifaces name ]
-        implementedClasses = map (ifaceLookup ifaces) implements
+                                 isNothing $ classLookup classes name ]
+        implementedClasses = map (classLookup classes) implements
         validClasses = catMaybes implementedClasses
                                      
-        extraFields = concat $ map ifaceFields validClasses
+        extraFields = concat $ map classFields validClasses
         addEntityName e (Unique name fields) = Unique (entityName e ++ name) fields
         
     
