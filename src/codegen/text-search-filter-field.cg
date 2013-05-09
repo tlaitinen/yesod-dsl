@@ -1,0 +1,1 @@
+defaultContainsFilterOp ~{entityFieldTypeName e f} query
