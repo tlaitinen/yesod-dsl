@@ -1,2 +1,2 @@
-textSearchFilter~{entityName e}~{paramName} :: String -> [Filter ~{entityName e}]
+textSearchFilter~{entityName e}~{paramName} :: Text -> [Filter ~{entityName e}]
 textSearchFilter~{entityName e}~{paramName} query = [~{fieldFilters}]

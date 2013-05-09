@@ -49,9 +49,8 @@ defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
-
-defaultContainsFilterOp :: forall v typ. (PersistField typ, typ ~PersistValue) => EntityField v typ -> typ -> Filter v
-defaultContainsFilterOp field val = Filter field (Left $ PersistText $ T.concat ["%", T.pack $ show val, "%"]) (BackendSpecificFilter "ILIKE")
+defaultContainsFilterOp :: forall v. EntityField v Text -> Text -> Filter v
+defaultContainsFilterOp field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ILIKE")
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v
