@@ -92,6 +92,7 @@ data Expr = AndExpr Expr Expr
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue deriving (Show,Eq)
 data HandlerParam = Public 
+                  | HandlerEntity EntityName
                   | DefaultFilterSort
                   | TextSearchFilter ParamName [FieldRef]
                   | SelectFrom EntityName VariableName
@@ -100,7 +101,7 @@ data HandlerParam = Public
                   | Where Expr
                   | PreTransform FunctionName
                   | PostTransform FunctionName
-                  | SortBy [(FieldRef,SortDir)]
+                  | OrderBy [(FieldRef,SortDir)]
                   | PreHook FunctionName 
                   | PostHook FunctionName  deriving (Show, Eq) 
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   

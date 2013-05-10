@@ -3,9 +3,10 @@ import Parser
 import System.Environment
 import ModuleMerger
 import Validation
-import CheckServices
 import ClassImplementer
 import AST
+import ASTToInt
+import qualified Intermediate as I 
 import Data.List
 import Generator
 import SyncFiles
@@ -26,14 +27,19 @@ createFiles files = mapM_ createFile files
 main = do
     [ path ] <- getArgs
     dbs <- parse path
-    let merged  = implementClasses . mergeModules dbs
-    let errors = validate merged
+    let ast  = implementClasses . mergeModules dbs
+    let errors = validate ast
     if null errors 
-        then do
-            syncFiles (generateModels impl)
+        then handle (astToIntermediate ast)
+       else do
+            hPutStrLn stderr errors
+    where
+        handle (Left err) = hPutStrLn stderr err
+        handle (Right int) = do
+            syncFiles (generateModels int)
             createFiles [("Model/ValidationFunctions.hs",
                           "module Model.ValidationFunctions where\nimport Import"),
                          ("Handler/Hooks.hs",
                           "module Handler.Hooks where\nimport Import")]
-        else do
-            hPutStrLn stderr errors
+
+    

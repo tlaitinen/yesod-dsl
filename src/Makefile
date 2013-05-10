@@ -1,6 +1,6 @@
 all: yesod-generate-rest
 
-yesod-generate-rest: main.hs Lexer.hs Parser.hs ModuleMerger.hs ClassImplementer.hs AST.hs Generator.hs SyncFiles.hs CheckFieldNames.hs CheckServices.hs
+yesod-generate-rest: main.hs Lexer.hs Parser.hs ModuleMerger.hs ClassImplementer.hs AST.hs Generator.hs SyncFiles.hs 
 	ghc --make main.hs -o yesod-generate-rest
 
 Lexer.hs: Lexer.x

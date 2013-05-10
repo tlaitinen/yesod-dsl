@@ -2,19 +2,17 @@ module ClassImplementer (implementClasses) where
 import Data.List
 import AST
 import Data.Maybe
-import CheckFieldNames
 
 entityPath :: Entity -> String
 entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 
 implementClasses :: Module -> Module
-implementClasses db' = 
+implementClasses mod = 
     let
-        db = checkFieldNames db'
-        classes = dbClasses db
+        classes = modClasses mod
     in 
-        db {
-            dbEntities  = [ implInEntity db classes e | e <- (dbEntities db) ]
+        mod {
+            modEntities  = [ implInEntity mod classes e | e <- (modEntities mod) ]
         }
 
 classLookup :: [Class] -> ClassName -> Maybe Class
@@ -22,21 +20,21 @@ classLookup classes name =  find (\i -> name == className i) classes
 
 
 expandClassField :: Module -> Entity ->  Field -> [Field]
-expandClassField db e f@(Field _ _ (EntityField iName)) 
+expandClassField mod e f@(Field _ _ (EntityField iName)) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to interface not allowed"
     | otherwise = [ Field {
                         fieldOptional = True,
                         fieldName = fieldName f ++ entityName re,
                         fieldContent = EntityField (entityName re)
 
-                    } | re <- dbEntities db, iName `elem` (entityImplements re) ]
+                    } | re <- modEntities mod, iName `elem` (entityImplements re) ]
 
 
 expandClassRefFields :: Module -> Entity -> Field -> [Field]
-expandClassRefFields db e f = expand (fieldContent f)
+expandClassRefFields mod e f = expand (fieldContent f)
     where       
-        expand (EntityField name) = if isJust (classLookup (dbClasses db) name) 
-                                        then expandClassField db e f 
+        expand (EntityField name) = if isJust (classLookup (modClasses mod) name) 
+                                        then expandClassField mod e f 
                                         else [f]
         expand _ = [f]                           
             
@@ -44,9 +42,9 @@ expandClassRefFields db e f = expand (fieldContent f)
 entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
 implInEntity :: Module -> [Class] -> Entity -> Entity
-implInEntity db classes e 
+implInEntity mod classes e 
     | null invalidClassNames = e {
-        entityFields  = concatMap (expandClassRefFields db e) $ entityFields e ++ extraFields,
+        entityFields  = concatMap (expandClassRefFields mod e) $ entityFields e ++ extraFields,
         entityUniques = entityUniques e ++ (map (addEntityName e) $ concatMap classUniques validClasses)
     }
     | otherwise        = entityError e $ "Invalid interfaces " 

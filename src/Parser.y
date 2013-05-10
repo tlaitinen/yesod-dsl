@@ -142,10 +142,10 @@ handlerdef : get handlerParamsBlock { Handler GetHandler $2 }
            | post handlerParamsBlock { Handler PostHandler $2 }
            | delete handlerParamsBlock { Handler DeleteHandler $2 }
 
-fieldPathList : fieldPath { [$1] }
-              | fieldPathList comma fieldPath { $3 : $1 }
+fieldRefList : fieldRef { [$1] }
+              | fieldRefList comma fieldRef { $3 : $1 }
 
-fieldPath : lowerId { FieldRefId $1 }
+fieldRef : lowerId { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
     
 handlerParamsBlock : lbrace handlerParams rbrace { $2 }
@@ -153,6 +153,7 @@ handlerParamsBlock : lbrace handlerParams rbrace { $2 }
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
+             | entity upperId { HandlerEntity $2 }
              | select from upperId as lowerId { SelectFrom $3 $5 }
              | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
              | where expr { Where $2 }
@@ -161,8 +162,8 @@ handlerParam : public { Public }
              | pretransform lowerId { PreTransform $2 }
              | posttransform lowerId { PostTransform $2 }
              | defaultfiltersort { DefaultFilterSort }
-             | textsearchfilter stringval fieldPathList { TextSearchFilter $2 $3 }
-             | order by sortbylist { SortBy $3 }
+             | textsearchfilter stringval fieldRefList { TextSearchFilter $2 $3 }
+             | order by sortbylist { OrderBy $3 }
              
 binop : equals { Eq }
       | ne { Ne }
@@ -177,10 +178,10 @@ expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
      | valexpr binop valexpr { BinOpExpr $1 $3 }
 
 valexpr : value { ConstExpr $1 }
-        | fieldPath { FieldExpr $1 }
+        | fieldRef { FieldExpr $1 }
 
 maybeJoinOn : { Nothing }
-            | on fieldPath binop fieldPath { Just ($2,$3,$4) }
+            | on fieldRef binop fieldRef { Just ($2,$3,$4) }
             
 jointype : join { InnerJoin }
          | cross join { CrossJoin } 
@@ -190,7 +191,7 @@ jointype : join { InnerJoin }
          
 sortbylist : sortbylistitem { [$1] }
         | sortbylist sortbylistitem { $2 : $1 }
-sortbylistitem : fieldPath sortdir { ($1, $2) }
+sortbylistitem : fieldRef sortdir { ($1, $2) }
 
 sortdir : asc { SortAsc }
         | desc  { SortDesc }
@@ -217,7 +218,7 @@ fieldOptions : { [] }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
 fieldOption : check lowerId { FieldCheck $2 }
-            | default stringval { FieldDefault $2 }
+            | default value { FieldDefault $2 }
 
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }

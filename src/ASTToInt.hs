@@ -86,8 +86,29 @@ mapClass m c = do
         I.classUniques = uniques
     }
 
+lookupClass :: A.Entity -> [I.Class] -> A.ClassName -> Either String I.Class
+lookupClass e classes cn = case find (\c -> I.className c == cn) classes of
+    Just c -> return $ c
+    Nothing -> Left $ "Reference to an undefined class: "
+                    ++ (A.entityName e) ++ " " ++ (show $ A.entityLoc e)
+
+mapEntity :: A.Module -> [I.Class] -> A.Entity -> Either String I.Entity
+mapEntity m classes e = do
+    implements <- mapM (lookupClass e classes) (A.entityImplements e)
+    fields <- mapM (mapField m e) (A.entityFields e)
+    uniques <- mapM (mapUnique m e fields) (A.entityUniques e)
+    return $ I.Entity {
+        I.entityLoc = A.entityLoc e,
+        I.entityName = A.entityName e,
+        I.entityImplements = implements,
+        I.entityFields = fields,
+        I.entityUniques = uniques,
+        I.entityDeriving = A.entityDeriving e,
+        I.entityChecks = A.entityChecks e
+    }
+
 mapPathPiece :: A.Module -> String -> [I.Entity] -> A.PathPiece -> Either String I.PathPiece
-mapPathPiece _ _ _ (A.PathText s) = I.PathText s
+mapPathPiece _ _ _ (A.PathText s) = return $ I.PathText s
 mapPathPiece m loc es (A.PathId en) = case find (\e -> I.entityName e == en) es of
     Just e -> Right $ I.PathId e
     Nothing -> Left $ "Reference to undefined entity in route: " ++ loc
@@ -96,17 +117,17 @@ mapHandler :: A.Module -> String -> [I.Entity] -> A.Handler -> Either String I.H
 mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
     where 
           allowed _ A.Public = True
-          allowed _ A.PreHook = True
-          allowed _ A.PreHook = True
-          allowed A.PutService (A.PreTransform _)= True
-          allowed A.PostService (A.PreTransform _)= True
-          allowed A.GetService (A.PostTransform _)= True
-          allowed A.GetService A.DefaultFilterSort = True
-          allowed A.GetService (A.TextSearchFilter _ _) = True
-          allowed A.GetService (A.Join _ _ _ _) = True
-          allowed A.GetService (A.Where _) = True
-          allowed A.GetService (A.SortBy _) = True
-          allowed A.GetService (A.SelectFrom _ _) = True
+          allowed _ (A.PreHook _) = True
+          allowed _ (A.PostHook _)= True
+          allowed A.PutHandler (A.PreTransform _)= True
+          allowed A.PostHandler (A.PreTransform _)= True
+          allowed A.GetHandler (A.PostTransform _)= True
+          allowed A.GetHandler A.DefaultFilterSort = True
+          allowed A.GetHandler (A.TextSearchFilter _ _) = True
+          allowed A.GetHandler (A.Join _ _ _ _) = True
+          allowed A.GetHandler (A.Where _) = True
+          allowed A.GetHandler (A.OrderBy _) = True
+          allowed A.GetHandler (A.SelectFrom _ _) = True
           allowed _ _ = False
 
           checkParam ht p = if allowed ht p 
@@ -122,15 +143,24 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
           lookupEntity en = case find (\e -> I.entityName e == en) es of
                 Just e -> Right e
                 Nothing -> Left $ "Reference to an undefined entity " ++ en 
-                                + " in " ++ (show ht) ++ ": " ++ loc
+                                ++ " in " ++ (show ht) ++ ": " ++ loc
                
-                                
+                               
+          isSelectFrom (A.SelectFrom _ _) = True
+          isSelectFrom _ = False          
           getSelectFrom = case find isSelectFrom ps of
-                Just (SelectFrom en v) -> do
+                Just (A.SelectFrom en v) -> do
                     e <- lookupEntity en
                     return $ (e, v)
                 Nothing -> Left $ "Missing 'select from' in " ++
                                  (show ht) ++ ": " ++ loc
+
+          isHandlerEntity (A.HandlerEntity _) = True
+          isHandlerEntity _ = False
+          getEntity = case find isHandlerEntity ps of
+                Just (A.HandlerEntity en) -> lookupEntity en
+                Nothing -> Left $ "Missing 'entity' in " ++ (show ht)
+                                ++ ": " ++ loc
                                  
           lookupAliasedEntity a = do
               (e, a') <- getSelectFrom
@@ -142,8 +172,8 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
           isJoin (A.Join _ _ _ _) = True
           isJoin _ = False
 
-          lookupJoinEntity a = case find (\(Join _ _ a' _) -> a' == a) joins of
-              Just (Join _ en _ _) -> lookupEntity en
+          lookupJoinEntity a = case find (\(A.Join _ _ a' _) -> a' == a) joins of
+              Just (A.Join _ en _ _) -> lookupEntity en
               Nothing -> Left $ "Reference to an undefined Entity-alias "
                               ++ a ++ " in " ++ (show ht) ++  ": " ++ loc
                         
@@ -160,7 +190,7 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
           mapFieldRef (A.FieldRefNormal en fn) = do
               e <- lookupAliasedEntity  en
               f <- lookupEntityField  e fn
-                  
+              return $ I.FieldRefNormal e f    
 
           mapValExpr (A.FieldExpr ref) = do
               ref' <- mapFieldRef ref
@@ -184,7 +214,7 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
           mapWhere (A.Where e) = do
               e' <- mapExpr e                       
               return $ Just e'
-          mapWhere _ = Right $ Nothing 
+          mapWhere _ = return $ Nothing 
 
           mapJoinExpr (Just (lhs, op, rhs)) = do
               lhs' <- mapFieldRef lhs
@@ -193,15 +223,23 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
           mapJoinExpr Nothing = return Nothing
           mapJoin (A.Join jt en vn je) = do
               e <- lookupEntity en
-              je' <- mapJoinExpr
+              je' <- mapJoinExpr je
               return $ I.Join {
                   I.joinType = jt,
                   I.joinEntity = e,
                   I.joinAlias = vn,
                   I.joinExpr = je'
               }
+          mapOrderByField (ref, dir) = do
+              ref' <- mapFieldRef ref
+              return $ (ref', dir)
+          mapOrderBy (A.OrderBy ob) = do
+              ob' <- mapM mapOrderByField ob
+              return $ Just $ ob'
+          mapOrderBy _ = return Nothing
+
           f A.GetHandler = do
-              textSearchFilters <- mapMaybeM mapTextSearch ps
+              textSearchFilters <- mapM mapTextSearch ps
               selectFrom <- getSelectFrom
               joins' <- mapM mapJoin joins
               wheres <- mapM mapWhere ps 
@@ -209,55 +247,64 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
               return $ I.GetHandler (I.GetHandlerParams {
                          I.ghPublic = public,
                          I.ghDefaultFilterSort = A.DefaultFilterSort `elem` ps,
-                         I.ghTextSearchFilter = textSearchFilters,
+                         I.ghTextSearchFilters = catMaybes textSearchFilters,
                          I.ghSelectFrom = selectFrom,
-                         I.ghJoins = joins'
-                         I.ghWhere = wheres,
+                         I.ghJoins = joins',
+                         I.ghWhere = catMaybes wheres,
                          I.ghPostTransforms = postTransforms,
-                         I.ghOrderBy = orderBy,
+                         I.ghOrderBy = concat $ catMaybes orderBy,
                          I.ghPreHooks = preHooks,
                          I.ghPostHooks = postHooks
                       })
           f A.PutHandler = do
               e <- getEntity
-              return $ I.PutHandler {
+              return $ I.PutHandler (I.PutHandlerParams {
                   I.puthPublic = public,
                   I.puthPreTransforms = preTransforms,
                   I.puthPreHooks = preHooks,
                   I.puthPostHooks = postHooks,
                   I.puthEntity = e
-              }
+              })
           f A.PostHandler = do
               e <- getEntity
-              return $ I.PostHandler {
-                  I.posthPublic = public
+              return $ I.PostHandler (I.PostHandlerParams {
+                  I.posthPublic = public,
                   I.posthPreTransforms = preTransforms,
                   I.posthPreHooks = preHooks,
                   I.posthPostHooks = postHooks,
                   I.posthEntity = e
-              }
+              })
           f A.DeleteHandler = do
               e <- getEntity
-              return $ I.DeleteHandler {
+              return $ I.DeleteHandler (I.DeleteHandlerParams {
                   I.dhPublic = public,
                   I.dhPreHooks = preHooks,
                   I.dhPostHooks = postHooks,
                   I.dhEntity = e
-              }
-          public = A.PublicService `elem` ps
-          preTransforms = map (\A.PreTransform f -> f) $filter isPreTransform ps
+              })
+          public = A.Public `elem` ps
+          preTransforms = map (\(A.PreTransform f) -> f) $filter isPreTransform ps
           isPreTransform (A.PreTransform _) = True
           isPreTransform _ = False
-          postTransforms = map (\A.PostTransform f -> f) $filter isPostTransform ps
+          postTransforms = map (\(A.PostTransform f) -> f) $filter isPostTransform ps
           isPostTransform (A.PostTransform _) = True
           isPostTransform _ = False
+        
+          preHooks = map (\(A.PreHook f) -> f) $filter isPreHook ps
+          isPreHook (A.PreHook _) = True
+          isPreHook _ = False
     
+          postHooks = map (\(A.PostHook f) -> f) $filter isPostHook ps
+          isPostHook (A.PostHook _) = True
+          isPostHook _ = False
+    
+
 
     
 mapResource :: A.Module -> [I.Entity] -> A.Resource -> Either String I.Resource
-mapResource m es r = doA
-    let loc = "resource " ++ A.resourceName r ++ " in " 
-            ++ (show $ A.resourceLoc r)
+mapResource m es r = do
+    let loc = "resource " ++ (show $ A.resRoute r) ++ " in " 
+            ++ (show $ A.resLoc r)
     route <- mapM (mapPathPiece m loc es) (A.resRoute r)
     handlers <- mapM (mapHandler m loc es) (A.resHandlers r)
     return $ I.Resource {
@@ -269,7 +316,7 @@ mapResource m es r = doA
 astToIntermediate :: A.Module -> Either String I.Module
 astToIntermediate m = do
     classes <- mapM (mapClass m) (A.modClasses m)
-    entities <- mapM (mapEntity m) (A.modEntities m)
+    entities <- mapM (mapEntity m classes) (A.modEntities m)
     resources <- mapM (mapResource m entities) (A.modResources m) 
     return $ I.Module {
         I.modClasses = classes,
