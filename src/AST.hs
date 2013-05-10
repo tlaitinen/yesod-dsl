@@ -102,6 +102,8 @@ data HandlerParam = Public
                   | PreTransform FunctionName
                   | PostTransform FunctionName
                   | OrderBy [(FieldRef,SortDir)]
+                  | ReturnEntity VariableName
+                  | ReturnFields [(ParamName, FieldRef)]
                   | PreHook FunctionName 
                   | PostHook FunctionName  deriving (Show, Eq) 
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   

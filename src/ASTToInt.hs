@@ -128,6 +128,8 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
           allowed A.GetHandler (A.Where _) = True
           allowed A.GetHandler (A.OrderBy _) = True
           allowed A.GetHandler (A.SelectFrom _ _) = True
+          allowed A.GetHandler (A.ReturnEntity _) = True
+          allowed A.GetHandler (A.ReturnFields _) = True
           allowed _ _ = False
 
           checkParam ht p = if allowed ht p 
@@ -238,12 +240,37 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
               return $ Just $ ob'
           mapOrderBy _ = return Nothing
 
+          mapReturnField (p,ref) = do
+              ref' <- mapFieldRef ref
+              return $ (p,ref')
+
+          mapReturnDef (A.ReturnEntity en) = do
+              e <- lookupEntity en
+              return $ Left e
+          mapReturnDef (A.ReturnFields fs) = do
+              fs' <- mapM mapReturnField fs
+              return $ Right fs'
+          returnDefs = filter isReturnDef ps
+          isReturnDef (A.ReturnEntity _) = True
+          isReturnDef (A.ReturnFields _) = True
+          isReturnDef _ = False
+
+
+          getReturn 
+              | null returnDefs = Left $ "Missing 'return' in "
+                    ++ (show ht) ++ ": " ++ loc
+              | length returnDefs == 1 = do
+                  mapReturnDef $ head returnDefs
+              | otherwise = Left $ "More than one 'return' in "
+                   ++ (show ht)++  ":"   ++ loc
+
           f A.GetHandler = do
               textSearchFilters <- mapM mapTextSearch ps
               selectFrom <- getSelectFrom
               joins' <- mapM mapJoin joins
               wheres <- mapM mapWhere ps 
               orderBy <- mapM mapOrderBy ps
+              return' <- getReturn
               return $ I.GetHandler (I.GetHandlerParams {
                          I.ghPublic = public,
                          I.ghDefaultFilterSort = A.DefaultFilterSort `elem` ps,
@@ -254,7 +281,8 @@ mapHandler m loc es (A.Handler ht ps) = (mapM (checkParam ht) ps) >> (f ht)
                          I.ghPostTransforms = postTransforms,
                          I.ghOrderBy = concat $ catMaybes orderBy,
                          I.ghPreHooks = preHooks,
-                         I.ghPostHooks = postHooks
+                         I.ghPostHooks = postHooks,
+                         I.ghReturn = return'
                       })
           f A.PutHandler = do
               e <- getEntity

@@ -66,7 +66,8 @@ data GetHandlerParams = GetHandlerParams {
     ghPostTransforms     :: [A.FunctionName],
     ghOrderBy            :: [(FieldRef, A.SortDir)],
     ghPreHooks           :: [A.FunctionName],
-    ghPostHooks          :: [A.FunctionName]
+    ghPostHooks          :: [A.FunctionName],
+    ghReturn             :: Either Entity [(A.ParamName, FieldRef)]
 }
 
 data PutHandlerParams = PutHandlerParams {

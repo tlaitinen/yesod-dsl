@@ -164,6 +164,11 @@ handlerParam : public { Public }
              | defaultfiltersort { DefaultFilterSort }
              | textsearchfilter stringval fieldRefList { TextSearchFilter $2 $3 }
              | order by sortbylist { OrderBy $3 }
+             | return lowerId { ReturnEntity $2 }
+             | return lbrace returnfields rbrace { ReturnFields $3 }
+             
+returnfields : stringval colon fieldRef { [($1, $3)] }
+             | returnfields comma stringval colon fieldRef { ($3,$5):$1}
              
 binop : equals { Eq }
       | ne { Ne }
