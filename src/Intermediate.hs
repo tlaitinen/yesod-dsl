@@ -3,16 +3,17 @@ module Intermediate where
 import qualified AST as A
 import Data.Either
 
-data Enum = Enum {
-    enumLoc          :: A.Location,
-    enumName         :: String,
-    enumValues       :: [String]    
+data Module = Module {
+    modEntities :: [Entity],
+    modClasses  :: [Class],
+    modEnums    :: [A.EnumType],
+    modResources :: [Resource]
 }
 
 data Class = Class {
     classLoc         :: A.Location,
     className        :: String,
-    classFields      :: Field,
+    classFields      :: [Field],
     classUniques     :: [Unique]
 }
 
@@ -29,12 +30,16 @@ data Entity = Entity {
 data Field = Field {
     fieldOptional    :: Bool,
     fieldName        :: String,
-    fieldType        :: Either A.FieldType Entity,
+    fieldType        :: FieldType,
     fieldChecks      :: [A.FunctionName],
-    fieldDefault     :: Maybe A.FieldValue,
-    fieldOwner       :: Entity
+    fieldDefault     :: Maybe A.FieldValue
 }
 
+data FieldType = DataField A.FieldType
+               | ERefField A.EntityName
+               | CRefField A.ClassName
+               | EnumField A.EnumType
+               
 data Unique = Unique A.UniqueName [Field]
                   
 data Resource = Resource {
@@ -52,38 +57,38 @@ data Handler = GetHandler GetHandlerParams
              | DeleteHandler DeleteHandlerParams
 
 data GetHandlerParams = GetHandlerParams {
-    ghPublic            :: Bool,
-    ghDefaultFilterSort :: Bool,
-    ghTextSearchFilter  :: (A.ParamName, [FieldRef]),
-    ghSelectFrom        :: (Entity, A.VariableName),
-    ghJoins             :: [Join],
-    ghWhere             :: Expr,
-    ghPostTransform     :: A.FunctionName,
-    ghOrderBy           :: [(FieldRef, A.SortDir)],
-    ghPreHook           :: A.FunctionName,
-    ghPostHook          :: A.FunctionName
+    ghPublic             :: Bool,
+    ghDefaultFilterSort  :: Bool,
+    ghTextSearchFilters  :: [(A.ParamName, [FieldRef])],
+    ghSelectFrom         :: (Entity, A.VariableName),
+    ghJoins              :: [Join],
+    ghWhere              :: [Expr],
+    ghPostTransforms     :: [A.FunctionName],
+    ghOrderBy            :: [(FieldRef, A.SortDir)],
+    ghPreHooks           :: [A.FunctionName],
+    ghPostHooks          :: [A.FunctionName]
 }
 
 data PutHandlerParams = PutHandlerParams {
     puthPublic          :: Bool,
-    puthPreTransform    :: A.FunctionName,
-    puthPreHook         :: A.FunctionName,
-    puthPostHook        :: A.FunctionName,
+    puthPreTransforms   :: [A.FunctionName],
+    puthPreHooks        :: [A.FunctionName],
+    puthPostHooks       :: [A.FunctionName],
     puthEntity          :: Entity  
 }
 
 data PostHandlerParams = PostHandlerParams {
     posthPublic         :: Bool,
-    posthPreTransform   :: A.FunctionName,
-    posthPreHook        :: A.FunctionName,
-    posthPostHook       :: A.FunctionName,
+    posthPreTransforms  :: [A.FunctionName],
+    posthPreHooks       :: [A.FunctionName],
+    posthPostHooks      :: [A.FunctionName],
     posthEntity         :: Entity
 }
 
 data DeleteHandlerParams = DeleteHandlerParams {
     dhPublic            :: Bool,
-    dhPreHook           :: A.FunctionName,
-    dhPostHook          :: A.FunctionName,
+    dhPreHooks          :: [A.FunctionName],
+    dhPostHooks         :: [A.FunctionName],
     dhEntity            :: Entity
 }
 
@@ -95,7 +100,7 @@ data Join = Join {
 }
 
 data FieldRef = FieldRefId Entity
-              | FieldRefNormal Field
+              | FieldRefNormal Entity Field
 
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr

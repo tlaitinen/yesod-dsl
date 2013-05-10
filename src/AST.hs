@@ -178,7 +178,7 @@ data Field = Field {
 type FunctionName = String
 
 data FieldOption = FieldCheck FunctionName
-                 | FieldDefault String
+                 | FieldDefault FieldValue
                  deriving (Show)
 
 data FieldValue = StringValue String
@@ -191,11 +191,4 @@ fieldOptions f = fieldContentOptions (fieldContent f)
     where fieldContentOptions (NormalField  _ options) = options
           fieldContentOptions _ = []
     
-fieldDefault :: Field -> Maybe String
-fieldDefault f = maybe Nothing (\(FieldDefault d) -> Just d) 
-                      (find isFieldDefault (fieldOptions f))
-    where
-        isFieldDefault (FieldDefault _) = True
-        isFieldDefault _ = False
-
 
