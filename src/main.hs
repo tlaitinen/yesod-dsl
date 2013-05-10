@@ -2,7 +2,7 @@ import Lexer
 import Parser
 import System.Environment
 import ModuleMerger
-import NameFinder
+import Validation
 import CheckServices
 import ClassImplementer
 import AST
@@ -11,6 +11,7 @@ import Generator
 import SyncFiles
 import System.Directory
 import Control.Monad
+import System.IO
 
 createFiles :: [(FilePath, String)] -> IO ()
 createFiles files = mapM_ createFile files
@@ -25,11 +26,14 @@ createFiles files = mapM_ createFile files
 main = do
     [ path ] <- getArgs
     dbs <- parse path
-    let merged    = mergeModules dbs
-    let impl      = (checkServices . implementInterfaces) merged
-    let generated = generateModels impl
-    syncFiles generated
-    createFiles [("Model/ValidationFunctions.hs",
-                  "module Model.ValidationFunctions where\nimport Import"),
-                 ("Handler/Hooks.hs",
-                  "module Handler.Hooks where\nimport Import")]
+    let merged  = implementClasses . mergeModules dbs
+    let errors = validate merged
+    if null errors 
+        then do
+            syncFiles (generateModels impl)
+            createFiles [("Model/ValidationFunctions.hs",
+                          "module Model.ValidationFunctions where\nimport Import"),
+                         ("Handler/Hooks.hs",
+                          "module Handler.Hooks where\nimport Import")]
+        else do
+            hPutStrLn stderr errors

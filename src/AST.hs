@@ -8,7 +8,7 @@ data Module = Module {
     modImports   :: [ImportPath],
     modEntities  :: [Entity],
     modClasses :: [Class],
-    modEnums :: [ModEnum],
+    modEnums :: [EnumType],
     modResources :: [Resource]
 }
     deriving (Show)
@@ -21,7 +21,7 @@ emptyModule = Module {
 }
 data ModDef = EntityDef Entity
            | ClassDef Class
-           | EnumDef ModEnum
+           | EnumDef EnumType
            | ResourceDef Resource
            deriving (Show)
 
@@ -42,7 +42,7 @@ getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
 getClasses :: [ModDef] -> [Class]
 getClasses defs = map (\(ClassDef e) -> e) $ filter isClass defs
 
-getEnums :: [ModDef] -> [ModEnum]
+getEnums :: [ModDef] -> [EnumType]
 getEnums defs = map (\(EnumDef e) -> e) $ filter isEnum defs
 
 getResources :: [ModDef] -> [Resource]
@@ -55,8 +55,10 @@ type ClassName = String
 type UniqueFlag = Bool
 type ParamName = String
 type EntityName = String
-type FieldType = TokenType
-type FieldName = String
+data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
+               | FTBool | FTDouble | FTTime | FTDate | FTDateTime 
+                              | FTZonedTime deriving (Show)
+type FieldName = String 
 type PathName = String
 type OptionalFlag = Bool
 type UniqueName = String
@@ -74,8 +76,8 @@ data HandlerType = GetHandler
                  | PutHandler 
                  | PostHandler 
                  | DeleteHandler 
-                 | ValidateHandler  deriving (Show, Eq) 
-type QueryAlias = String
+                 deriving (Show, Eq) 
+type VariableName = String
 data JoinType = InnerJoin 
               | CrossJoin
               | LeftOuterJoin
@@ -87,18 +89,18 @@ data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like deriving (Show,Eq)
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr
           | BinOpExpr ValExpr ValExpr deriving (Show,Eq)
-data ValExpr = FieldExpr FieldPath
+data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue deriving (Show,Eq)
 data HandlerParam = Public 
                   | DefaultFilterSort
-                  | TextSearchFilter QueryAlias [FieldPath]
-                  | SelectFrom EntityName QueryAlias
-                  | Join JoinType EntityName QueryAlias 
-                         (Maybe (FieldPath, BinOp, FieldPath))
+                  | TextSearchFilter ParamName [FieldRef]
+                  | SelectFrom EntityName VariableName
+                  | Join JoinType EntityName VariableName
+                         (Maybe (FieldRef, BinOp, FieldRef))
                   | Where Expr
                   | PreTransform FunctionName
                   | PostTransform FunctionName
-                  | SortBy [(FieldPath,SortDir)]
+                  | SortBy [(FieldRef,SortDir)]
                   | PreHook FunctionName 
                   | PostHook FunctionName  deriving (Show, Eq) 
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
@@ -125,21 +127,19 @@ data PathPiece = PathText String
                | PathId EntityName deriving (Show)
 
 
-data FieldPath = FieldPathId EntityName 
-               | FieldPathNormal EntityName FieldName deriving (Show, Eq)
+data FieldRef = FieldRefId EntityName 
+               | FieldRefNormal EntityName FieldName deriving (Show, Eq)
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
                                (find (\f -> fieldName f == fn) (entityFields e))
 
-data ModEnum = ModEnum {
+data EnumType = EnumType {
     enumLoc :: Location,
     enumName :: String,
     enumValues :: [String]
 } deriving (Show)
 
-entityPath :: Entity -> String
-entityPath e = entityName e ++ " in " ++ show (entityLoc e)
 
 
 data Class = Class {

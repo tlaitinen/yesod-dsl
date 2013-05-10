@@ -11,7 +11,7 @@ import Control.Exception hiding (Handler)
 import System.Exit
 }
 
-%name dbdef
+%name moduleDefs
 %tokentype { Token }
 %error { parseError }
 
@@ -114,7 +114,7 @@ def : resourceDef     { ResourceDef $1 }
       | enumDef       { EnumDef $1 }
 
 enumDef : enum upperId equals enumValues semicolon 
-         { DbEnum (mkLoc $1) $2 $4 }
+         { EnumType (mkLoc $1) $2 $4 }
 
 enumValues : upperId { [$1] }
            | enumValues pipe upperId { $3 : $1 }
@@ -145,8 +145,8 @@ handlerdef : get handlerParamsBlock { Handler GetHandler $2 }
 fieldPathList : fieldPath { [$1] }
               | fieldPathList comma fieldPath { $3 : $1 }
 
-fieldPath : lowerId { FieldPathId $1 }
-          | lowerId dot lowerId { FieldPathNormal $1 $3 } 
+fieldPath : lowerId { FieldRefId $1 }
+          | lowerId dot lowerId { FieldRefNormal $1 $3 } 
     
 handlerParamsBlock : lbrace handlerParams rbrace { $2 }
 
@@ -209,7 +209,7 @@ classDef : class upperId lbrace
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField (tokenType $3) $4) } 
+field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField $3 $4) } 
       | lowerId maybeMaybe upperId { Field $2 $1 (EntityField $3) }
 
 fieldOptions : { [] }
@@ -239,17 +239,17 @@ checkDef :  check lowerId { $2 }
 fieldIdList : lowerId { [] }
             | fieldIdList comma lowerId { $3 : $1 }
 
-fieldType : word32 { $1 }
-          | word64{ $1 }
-          | int32{ $1 }
-          | int64{ $1 }
-          | text { $1 }
-          | bool{ $1 }
-          | double{ $1 }
-          | time { $1 }
-          | date { $1 }
-          | datetime{ $1 }
-          | zonedtime{ $1 }
+fieldType : word32 { FTWord32 }
+          | word64{ FTWord64 }
+          | int32{ FTInt32 }
+          | int64{ FTInt64 }
+          | text { FTText }
+          | bool{ FTBool }
+          | double{ FTDouble }
+          | time { FTTime }
+          | date { FTDate }
+          | datetime{ FTDateTime }
+          | zonedtime{ FTZonedTime }
 
 maybeMaybe : { False }
               | maybe { True }
@@ -267,8 +267,8 @@ parseModules handled (path:paths)
     | path `elem` handled = return []
     | otherwise = do
         s <- readFile path
-        let mod = (dbdef . lexer) s
-        catch (do rest <- parseModules (path:handled) (paths ++ dbImports mod)
+        let mod = (moduleDefs . lexer) s
+        catch (do rest <- parseModules (path:handled) (paths ++ modImports mod)
                   return ((path,mod):rest))
               (\(ParseError msg) -> do 
                     putStrLn $ path ++ ": " ++ msg

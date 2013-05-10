@@ -1,11 +1,14 @@
-module ClassImplementer (implementInterfaces) where
+module ClassImplementer (implementClasses) where
 import Data.List
 import AST
 import Data.Maybe
 import CheckFieldNames
 
-implementInterfaces :: Module -> Module
-implementInterfaces db' = 
+entityPath :: Entity -> String
+entityPath e = entityName e ++ " in " ++ show (entityLoc e)
+
+implementClasses :: Module -> Module
+implementClasses db' = 
     let
         db = checkFieldNames db'
         classes = dbClasses db
