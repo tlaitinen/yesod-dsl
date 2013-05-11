@@ -4,7 +4,8 @@ module ValidationNames (names, NameList, Name, NameSpace(..), nameErrors) where
 import AST
 import Data.List
 
-data NameSpace = GlobalNS | EntityNS | EnumNS | FieldNS deriving (Eq, Ord)
+data NameSpace = GlobalNS | EntityNS | EnumNS | FieldNS | FieldTypeNS
+               deriving (Eq, Ord)
 type Name = String
 type NameList = [(NameSpace, [(Name, [Location])])]
 
@@ -21,7 +22,7 @@ instance HasNames Module where
                ++ getNames (modResources m) 
 
 instance HasNames Entity where
-    getNames e = [([GlobalNS, EntityNS], entityName e, entityLoc e)]
+    getNames e = [([GlobalNS, EntityNS, FieldTypeNS], entityName e, entityLoc e)]
                ++ getNames [ (e, f) | f <- (entityFields e) ]
 
 instance HasNames (Entity, Field) where
@@ -29,7 +30,7 @@ instance HasNames (Entity, Field) where
                       entityLoc e)]
                
 instance HasNames Class where 
-    getNames c = [([GlobalNS, EntityNS], className c, classLoc c)]
+    getNames c = [([GlobalNS, EntityNS, FieldTypeNS], className c, classLoc c)]
                ++ getNames [ (c,f) | f <- (classFields c)]
 
 instance HasNames (Class, Field) where
@@ -37,7 +38,7 @@ instance HasNames (Class, Field) where
                       classLoc c)]
 
 instance HasNames EnumType where
-    getNames e = [([GlobalNS, EnumNS], enumName e, enumLoc e)]
+    getNames e = [([GlobalNS, EnumNS, FieldTypeNS], enumName e, enumLoc e)]
                ++ getNames [ (e, v) | v <- enumValues e]
 
 instance HasNames (EnumType, String) where
@@ -55,15 +56,14 @@ instance HasNames (Resource, HandlerType, HandlerParam) where
     getNames (r,ht,p) = [([GlobalNS],
                           handlerName r ht ++ " "++ handlerParamName p,
                           resLoc r)]
+     
 
-handlerName :: Resource -> HandlerType -> String                       
-handlerName r ht = show r ++ " " ++ show ht
 handlerParamName :: HandlerParam -> String
 handlerParamName Public = "public"
 handlerParamName (HandlerEntity en) = "entity " ++ en
 handlerParamName (TextSearchFilter pn _) = "text-search-filter " ++ pn
-handlerParamName (SelectFrom en v) = "select-from"
-handlerParamName (Join _ en v _) = "join " ++ v
+handlerParamName (SelectFrom en v) = v
+handlerParamName (Join _ en v _) =  v
 handlerParamName (Where e) = "where" 
 handlerParamName (MapBy f) = "map-by"
 handlerParamName (OrderBy fs) = "order-by"

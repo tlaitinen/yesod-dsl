@@ -108,7 +108,6 @@ data HandlerParam = Public
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
 
 data Handler = Handler HandlerType [HandlerParam]  deriving (Show)
-
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
@@ -125,12 +124,14 @@ data Resource = Resource {
     resHandlers :: [Handler]
 } deriving (Show)
 
+handlerName :: Resource -> HandlerType -> String
+handlerName r ht = show (resRoute r) ++ " " ++ show ht
 data PathPiece = PathText String
                | PathId EntityName deriving (Show)
 
 
-data FieldRef = FieldRefId EntityName 
-              | FieldRefNormal EntityName FieldName
+data FieldRef = FieldRefId VariableName
+              | FieldRefNormal VariableName FieldName
               | FieldRefPathParam Int deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field
