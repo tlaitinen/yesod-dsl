@@ -5,10 +5,8 @@ import ModuleMerger
 import Validation
 import ClassImplementer
 import AST
-import ASTToInt
-import qualified Intermediate as I 
 import Data.List
-import Generator
+--import Generator
 import SyncFiles
 import System.Directory
 import Control.Monad
@@ -27,19 +25,15 @@ createFiles files = mapM_ createFile files
 main = do
     [ path ] <- getArgs
     dbs <- parse path
-    let ast  = implementClasses . mergeModules dbs
+    let ast  = implementClasses . mergeModules $ dbs
     let errors = validate ast
     if null errors 
-        then handle (astToIntermediate ast)
+        then do
+            putStrLn "OK"
+            -- syncFiles (generateModels int)
+            -- createFiles [("Model/ValidationFunctions.hs",
+            --              "module Model.ValidationFunctions where\nimport Import"),
+            --             ("Handler/Hooks.hs",
+            --              "module Handler.Hooks where\nimport Import")]
        else do
             hPutStrLn stderr errors
-    where
-        handle (Left err) = hPutStrLn stderr err
-        handle (Right int) = do
-            syncFiles (generateModels int)
-            createFiles [("Model/ValidationFunctions.hs",
-                          "module Model.ValidationFunctions where\nimport Import"),
-                         ("Handler/Hooks.hs",
-                          "module Handler.Hooks where\nimport Import")]
-
-    

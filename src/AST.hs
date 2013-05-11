@@ -76,7 +76,12 @@ data HandlerType = GetHandler
                  | PutHandler 
                  | PostHandler 
                  | DeleteHandler 
-                 deriving (Show, Eq) 
+                 deriving (Eq) 
+instance Show HandlerType where
+    show GetHandler = "GET"
+    show PutHandler = "PUT"
+    show PostHandler = "POST"
+    show DeleteHandler = "DELETE"
 type VariableName = String
 data JoinType = InnerJoin 
               | CrossJoin
@@ -129,7 +134,11 @@ handlerName r ht = show (resRoute r) ++ " " ++ show ht
 
 
 data PathPiece = PathText String
-               | PathId EntityName deriving (Show)
+               | PathId EntityName
+instance Show PathPiece where
+    show (PathText s) = s
+    show (PathId en) = "#" ++ en
+    
 
 
 data FieldRef = FieldRefId VariableName

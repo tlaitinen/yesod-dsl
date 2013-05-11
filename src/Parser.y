@@ -126,7 +126,7 @@ entityDef : entity upperId lbrace
 
 resourceDef : resource pathpieces lbrace handlers rbrace { Resource (mkLoc $1) $2 $4 }
 pathpieces : slash pathpiece { [$2] }
-           | pathpieces pathpiece { $2 : $1 }
+           | pathpieces slash pathpiece { $3 : $1 }
 
 pathpiece : lowerId { PathText $1 } 
           | hash upperId { PathId $2 }
@@ -186,7 +186,7 @@ valexpr : value { ConstExpr $1 }
 maybeJoinOn : { Nothing }
             | on fieldRef binop fieldRef { Just ($2,$3,$4) }
             
-jointype : join { InnerJoin }
+jointype : inner join { InnerJoin }
          | cross join { CrossJoin } 
          | left outer join { LeftOuterJoin }
          | right outer join { RightOuterJoin }
@@ -200,7 +200,7 @@ sortdir : asc { SortAsc }
         | desc  { SortDesc }
               
 maybeInstances : { [] }
-               | instanceof instances { $2 }
+               | instanceof instances semicolon { $2 }
 
 instances : upperId { [$1] }
             | instances comma upperId { $3 : $1 }

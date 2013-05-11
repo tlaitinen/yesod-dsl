@@ -69,6 +69,7 @@ instance HasRefs (Resource, HandlerType, HandlerParam) where
         getRefs [(r,ht,
                   (resLoc r), "return-expression in " ++ handlerInfo r ht, f)
                 | (_, f) <- fs ]
+    getRefs _ = []            
                   
 instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
     getRefs (r,ht,l,i,(FieldRefId vn)) = 
@@ -118,8 +119,8 @@ refErrors :: NameList -> Refs -> String
 refErrors nl refs = 
     concatMap refError $ filter (not . (hasRef  nl)) refs
         where
-            refError (l,i,ns,n) = "Reference to an undefined name " ++ n 
-                                ++ " " ++ i ++ "\n"
+            refError (l,i,ns,n) = "Reference to an undefined name '" ++ n 
+                                ++ "' in " ++ i ++ " in " ++ show l ++ "\n"
 
 hasRef :: NameList -> Ref -> Bool
 hasRef nl (_,_,ns,n) = isJust $ findName nl ns n

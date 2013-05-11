@@ -71,6 +71,7 @@ instance HasNames (Resource, HandlerType, HandlerParam) where
 handlerParamName :: HandlerParam -> String
 handlerParamName Public = "public"
 handlerParamName (HandlerEntity en) = "entity " ++ en
+handlerParamName DefaultFilterSort = "default-filter-sort"
 handlerParamName (TextSearchFilter pn _) = "text-search-filter " ++ pn
 handlerParamName (SelectFrom en v) = v
 handlerParamName (Join _ en v _) =  v
@@ -81,7 +82,6 @@ handlerParamName (ReturnEntity _) = "return"
 handlerParamName (ReturnFields _) = "return"
 handlerParamName (BeforeHandler f) = "before-handler " ++ f
 handlerParamName (AfterHandler f) = "after-handler " ++ f
-        
 groupByName :: [(Name, Location)] -> [(Name, [Location])]
 groupByName ns = nameGroups 
     where
