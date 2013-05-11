@@ -68,14 +68,11 @@ import System.Exit
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
     return { Tk _ TReturn }
-    instance { Tk _ TInstance }
-    of { Tk _ TOf }
-    pretransform { Tk _ TPreTransform }
-    posttransform { Tk _ TPostTransform }
-    prehook { Tk _ TPreHook }
-    posthook { Tk _ TPostHook }
-    select { Tk _ TSelect }
-    from { Tk _ TFrom }
+    instanceof { Tk _ TInstanceOf }
+    mapby { Tk _ TMapBy }
+    beforehandler { Tk _ TBeforeHandler }
+    afterhandler { Tk _ TAfterHandler }
+    selectfrom { Tk _ TSelectFrom }
     join { Tk _ TJoin }
     inner { Tk _ TInner }
     outer { Tk _ TOuter }
@@ -85,16 +82,15 @@ import System.Exit
     cross { Tk _ TCross }
     on { Tk _ TOn }
     as { Tk _ TAs }
-    validate { Tk _ TValidate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     textsearchfilter { Tk _ TTextSearchFilter }
-    order { Tk _ TOrder }
-    by { Tk _ TBy }
+    orderby { Tk _ TOrderBy }
     asc { Tk _ TAsc }
     desc { Tk _ TDesc }
     where { Tk _ TWhere }
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
+    pathParam { Tk _ (TPathParam $$) }
 %%
 
 dbModule : imports defs { Module $1 (getEntities $2) 
@@ -147,6 +143,7 @@ fieldRefList : fieldRef { [$1] }
 
 fieldRef : lowerId { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
+          | pathParam { FieldRefPathParam $1 }
     
 handlerParamsBlock : lbrace handlerParams rbrace { $2 }
 
@@ -154,16 +151,15 @@ handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
              | entity upperId { HandlerEntity $2 }
-             | select from upperId as lowerId { SelectFrom $3 $5 }
+             | selectfrom upperId as lowerId { SelectFrom $2 $4 }
              | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
              | where expr { Where $2 }
-             | prehook lowerId { PreHook $2 }
-             | posthook lowerId { PostHook $2 }
-             | pretransform lowerId { PreTransform $2 }
-             | posttransform lowerId { PostTransform $2 }
+             | beforehandler lowerId { BeforeHandler $2 }
+             | afterhandler lowerId { AfterHandler $2 }
+             | mapby lowerId { MapBy $2 }
              | defaultfiltersort { DefaultFilterSort }
              | textsearchfilter stringval fieldRefList { TextSearchFilter $2 $3 }
-             | order by sortbylist { OrderBy $3 }
+             | orderby sortbylist { OrderBy $2 }
              | return lowerId { ReturnEntity $2 }
              | return lbrace returnfields rbrace { ReturnFields $3 }
              
@@ -202,7 +198,7 @@ sortdir : asc { SortAsc }
         | desc  { SortDesc }
               
 maybeInstances : { [] }
-               | instance of instances { $3 }
+               | instanceof instances { $2 }
 
 instances : upperId { [$1] }
             | instances comma upperId { $3 : $1 }

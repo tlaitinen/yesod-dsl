@@ -99,13 +99,12 @@ data HandlerParam = Public
                   | Join JoinType EntityName VariableName
                          (Maybe (FieldRef, BinOp, FieldRef))
                   | Where Expr
-                  | PreTransform FunctionName
-                  | PostTransform FunctionName
+                  | MapBy FunctionName
                   | OrderBy [(FieldRef,SortDir)]
                   | ReturnEntity VariableName
                   | ReturnFields [(ParamName, FieldRef)]
-                  | PreHook FunctionName 
-                  | PostHook FunctionName  deriving (Show, Eq) 
+                  | BeforeHandler FunctionName 
+                  | AfterHandler FunctionName  deriving (Show, Eq) 
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
 
 data Handler = Handler HandlerType [HandlerParam]  deriving (Show)
@@ -131,7 +130,8 @@ data PathPiece = PathText String
 
 
 data FieldRef = FieldRefId EntityName 
-               | FieldRefNormal EntityName FieldName deriving (Show, Eq)
+              | FieldRefNormal EntityName FieldName
+              | FieldRefPathParam Int deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id

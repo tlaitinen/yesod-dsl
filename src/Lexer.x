@@ -12,7 +12,7 @@ $upper = [A-Z]
 @specialChars = [\\]$printable
 @string = \" (@stringWithoutSpecialChars | @specialChars)* \"
 @fieldName = \' $lower [$alpha $digit \_ ]* \'
-
+@pathParam = \$ ($digit)+
 
 tokens :-
 	$white+	;
@@ -42,7 +42,6 @@ tokens :-
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
-    "validate" { mkT TValidate }
     "delete" { mkT TDelete }
     "import" { mkT TImport }
     "enum" { mkT TEnum }
@@ -51,10 +50,9 @@ tokens :-
     "resource" { mkT TResource }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
-    "pre-transform" { mkT TPreTransform }
-    "post-transform" { mkT TPostTransform }
-    "pre-hook" { mkT TPreHook }
-    "post-hook" { mkT TPostHook }
+    "map-by" { mkT TMapBy }
+    "before-handler" { mkT TBeforeHandler }
+    "after-handler" { mkT TAfterHandler }
     "inner" { mkT TInner }
     "outer" { mkT TOuter }
     "left" { mkT TLeft }
@@ -65,8 +63,7 @@ tokens :-
     "on" { mkT TOn }
     "as" { mkT TAs }
     "public" { mkT TPublic }
-    "select" { mkT TSelect }
-    "from" { mkT TFrom }
+    "select-from" { mkT TSelectFrom }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -81,8 +78,7 @@ tokens :-
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
     "text-search-filter" { mkT TTextSearchFilter }
-    "order" { mkT TOrder }
-    "by" { mkT TBy }
+    "order-by" { mkT TOrderBy }
     "and" { mkT TAnd }
     "or" { mkT TOr }
     "asc" { mkT TAsc }
@@ -91,15 +87,14 @@ tokens :-
     "where" { mkT TWhere }
     "return" { mkT TReturn }
     "default" { mkT TDefault }
-    "instance" { mkT TInstance }
-    "of" { mkT TOf }
+    "instance-of" { mkT TInstanceOf }
     "deriving" { mkT TDeriving }
 	$digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
 	$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
     @fieldName { mkTvar (TLowerId . stripQuotes) }
-    
+    @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
     
 {
 
@@ -137,8 +132,7 @@ data TokenType = TSemicolon
                | TInt     Int
                | TFloat   Double
                | TSlash
-               | TOrder
-               | TBy
+               | TOrderBy
                | TAsc
                | TDesc
                | TCheck
@@ -165,19 +159,15 @@ data TokenType = TSemicolon
                | TGet
                | TPut
                | TPost
-               | TInstance 
-               | TOf 
+               | TInstanceOf
                | TDelete
                | TPublic
-               | TPreTransform
-               | TPostTransform
-               | TSelect
+               | TMapBy
+               | TSelectFrom
                | TAnd
                | TOr
-               | TFrom
-               | TPreHook
-               | TPostHook
-               | TValidate
+               | TBeforeHandler
+               | TAfterHandler
                | TDefaultFilterSort
                | TTextSearchFilter
                | TWhere
@@ -185,6 +175,7 @@ data TokenType = TSemicolon
                | TReturn
                | TDeriving
                | TDefault
+               | TPathParam Int
         deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)
