@@ -91,6 +91,7 @@ import System.Exit
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
     pathParam { Tk _ (TPathParam $$) }
+    authId { Tk _ TAuthId }
 %%
 
 dbModule : imports defs { Module $1 (getEntities $2) 
@@ -144,6 +145,7 @@ fieldRefList : fieldRef { [$1] }
 fieldRef : lowerId { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
           | pathParam { FieldRefPathParam $1 }
+          | authId { FieldRefAuthId }
     
 handlerParamsBlock : lbrace handlerParams rbrace { $2 }
 

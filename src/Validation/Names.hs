@@ -1,14 +1,24 @@
 {-# LANGUAGE FlexibleInstances #-}
-module ValidationNames (names, NameList, Name, NameSpace(..), nameErrors) where
+module Validation.Names (names, 
+                         findName, 
+                         NameList, Name, NameSpace(..), nameErrors) where
 
 import AST
 import Data.List
 
-data NameSpace = GlobalNS | EntityNS | EnumNS | FieldNS | FieldTypeNS
+data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS
                deriving (Eq, Ord)
 type Name = String
 type NameList = [(NameSpace, [(Name, [Location])])]
 
+findName :: NameList -> NameSpace -> Name -> Maybe Location
+findName nl ns' n' = case matching of
+    ((_,_,l):_)  -> Just (head l)
+    _ -> Nothing
+    where matching = [ (ns, n, l) | (ns, names) <- nl, (n, l) <- names,
+                      ns == ns', n == n' ]
+
+             
 class HasNames a where 
     getNames :: a -> [([NameSpace], Name, Location)]
 
@@ -30,7 +40,7 @@ instance HasNames (Entity, Field) where
                       entityLoc e)]
                
 instance HasNames Class where 
-    getNames c = [([GlobalNS, EntityNS, FieldTypeNS], className c, classLoc c)]
+    getNames c = [([GlobalNS, ClassNS, EntityNS, FieldTypeNS], className c, classLoc c)]
                ++ getNames [ (c,f) | f <- (classFields c)]
 
 instance HasNames (Class, Field) where

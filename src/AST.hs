@@ -126,12 +126,15 @@ data Resource = Resource {
 
 handlerName :: Resource -> HandlerType -> String
 handlerName r ht = show (resRoute r) ++ " " ++ show ht
+
+
 data PathPiece = PathText String
                | PathId EntityName deriving (Show)
 
 
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
+              | FieldRefAuthId
               | FieldRefPathParam Int deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field

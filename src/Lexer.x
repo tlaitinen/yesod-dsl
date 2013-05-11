@@ -13,7 +13,7 @@ $upper = [A-Z]
 @string = \" (@stringWithoutSpecialChars | @specialChars)* \"
 @fieldName = \' $lower [$alpha $digit \_ ]* \'
 @pathParam = \$ ($digit)+
-
+@authId = \$ "authId"
 tokens :-
 	$white+	;
 	"--".*	;
@@ -95,6 +95,7 @@ tokens :-
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
     @fieldName { mkTvar (TLowerId . stripQuotes) }
     @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
+    @authId { mkT TAuthId }
     
 {
 
@@ -176,6 +177,7 @@ data TokenType = TSemicolon
                | TDeriving
                | TDefault
                | TPathParam Int
+               | TAuthId 
         deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

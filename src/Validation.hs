@@ -1,9 +1,10 @@
-module Validation where
+module Validation (validate) where
 
 import AST
 import Data.List
-import ValidationNames
-import ValidationRefs
+import Validation.Names
+import Validation.Refs
 
 validate :: Module -> String
-validate m = nameErrors (names m) ++ refErrors (refTargets m) (refs m)
+validate m = nameErrors ns ++ refErrors ns (refs m)
+    where ns = names m
