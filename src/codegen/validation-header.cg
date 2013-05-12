@@ -1,10 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ExistentialQuantification #-}
-module Model.Validation (Validatable(..)) where
-import Data.Text
-import Data.Maybe
-import qualified Model.ValidationFunctions as V
-import Import
 checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m (Maybe Text)
 checkResult msg f = do
    result <- f
@@ -12,3 +5,5 @@ checkResult msg f = do
 
 class Validatable a where
     validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]
+
+class ValidationFunction a where

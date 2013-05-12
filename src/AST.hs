@@ -132,7 +132,7 @@ data Handler = Handler {
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
-    entityImplements :: [ClassName],
+    entityInstances :: [ClassName],
     entityFields     :: [Field],
     entityUniques    :: [Unique],
     entityDeriving   :: [ClassName],
@@ -231,3 +231,9 @@ fieldDefault f = case find isDefault (fieldOptions f) of
     Nothing -> Nothing
     where isDefault (FieldDefault _) = True
           isDefault _ = False
+
+fieldChecks :: Field -> [FunctionName]
+fieldChecks = (map (\(FieldCheck f) -> f)) . (filter isCheck) . fieldOptions
+    where isCheck (FieldCheck _) = True
+          isCheck _ = False
+

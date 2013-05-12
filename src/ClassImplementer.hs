@@ -27,7 +27,7 @@ expandClassField mod e f@(Field _ _ (EntityField iName))
                         fieldName = fieldName f ++ entityName re,
                         fieldContent = EntityField (entityName re)
 
-                    } | re <- modEntities mod, iName `elem` (entityImplements re) ]
+                    } | re <- modEntities mod, iName `elem` (entityInstances re) ]
 
 
 expandClassRefFields :: Module -> Entity -> Field -> [Field]
@@ -50,11 +50,11 @@ implInEntity mod classes e
     | otherwise        = entityError e $ "Invalid interfaces " 
                                         ++ show invalidClassNames
     where
-        implements = entityImplements e
-        invalidClassNames = [ name | name <- implements, 
+        instances = entityInstances e
+        invalidClassNames = [ name | name <- instances, 
                                  isNothing $ classLookup classes name ]
-        implementedClasses = map (classLookup classes) implements
-        validClasses = catMaybes implementedClasses
+        instantiatedClasses = map (classLookup classes) instances
+        validClasses = catMaybes instantiatedClasses
                                      
         extraFields = concat $ map classFields validClasses
         addEntityName e (Unique name fields) = Unique (entityName e ++ name) fields
