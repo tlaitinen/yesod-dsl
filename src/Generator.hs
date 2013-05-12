@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Generator (generate) where
 
 import System.IO (FilePath)
@@ -150,8 +151,67 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
+getHandlerParam :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
+getHandlerParam m r ps DefaultFilterSort = "" -- $(codegenFile "codegen/default-filter-sort.cg")  -- TODO
+getHandlerParam _ _ _ _ = ""        
+
+
+getHandlerJoinDef :: (JoinType, EntityName, VariableName, (Maybe (FieldRef, BinOp, FieldRef))) -> String
+getHandlerJoinDef (jt, _, vn, _) = T.unpack $(codegenFile "codegen/get-handler-join-def.cg")
+
+hsFieldRef :: [HandlerParam] -> FieldRef -> String
+hsFieldRef ps (FieldRefId vn) = vn ++ " ^. " 
+                 ++  (fromJust $ handlerVariableEntity ps vn) ++ "Id"
+hsFieldRef ps (FieldRefNormal vn fn) = vn ++ " ^. " 
+                 ++ (fromJust $ handlerVariableEntity ps vn) 
+                 ++ (upperFirst fn)
+hsFieldRef _ FieldRefAuthId = "authId"
+hsFieldRef _ (FieldRefPathParam p) = "p" ++ show p
+
+hsBinOp :: BinOp -> String
+hsBinOp op = case op of
+    Eq -> "==."
+    Ne -> "!=."
+    Lt -> "<."
+    Gt -> ">."
+    Le -> "<=."
+    Ge -> ">=."
+    Like -> "like"
+
+getHandlerJoinExpr :: [HandlerParam] -> (JoinType, EntityName, VariableName, (Maybe (FieldRef, BinOp, FieldRef))) -> String
+getHandlerJoinExpr ps (_, en, vn, (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/get-handler-join-expr.cg")
+getHandlerJoinExpr _ _ = ""
+
+getHandler :: Module -> Resource -> [HandlerParam] -> String
+getHandler m r ps = T.unpack $(codegenFile "codegen/get-handler-footer.cg")
+    ++ (concatMap (getHandlerParam m r ps) ps)
+    ++ (T.unpack $(codegenFile "codegen/get-handler-select.cg"))
+    ++ (concatMap (getHandlerJoinExpr ps) rjoins)
+    where 
+        (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
+        joins = handlerJoins ps 
+        rjoins = reverse joins
+
+putHandler :: Module -> Resource -> [HandlerParam] -> String
+putHandler m r ps = T.unpack $(codegenFile "codegen/put-handler-footer.cg")
+
+postHandler :: Module -> Resource -> [HandlerParam] -> String
+postHandler m r ps = T.unpack $(codegenFile "codegen/post-handler-footer.cg")
+
+deleteHandler :: Module -> Resource -> [HandlerParam] -> String
+deleteHandler m r ps = T.unpack $(codegenFile "codegen/delete-handler-footer.cg")
+
+
 handler :: Module -> Resource -> Handler -> String
 handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")
+    ++ if Public `elem` ps 
+            then "" 
+            else (T.unpack $(codegenFile "codegen/handler-requireauth.cg"))
+    ++ (case ht of
+            GetHandler -> getHandler m r ps
+            PutHandler -> putHandler m r ps
+            PostHandler -> postHandler m r ps
+            DeleteHandler -> deleteHandler m r ps)
 
 generate :: Module -> String
 generate m = T.unpack $(codegenFile "codegen/header.cg")

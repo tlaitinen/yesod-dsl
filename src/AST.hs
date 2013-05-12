@@ -153,6 +153,28 @@ handlerName r ht = show (resRoute r) ++ " " ++ show ht
 routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)
 
+handlerSelectFrom :: [HandlerParam] -> Maybe (EntityName, VariableName)
+handlerSelectFrom ps = case find isSelectFrom ps of
+    Just (SelectFrom en vn) -> Just (en, vn)
+    Nothing -> Nothing
+    where isSelectFrom (SelectFrom _ _) = True
+          isSelectFrom _ = False
+
+handlerJoins :: [HandlerParam] -> [(JoinType, EntityName, VariableName,
+                                   (Maybe (FieldRef, BinOp, FieldRef)))]
+handlerJoins = (map (\(Join jt en vn je) -> (jt,en,vn,je))) . (filter isJoin)
+    where isJoin (Join _ _ _ _) = True
+          isJoin _ = False
+
+
+handlerVariableEntity :: [HandlerParam] -> VariableName -> Maybe EntityName
+handlerVariableEntity ps vn = case filter match ps of
+    ((SelectFrom en _):_) -> Just en
+    ((Join _ en _ _):_) -> Just en
+    _ -> Nothing
+   where match (SelectFrom _ vn') = vn == vn'
+         match (Join _ _ vn' _) = vn == vn'
+
 data PathPiece = PathText String
                | PathId EntityName
 instance Show PathPiece where

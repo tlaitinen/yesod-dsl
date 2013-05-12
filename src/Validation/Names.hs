@@ -77,14 +77,14 @@ instance HasNames (Resource, HandlerType, HandlerParam) where
 
 handlerParamName :: HandlerParam -> String
 handlerParamName Public = "public"
-handlerParamName (HandlerEntity en) = "entity " ++ en
+handlerParamName (HandlerEntity en) = "entity"
 handlerParamName DefaultFilterSort = "default-filter-sort"
 handlerParamName (TextSearchFilter pn _) = "text-search-filter " ++ pn
 handlerParamName (SelectFrom en v) = v
 handlerParamName (Join _ en v _) =  v
 handlerParamName (Where e) = "where" 
-handlerParamName (MapBy f) = "map-by"
-handlerParamName (OrderBy fs) = "order-by"
+handlerParamName (MapBy f) = "map by"
+handlerParamName (OrderBy fs) = "order by"
 handlerParamName (ReturnEntity _) = "return"
 handlerParamName (ReturnFields _) = "return"
 handlerParamName (BeforeHandler f) = "before-handler " ++ f
