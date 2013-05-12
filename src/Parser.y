@@ -92,12 +92,13 @@ import System.Exit
     default  { Tk _ TDefault }
     pathParam { Tk _ (TPathParam $$) }
     authId { Tk _ TAuthId }
+    entityId { Tk _ (TEntityId $$) }
 %%
 
-dbModule : imports defs { Module $1 (getEntities $2) 
-                                    (getClasses $2)
-                                    (getEnums $2)
-                                    (getResources $2)}
+dbModule : imports defs { Module (reverse $1) ((reverse . getEntities) $2) 
+                                    ((reverse . getClasses) $2)
+                                    ((reverse . getEnums) $2)
+                                    ((reverse . getResources) $2)}
 
 imports : { [] }
         | imports importStmt { $2 : $1 }
@@ -122,14 +123,15 @@ entityDef : entity upperId lbrace
             uniques
             derives
             checks
-            rbrace { Entity (mkLoc $1) $2 $4 $5 $6 $7 $8 }
+            rbrace { Entity (mkLoc $1) $2 (reverse $4) (reverse $5)
+                            (reverse $6) (reverse $7) (reverse $8) }
 
-resourceDef : resource pathpieces lbrace handlers rbrace { Resource (mkLoc $1) $2 $4 }
-pathpieces : slash pathpiece { [$2] }
-           | pathpieces slash pathpiece { $3 : $1 }
+resourceDef : resource pathPieces lbrace handlers rbrace { Resource (mkLoc $1) (reverse $2) (reverse $4) }
+pathPieces : slash pathPiece { [$2] }
+           | pathPieces slash pathPiece { $3 : $1 }
 
-pathpiece : lowerId { PathText $1 } 
-          | hash upperId { PathId $2 }
+pathPiece : lowerId { PathText $1 } 
+          | hash entityId { PathId $2 }
 
 handlers : handlerdef  { [$1] }
          | handlers handlerdef { $2 : $1 }
@@ -147,7 +149,7 @@ fieldRef : lowerId { FieldRefId $1 }
           | pathParam { FieldRefPathParam $1 }
           | authId { FieldRefAuthId }
     
-handlerParamsBlock : lbrace handlerParams rbrace { $2 }
+handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
@@ -160,10 +162,10 @@ handlerParam : public { Public }
              | afterhandler lowerId { AfterHandler $2 }
              | mapby lowerId { MapBy $2 }
              | defaultfiltersort { DefaultFilterSort }
-             | textsearchfilter stringval fieldRefList { TextSearchFilter $2 $3 }
-             | orderby sortbylist { OrderBy $2 }
+             | textsearchfilter stringval fieldRefList { TextSearchFilter $2 (reverse $3) }
+             | orderby sortbylist { OrderBy (reverse $2) }
              | return lowerId { ReturnEntity $2 }
-             | return lbrace returnfields rbrace { ReturnFields $3 }
+             | return lbrace returnfields rbrace { ReturnFields (reverse $3) }
              
 returnfields : stringval colon fieldRef { [($1, $3)] }
              | returnfields comma stringval colon fieldRef { ($3,$5):$1}

@@ -57,7 +57,20 @@ type ParamName = String
 type EntityName = String
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTime | FTDate | FTDateTime 
-                              | FTZonedTime deriving (Show)
+                              | FTZonedTime
+instance Show FieldType where
+    show FTWord32 = "Word32"
+    show FTWord64 = "Word64"
+    show FTInt32 = "Int32"
+    show FTInt64 = "Int64"
+    show FTText = "Text"
+    show FTBool = "Bool"
+    show FTDouble = "Double"
+    show FTTime = "TimeOfDay"
+    show FTDate = "Day"
+    show FTDateTime = "UTCTime"
+    show FTZonedTime = "ZonedTime"
+
 type FieldName = String 
 type PathName = String
 type OptionalFlag = Bool
@@ -112,7 +125,10 @@ data HandlerParam = Public
                   | AfterHandler FunctionName  deriving (Show, Eq) 
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
 
-data Handler = Handler HandlerType [HandlerParam]  deriving (Show)
+data Handler = Handler {
+    handlerType   :: HandlerType,
+    handlerParams :: [HandlerParam] 
+} deriving (Show)
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
@@ -132,12 +148,14 @@ data Resource = Resource {
 handlerName :: Resource -> HandlerType -> String
 handlerName r ht = show (resRoute r) ++ " " ++ show ht
 
+routeName :: [PathPiece] -> String
+routeName ps = "/" ++ intercalate "/" (map show ps)
 
 data PathPiece = PathText String
                | PathId EntityName
 instance Show PathPiece where
     show (PathText s) = s
-    show (PathId en) = "#" ++ en
+    show (PathId en) = "#" ++ en ++ "Id"
     
 
 
@@ -207,4 +225,9 @@ fieldOptions f = fieldContentOptions (fieldContent f)
     where fieldContentOptions (NormalField  _ options) = options
           fieldContentOptions _ = []
     
-
+fieldDefault :: Field -> Maybe FieldValue
+fieldDefault f = case find isDefault (fieldOptions f) of
+    Just (FieldDefault fv) -> Just fv
+    Nothing -> Nothing
+    where isDefault (FieldDefault _) = True
+          isDefault _ = False

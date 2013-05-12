@@ -14,6 +14,7 @@ $upper = [A-Z]
 @fieldName = \' $lower [$alpha $digit \_ ]* \'
 @pathParam = \$ ($digit)+
 @authId = \$ "authId"
+@entityId = $upper [$alpha $digit \_]* "Id"
 tokens :-
 	$white+	;
 	"--".*	;
@@ -92,6 +93,7 @@ tokens :-
 	$digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
 	$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
+    @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
     @fieldName { mkTvar (TLowerId . stripQuotes) }
     @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
@@ -178,6 +180,7 @@ data TokenType = TSemicolon
                | TDefault
                | TPathParam Int
                | TAuthId 
+               | TEntityId String
         deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)
