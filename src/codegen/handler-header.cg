@@ -1,0 +1,2 @@
+~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} :: ~{hsRouteType (resRoute r)}HandlerT Generated (HandlerT master IO) Value
+~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} ~{hsRouteParams (resRoute r)} = do

@@ -1,6 +1,0 @@
-{-# LANGUAGE TemplateHaskell #-}
-module Model.Enums where
-import Prelude (Show, Read, Eq)
-import Database.Persist
-import Database.Persist.TH
-

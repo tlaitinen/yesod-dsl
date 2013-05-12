@@ -1,0 +1,1 @@
+    ~{func} :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a => m Bool

@@ -46,6 +46,8 @@ classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 
+enum :: EnumType -> String
+enum e = T.unpack $(codegenFile "codegen/enum.cg")
 
 modelField :: Field -> String
 modelField f = T.unpack $(codegenFile "codegen/model-field.cg")
@@ -59,7 +61,7 @@ modelDeriving d = T.unpack $(codegenFile "codegen/model-deriving.cg")
 model :: Entity -> String
 model e = T.unpack $(codegenFile "codegen/model-header.cg")
         ++ (concatMap modelField (entityFields e))
-        ++ (concatMap modelUnique (entityUniques e))
+        ++ (concatMap modelUnique (entityUniques e)) 
         ++ (concatMap modelDeriving (entityDeriving e))
 
 models :: Module -> String
@@ -96,9 +98,9 @@ hsRouteName = f . routeName
           f [] = "R"
 
 hsRouteType :: [PathPiece] -> String
-hsRouteType = (intercalate " -> ") . (mapMaybe toType)
+hsRouteType = (intercalate " ") . (mapMaybe toType)
     where toType (PathText _) = Nothing
-          toType (PathId en) = Just $ en ++ "Id"
+          toType (PathId en) = Just $ en ++ "Id -> "
 
 routeResource :: Resource -> String
 routeResource r = T.unpack $(codegenFile "codegen/route.cg")
@@ -109,14 +111,19 @@ routes m = T.unpack $(codegenFile "codegen/routes-header.cg")
          ++ (concatMap routeResource (modResources m))
          ++ (T.unpack $(codegenFile "codegen/routes-footer.cg"))
 
-validationField :: Entity -> Field -> FunctionName -> String
-validationField e f func = T.unpack $(codegenFile "codegen/validation-field.cg")
+validationFieldCheck :: Entity -> Field -> FunctionName -> String
+validationFieldCheck e f func = T.unpack $(codegenFile "codegen/validation-field.cg")
+
+validationEntityCheck :: Entity -> FunctionName -> String
+validationEntityCheck e func = T.unpack $(codegenFile "codegen/validation-entity.cg")
 
 validationEntity :: Entity -> String
 validationEntity e = T.unpack $(codegenFile "codegen/validation-entity-header.cg")
-                   ++ (intercalate ", " $ [ validationField e f func 
+                   ++ (intercalate ", " $ [ validationFieldCheck e f func 
                                           | f <- entityFields e, 
-                                            func <- fieldChecks f ])
+                                            func <- fieldChecks f ]
+                                          ++ [ validationEntityCheck e func
+                                              | func <- entityChecks e ])
                    ++ (T.unpack $(codegenFile "codegen/validation-entity-footer.cg"))
 
 
@@ -131,12 +138,31 @@ validation m = T.unpack $(codegenFile "codegen/validation-header.cg")
                   ++ [ func | e <- modEntities m, func <- entityChecks e ])
              ++ (concatMap validationEntity (modEntities m))
 
+hsRouteParams :: [PathPiece] -> String
+hsRouteParams ps = intercalate " " [("p" ++ show x) | 
+                                    x <- [1..length (filter hasType ps)]]
+    where hasType (PathId _) = True
+          hasType _ = False
+
+hsHandlerMethod :: HandlerType -> String          
+hsHandlerMethod GetHandler    = "get"
+hsHandlerMethod PutHandler    = "put"
+hsHandlerMethod PostHandler   = "post"
+hsHandlerMethod DeleteHandler = "delete"
+
+handler :: Module -> Resource -> Handler -> String
+handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")
+
 generate :: Module -> String
 generate m = T.unpack $(codegenFile "codegen/header.cg")
+         ++ (concatMap enum $ modEnums m)
          ++ models m
          ++ classes m
          ++ routes m
          ++ validation m
+         ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))
+         ++ (concat [ handler m r h | r <- modResources m, h <- resHandlers r ])
+                            
 
 
 

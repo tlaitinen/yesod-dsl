@@ -82,8 +82,10 @@ instance Show Location where
     show (Loc path row col) = path ++ " line " ++ show row ++ " col " ++ show col
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
-data Unique = Unique UniqueName [FieldName]
-           deriving (Show)
+data Unique = Unique {
+    uniqueName :: UniqueName,
+    uniqueFields :: [FieldName]
+} deriving (Show)
 
 data HandlerType = GetHandler 
                  | PutHandler 
@@ -157,8 +159,6 @@ instance Show PathPiece where
     show (PathText s) = s
     show (PathId en) = "#" ++ en ++ "Id"
     
-
-
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
               | FieldRefAuthId

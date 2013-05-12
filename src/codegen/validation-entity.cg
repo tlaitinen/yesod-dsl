@@ -1,0 +1,1 @@
+                checkResult "~{entityName e} ~{func}" (~{func} $ e) 

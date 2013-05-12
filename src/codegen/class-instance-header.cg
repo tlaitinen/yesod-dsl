@@ -1,0 +1,1 @@
+instance ~{className c} ~{entityName e} where

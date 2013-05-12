@@ -210,12 +210,12 @@ instances : upperId { [$1] }
 classDef : class upperId lbrace
              fields
             uniques
-            rbrace { Class (mkLoc $1) $2 $4 $5 }
+            rbrace { Class (mkLoc $1) $2 (reverse $4) (reverse $5) }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField $3 $4) } 
+field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField $3 (reverse $4)) } 
       | lowerId maybeMaybe upperId { Field $2 $1 (EntityField $3) }
 
 fieldOptions : { [] }
@@ -232,7 +232,7 @@ value : stringval { StringValue $1 }
       
 uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
-uniqueDef :  unique upperId fieldIdList { Unique $2 $3 }
+uniqueDef :  unique upperId fieldIdList { Unique $2 (reverse $3) }
 
 derives : { [] }
         | derives deriveDef semicolon { $2 : $1 }
@@ -242,7 +242,7 @@ checks : { [] }
         | checks checkDef semicolon { $2 : $1 }
 checkDef :  check lowerId { $2 }
 
-fieldIdList : lowerId { [] }
+fieldIdList : lowerId { [$1] }
             | fieldIdList comma lowerId { $3 : $1 }
 
 fieldType : word32 { FTWord32 }

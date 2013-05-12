@@ -34,6 +34,8 @@ instance HasNames Module where
 instance HasNames Entity where
     getNames e = [([GlobalNS, EntityNS, FieldTypeNS], entityName e, entityLoc e)]
                ++ getNames [ (e, f) | f <- (entityFields e) ]
+               ++ [([GlobalNS], uniqueName u, entityLoc e) 
+                    | u <- entityUniques e ]
 
 instance HasNames (Entity, Field) where
     getNames (e,f) = [([GlobalNS, FieldNS], entityName e ++ "." ++ fieldName f,
@@ -42,6 +44,11 @@ instance HasNames (Entity, Field) where
 instance HasNames Class where 
     getNames c = [([GlobalNS, ClassNS, EntityNS, FieldTypeNS], className c, classLoc c)]
                ++ getNames [ (c,f) | f <- (classFields c)]
+
+               ++ [([GlobalNS], uniqueName u, classLoc c) 
+                  | u <- classUniques c ]
+
+
 
 instance HasNames (Class, Field) where
     getNames (c,f) = [([GlobalNS, FieldNS], className c ++ "." ++ fieldName f,
