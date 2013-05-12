@@ -194,11 +194,37 @@ getHandlerJoinExpr m ps (_, en, vn, (Just (f1, op, f2))) = T.unpack $(codegenFil
           f2maybe = isMaybeFieldRef m ps f2
 getHandlerJoinExpr m _ _ = ""
 
+hsOrderBy :: [HandlerParam] -> (FieldRef, SortDir) -> String
+hsOrderBy ps (f,d) = dir d ++ "(" ++ hsFieldRef ps f ++ ")"
+    where dir SortAsc = "asc "
+          dir SortDesc = "desc "
+
+
+hsValExpr :: [HandlerParam] -> ValExpr -> String
+hsValExpr ps ve = case ve of
+    FieldExpr fr -> hsFieldRef ps fr
+    ConstExpr fv -> show fv
+
+hsExpr :: [HandlerParam] -> Expr -> String
+hsExpr ps expr = case expr of
+    AndExpr e1 e2 -> "(" ++ hsExpr ps e1 ++ ") &&. (" ++ hsExpr ps e2 ++ ")"
+    OrExpr e1 e2 -> "(" ++ hsExpr ps e1 ++ ") ||. (" ++ hsExpr ps e2 ++ ")"
+    BinOpExpr e1 op e2 -> hsValExpr ps e1 ++ " " ++ hsBinOp op ++ hsValExpr ps e2
+
+getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
+getHandlerSQLExpr m ps p = T.unpack $ case p of
+    DefaultFilterSort -> "" -- TODO
+    TextSearchFilter pn fields -> "" -- TODO
+    (Where expr) -> $(codegenFile "codegen/get-handler-where-expr.cg")
+    OrderBy fields -> $(codegenFile "codegen/get-handler-order-by.cg")
+    _ -> ""
+
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = T.unpack $(codegenFile "codegen/get-handler-footer.cg")
     ++ (concatMap (getHandlerParam m r ps) ps)
     ++ (T.unpack $(codegenFile "codegen/get-handler-select.cg"))
     ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
+    ++ (concatMap (getHandlerSQLExpr m ps) ps)
     where 
         (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
         joins = handlerJoins ps 

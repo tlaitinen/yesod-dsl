@@ -108,7 +108,7 @@ data JoinType = InnerJoin
 data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like deriving (Show,Eq)     
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr
-          | BinOpExpr ValExpr ValExpr deriving (Show,Eq)
+          | BinOpExpr ValExpr BinOp ValExpr deriving (Show,Eq)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue deriving (Show,Eq)
 data HandlerParam = Public 

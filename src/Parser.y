@@ -180,7 +180,7 @@ binop : equals { Eq }
 
 expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
      | lparen expr rparen or lparen expr rparen { OrExpr $2 $6 }
-     | valexpr binop valexpr { BinOpExpr $1 $3 }
+     | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
 
 valexpr : value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }

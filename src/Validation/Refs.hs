@@ -103,7 +103,7 @@ instance HasRefs (Resource, HandlerType, Location, Info, (Maybe (FieldRef, BinOp
 instance HasRefs (Resource, HandlerType, Location, Info, Expr) where
     getRefs (r,ht,l, i, (AndExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
     getRefs (r,ht,l, i, (OrExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
-    getRefs (r,ht,l, i, (BinOpExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
+    getRefs (r,ht,l, i, (BinOpExpr e1 op e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
 
 instance HasRefs (Resource, HandlerType, Location, Info, ValExpr) where
     getRefs (r,ht,l, i, (FieldExpr f)) = getRefs (r,ht,l,i,f)
