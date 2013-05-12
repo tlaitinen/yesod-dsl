@@ -1,0 +1,1 @@
+        on (~{hsFieldRef ps f1} ~{hsBinOp op} ~{hsFieldRef ps f2})
