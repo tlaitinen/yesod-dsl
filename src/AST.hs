@@ -259,3 +259,9 @@ fieldChecks = (map (\(FieldCheck f) -> f)) . (filter isCheck) . fieldOptions
     where isCheck (FieldCheck _) = True
           isCheck _ = False
 
+
+lookupField :: Module -> EntityName -> FieldName -> Maybe Field
+lookupField m en fn = listToMaybe [ f | e <- modEntities m,
+                                    f <- entityFields e,
+                                    entityName e == en,
+                                    fieldName f == fn ] 

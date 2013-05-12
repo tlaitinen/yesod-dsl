@@ -1,1 +1,1 @@
-        on (~{hsFieldRef ps f1} ~{hsBinOp op} ~{hsFieldRef ps f2})
+        on (~{makeJustField f1just (hsFieldRef ps f1)} ~{hsBinOp op} ~{makeJustField f2just (hsFieldRef ps f2)})

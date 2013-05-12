@@ -168,6 +168,10 @@ hsFieldRef ps (FieldRefNormal vn fn) = vn ++ " ^. "
 hsFieldRef _ FieldRefAuthId = "authId"
 hsFieldRef _ (FieldRefPathParam p) = "p" ++ show p
 
+isMaybeFieldRef :: Module -> [HandlerParam] -> FieldRef -> Bool
+isMaybeFieldRef m ps (FieldRefNormal vn fn) = fieldOptional $ fromJust $ lookupField m (fromJust $ handlerVariableEntity ps vn) fn
+isMaybeFieldRef _ _  _ = False
+
 hsBinOp :: BinOp -> String
 hsBinOp op = case op of
     Eq -> "==."
@@ -178,15 +182,23 @@ hsBinOp op = case op of
     Ge -> ">=."
     Like -> "like"
 
-getHandlerJoinExpr :: [HandlerParam] -> (JoinType, EntityName, VariableName, (Maybe (FieldRef, BinOp, FieldRef))) -> String
-getHandlerJoinExpr ps (_, en, vn, (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/get-handler-join-expr.cg")
-getHandlerJoinExpr _ _ = ""
+makeJustField :: Bool -> String -> String    
+makeJustField True f = "(just " ++ f ++ ")"
+makeJustField False f = f
+
+getHandlerJoinExpr :: Module -> [HandlerParam] -> (JoinType, EntityName, VariableName, (Maybe (FieldRef, BinOp, FieldRef))) -> String
+getHandlerJoinExpr m ps (_, en, vn, (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/get-handler-join-expr.cg")
+    where f1just = f1maybe == False && f2maybe == True
+          f2just = f2maybe == False && f1maybe == True
+          f1maybe = isMaybeFieldRef m ps f1
+          f2maybe = isMaybeFieldRef m ps f2
+getHandlerJoinExpr m _ _ = ""
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = T.unpack $(codegenFile "codegen/get-handler-footer.cg")
     ++ (concatMap (getHandlerParam m r ps) ps)
     ++ (T.unpack $(codegenFile "codegen/get-handler-select.cg"))
-    ++ (concatMap (getHandlerJoinExpr ps) rjoins)
+    ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
     where 
         (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
         joins = handlerJoins ps 
