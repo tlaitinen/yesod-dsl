@@ -6,8 +6,7 @@ module Validation.Names (names,
 import AST
 import Data.List
 
-data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS
-               deriving (Eq, Ord)
+data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS | InputNS | RouteNS deriving (Eq, Ord)
 type Name = String
 type NameList = [(NameSpace, [(Name, [Location])])]
 
@@ -65,29 +64,40 @@ instance HasNames (EnumType, String) where
 instance HasNames Resource where
     getNames r = [([GlobalNS], show $ resRoute r, resLoc r)]
                ++ getNames [ (r, h) | h <- resHandlers r ]
+               ++ getNames [ (r, p, i) | (p,i) <- zip (resRoute r) ([1..] :: [Int]) ]
                
+instance HasNames (Resource, PathPiece, Int) where
+    getNames (r,p,i) = [([GlobalNS, RouteNS],
+                          show (resRoute r) ++ " p" ++ show i,
+                          resLoc r)]
 instance HasNames (Resource, Handler) where
     getNames (r,(Handler ht ps)) = [([GlobalNS], handlerName r ht, resLoc r)]
                                  ++ getNames [ (r,ht,p) | p <- ps ]
 instance HasNames (Resource, HandlerType, HandlerParam) where
     getNames (r,ht,p) = [([GlobalNS],
-                          handlerName r ht ++ " "++ handlerParamName p,
-                          resLoc r)]
+                          handlerName r ht ++ " "++ pn,
+                          resLoc r) | pn <- handlerParamName p]
+                      ++ [([InputNS], handlerName r ht ++ " " ++ pn,
+                           resLoc r) | isReadJson p, pn <- handlerParamName p]
+        where isReadJson (ReadJson _) = True    
+              isReadJson _ = False        
+
      
 
-handlerParamName :: HandlerParam -> String
-handlerParamName Public = "public"
-handlerParamName (HandlerEntity en) = "entity"
-handlerParamName DefaultFilterSort = "default-filter-sort"
-handlerParamName (TextSearchFilter pn _) = "text-search-filter " ++ pn
-handlerParamName (SelectFrom en v) = v
-handlerParamName (Join _ en v _) =  v
-handlerParamName (Where e) = "where" 
-handlerParamName (OrderBy fs) = "order by"
-handlerParamName (ReturnEntity _) = "return"
-handlerParamName (ReturnFields _) = "return"
-handlerParamName (BeforeHandler f) = "before-handler " ++ f
-handlerParamName (AfterHandler f) = "after-handler " ++ f
+handlerParamName :: HandlerParam -> [String]
+handlerParamName Public = ["public"]
+handlerParamName DefaultFilterSort = ["default-filter-sort"]
+handlerParamName (TextSearchFilter pn _) = ["text-search-filter " ++ pn, "input query string " ++ pn]
+handlerParamName (SelectFrom _ v) = [v, "select from"]
+handlerParamName (ReadJson v) = [v, "read"]
+handlerParamName (DeleteFrom _ v _) = [v, "delete"]
+handlerParamName (Join _ en v _) =  [v]
+handlerParamName (Where e) = ["where"]
+handlerParamName (OrderBy fs) = ["order by"]
+handlerParamName (ReturnEntity _) = ["return"]
+handlerParamName (ReturnFields _) = ["return"]
+handlerParamName (Replace _ _ _) = ["replace"]
+handlerParamName (Insert _ _) = [""]
 groupByName :: [(Name, Location)] -> [(Name, [Location])]
 groupByName ns = nameGroups 
     where

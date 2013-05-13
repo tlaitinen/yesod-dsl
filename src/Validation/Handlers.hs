@@ -9,11 +9,13 @@ handlerErrors m = concatMap handlerError $
                       p <- ps, not $ allowed ht p ] 
     where             
         allowed _ Public = True
-        allowed _ (BeforeHandler _) = True
-        allowed _ (AfterHandler _)= True
-        allowed PutHandler (HandlerEntity _) = True
-        allowed PostHandler (HandlerEntity _) = True
-        allowed DeleteHandler (HandlerEntity _) =True
+        allowed PutHandler (ReadJson _) = True
+        allowed PostHandler (ReadJson _) = True
+        allowed PostHandler (Insert _ _) = True
+        allowed PostHandler (Replace _ _ _) = True
+        allowed PutHandler (Insert _ _) = True
+        allowed PutHandler (Replace _ _ _) = True
+        allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (TextSearchFilter _ _) = True
         allowed GetHandler (Join _ _ _ _) = True

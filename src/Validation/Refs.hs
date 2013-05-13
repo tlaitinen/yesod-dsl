@@ -45,8 +45,14 @@ instance HasRefs (Resource, Handler) where
     getRefs (r, (Handler ht ps)) = getRefs [ (r,ht,p) | p <- ps ]
 
 instance HasRefs (Resource, HandlerType, HandlerParam) where
-    getRefs (r,ht,(HandlerEntity en)) = 
-        [(resLoc r, "entity-reference in " ++ handlerInfo r ht,EntityNS, en)]
+    getRefs (r,ht,(Insert en io)) = 
+        [(resLoc r, "insert in " ++ handlerInfo r ht,EntityNS, en)]
+        ++ getRefs (r,ht,resLoc r, "insert input expression in " ++ handlerInfo r ht, io) 
+    getRefs (r,ht,(Replace en fr io)) = 
+        [(resLoc r, "replace in " ++ handlerInfo r ht, EntityNS, en)]
+        ++ getRefs (r, ht, resLoc r, "replace-with in " ++ handlerInfo r ht, fr)
+        ++ getRefs (r, ht, resLoc r, "replace-from in " ++ handlerInfo r ht, io)
+                        
     getRefs (r,ht,(TextSearchFilter p fs)) = 
         getRefs [(r,ht,resLoc r, "text-search-filter in " ++ handlerInfo r ht, f)
                 | f <- fs ]
@@ -79,8 +85,22 @@ instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
         ++ case lookupEntityByVariable r ht vn of
                (Just en) -> [(l,i,FieldNS, en ++ "." ++ fn)]
                Nothing -> []
+    getRefs (r,ht,l,i,(FieldRefPathParam pi)) = 
+        [(l,i,RouteNS, show (resRoute r) ++ " p" ++ show pi)]
     getRefs _ = []
 
+instance HasRefs (Resource, HandlerType, Location, Info, InputObject) where
+    getRefs (r,ht,l,i,(InputJsonVariable vn)) =
+        [(l,i,InputNS, handlerName r ht ++ " " ++ vn)]
+    getRefs (r,ht,l,i,(InputJsonFields fields)) =
+        getRefs [ (r,ht,l,i,f) | (pn,f) <- fields ]
+    
+instance HasRefs (Resource, HandlerType, Location, Info, InputFieldRef) where
+    getRefs (r,ht,l,i,(InputFieldNormal vn fn)) = 
+        [(l,i,InputNS, handlerName r ht ++ " " ++ vn)]
+    getRefs (r,ht,l,i,(InputFieldPathParam pi)) = 
+        [(l,i,RouteNS, show (resRoute r) ++ " p" ++ show pi)]    
+    getRefs _ = []
 
 lookupEntityByVariable :: Resource -> HandlerType -> VariableName 
                        -> Maybe EntityName

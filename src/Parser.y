@@ -73,6 +73,9 @@ import System.Exit
     beforehandler { Tk _ TBeforeHandler }
     afterhandler { Tk _ TAfterHandler }
     select { Tk _ TSelect }
+    from { Tk _ TFrom }
+    read { Tk _ TRead }
+    json { Tk _ TJson }
     join { Tk _ TJoin }
     inner { Tk _ TInner }
     outer { Tk _ TOuter }
@@ -82,8 +85,12 @@ import System.Exit
     cross { Tk _ TCross }
     on { Tk _ TOn }
     as { Tk _ TAs }
+    insert { Tk _ TInsert }
+    replace { Tk _ TReplace }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     textsearchfilter { Tk _ TTextSearchFilter }
+    identified { Tk _ TIdentified }
+    with { Tk _ TWith }
     order { Tk _ TOrder }
     by { Tk _ TBy }
     asc { Tk _ TAsc }
@@ -155,20 +162,34 @@ handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
-             | entity upperId { HandlerEntity $2 }
-             | select upperId as lowerId { SelectFrom $2 $4 }
+             | select from upperId as lowerId { SelectFrom $3 $5 }
+             | delete from upperId as lowerId where expr { DeleteFrom $3 $5 $7 }
+             | read json as lowerId { ReadJson $4 }
+             | replace upperId identified by fieldRef with inputJson { Replace $2 $5 $7 } 
+             | insert upperId from inputJson { Insert $2 $4 }
              | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
              | where expr { Where $2 }
-             | beforehandler lowerId { BeforeHandler $2 }
-             | afterhandler lowerId { AfterHandler $2 }
              | defaultfiltersort { DefaultFilterSort }
              | textsearchfilter stringval fieldRefList { TextSearchFilter $2 (reverse $3) }
              | order by sortbylist { OrderBy (reverse $3) }
              | return lowerId { ReturnEntity $2 }
-             | return lbrace returnfields rbrace { ReturnFields (reverse $3) }
+             | return lbrace outputJsonFields rbrace { ReturnFields (reverse $3) }
              
-returnfields : stringval colon fieldRef { [($1, $3)] }
-             | returnfields comma stringval colon fieldRef { ($3,$5):$1}
+inputJson: lowerId { InputJsonVariable $1 }
+          | lbrace inputJsonFields rbrace { InputJsonFields $2 }
+inputJsonField : stringval colon inputRef { ($1, $3) }
+
+inputRef: lowerId dot lowerId { InputFieldNormal $1 $3 }
+        | pathParam { InputFieldPathParam $1 }
+        | authId { InputFieldAuthId }
+
+inputJsonFields : inputJsonField { [$1] }
+           | inputJsonFields comma inputJsonField  { $3:$1 }
+ 
+outputJsonField : stringval colon fieldRef { ($1, $3) }
+
+outputJsonFields : outputJsonField { [$1] }
+           | outputJsonFields comma outputJsonField  { $3:$1 }
              
 binop : equals { Eq }
       | ne { Ne }

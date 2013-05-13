@@ -64,6 +64,11 @@ tokens :-
     "as" { mkT TAs }
     "public" { mkT TPublic }
     "select" { mkT TSelect }
+    "replace" { mkT TReplace }
+    "insert" { mkT TInsert }
+    "from" { mkT TFrom }
+    "read" { mkT TRead }
+    "json" { mkT TJson }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -79,6 +84,8 @@ tokens :-
     "default-filter-sort" { mkT TDefaultFilterSort }
     "text-search-filter" { mkT TTextSearchFilter }
     "order" { mkT TOrder }
+    "identified" { mkT TIdentified }
+    "with" { mkT TWith }
     "by" { mkT TBy }
     "and" { mkT TAnd }
     "or" { mkT TOr }
@@ -137,6 +144,10 @@ data TokenType = TSemicolon
                | TFloat   Double
                | TSlash
                | TOrder
+               | TIdentified 
+               | TReplace
+               | TInsert
+               | TWith 
                | TBy
                | TAsc
                | TDesc
@@ -169,6 +180,9 @@ data TokenType = TSemicolon
                | TDelete
                | TPublic
                | TSelect
+               | TRead
+               | TJson
+               | TFrom
                | TAnd
                | TOr
                | TBeforeHandler

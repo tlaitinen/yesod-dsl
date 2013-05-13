@@ -85,7 +85,7 @@ mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 data Unique = Unique {
     uniqueName :: UniqueName,
     uniqueFields :: [FieldName]
-} deriving (Show)
+} deriving (Show, Eq)
 
 data HandlerType = GetHandler 
                  | PutHandler 
@@ -108,28 +108,39 @@ data JoinType = InnerJoin
 data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like deriving (Show,Eq)     
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr
-          | BinOpExpr ValExpr BinOp ValExpr deriving (Show,Eq)
+          | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
-           | ConstExpr FieldValue deriving (Show,Eq)
+           | ConstExpr FieldValue deriving (Show, Eq)
 data HandlerParam = Public 
-                  | HandlerEntity EntityName
                   | DefaultFilterSort
                   | TextSearchFilter ParamName [FieldRef]
                   | SelectFrom EntityName VariableName
+                  | DeleteFrom EntityName VariableName Expr
+                  | Replace EntityName FieldRef InputObject
+                  | Insert EntityName InputObject
+                  | ReadJson VariableName
                   | Join JoinType EntityName VariableName
                          (Maybe (FieldRef, BinOp, FieldRef))
                   | Where Expr
                   | OrderBy [(FieldRef,SortDir)]
                   | ReturnEntity VariableName
                   | ReturnFields [(ParamName, FieldRef)]
-                  | BeforeHandler FunctionName 
-                  | AfterHandler FunctionName  deriving (Show, Eq) 
+                  deriving (Show, Eq) 
+data InputObject = InputJsonVariable VariableName 
+                 | InputJsonFields [(ParamName, InputFieldRef)] 
+                  deriving (Show, Eq)
+
+data InputFieldRef = InputFieldNormal VariableName FieldName
+                   | InputFieldAuthId
+                   | InputFieldPathParam Int
+                    deriving (Show, Eq)
+                    
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
 
 data Handler = Handler {
     handlerType   :: HandlerType,
     handlerParams :: [HandlerParam] 
-} deriving (Show)
+} deriving (Show, Eq)
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
@@ -246,12 +257,12 @@ type FunctionName = String
 
 data FieldOption = FieldCheck FunctionName
                  | FieldDefault FieldValue
-                 deriving (Show)
+                 deriving (Show, Eq)
 
 data FieldValue = StringValue String
                 | IntValue Int
                 | FloatValue Double
-                deriving (Show,Eq)
+                deriving (Show, Eq)
 
 fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)
