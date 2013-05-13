@@ -1,10 +1,4 @@
-toDefaultFilter~{entityName e} :: FilterJsonMsg -> [Filter ~{entityName e}]
-toDefaultFilter~{entityName e} f = case (filterJsonMsg_field f) of
-~{fieldFilters}
-    _ -> []
-
-toDefaultSort~{entityName e} :: SortJsonMsg -> Maybe (SelectOpt ~{entityName e})
-toDefaultSort~{entityName e} s = case (sortJsonMsg_property s) of
-~{fieldSorters}
-    _ -> Nothing
-
+    defaultFilterParam <- lookupGetParam "filter"
+    let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
+    defaultSortParam <- lookupGetParam "sort"
+    let defaultSortJsin = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUTf8) defaultSortParam) :: Maybe [SortJsonMsg]

@@ -46,7 +46,8 @@ classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
-
+entityFieldTypeName :: Entity -> Field -> String
+entityFieldTypeName e f = upperFirst $ entityFieldName e f
 enum :: EnumType -> String
 enum e = T.unpack $(codegenFile "codegen/enum.cg")
 
@@ -151,8 +152,25 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
+defaultFilterField :: (Entity, VariableName, Field) -> String
+defaultFilterField (e,vn,f) = T.unpack $(codegenFile "codegen/default-filter-field.cg")
+    where maybeJust :: Bool -> String -> String
+          maybeJust True s = "(Just " ++ s ++ ")"
+          maybeJust False s = s
+
+defaultFilterFields :: Module -> [HandlerParam] -> String
+defaultFilterFields m ps = T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
+    where fields = concatMap defaultFilterField (handlerFields m ps)
+
+defaultSortField :: (Entity, VariableName, Field) -> String    
+defaultSortField (e,vn,f) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
+defaultSortFields :: Module -> [HandlerParam] -> String
+defaultSortFields m ps = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
+    where fields = concatMap defaultSortField (handlerFields m ps)
+
 getHandlerParam :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
-getHandlerParam m r ps DefaultFilterSort = "" -- $(codegenFile "codegen/default-filter-sort.cg")  -- TODO
+getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort.cg")  -- TODO
+getHandlerParam m r ps (TextSearchFilter pn fs) = "" 
 getHandlerParam _ _ _ _ = ""        
 
 
@@ -212,11 +230,11 @@ hsExpr ps expr = case expr of
     BinOpExpr e1 op e2 -> hsValExpr ps e1 ++ " " ++ hsBinOp op ++ hsValExpr ps e2
 
 getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
-getHandlerSQLExpr m ps p = T.unpack $ case p of
-    DefaultFilterSort -> "" -- TODO
+getHandlerSQLExpr m ps p = case p of
+    DefaultFilterSort -> defaultFilterFields m ps ++ defaultSortFields m ps 
     TextSearchFilter pn fields -> "" -- TODO
-    (Where expr) -> $(codegenFile "codegen/get-handler-where-expr.cg")
-    OrderBy fields -> $(codegenFile "codegen/get-handler-order-by.cg")
+    (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
+    OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")
     _ -> ""
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String

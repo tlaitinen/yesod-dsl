@@ -83,7 +83,6 @@ handlerParamName (TextSearchFilter pn _) = "text-search-filter " ++ pn
 handlerParamName (SelectFrom en v) = v
 handlerParamName (Join _ en v _) =  v
 handlerParamName (Where e) = "where" 
-handlerParamName (MapBy f) = "map by"
 handlerParamName (OrderBy fs) = "order by"
 handlerParamName (ReturnEntity _) = "return"
 handlerParamName (ReturnFields _) = "return"

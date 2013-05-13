@@ -48,11 +48,8 @@ defaultFilterOp "lt" = (<.)
 defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
+defaultFilterOp "like" = like
 defaultFilterOp _ = (==.)
-defaultContainsFilterOp = like
-
---defaultContainsFilterOp :: forall v. EntityField v Text -> Text -> Filter v
---defaultContainsFilterOp field val = Filter field (Left $ T.concat ["%", val, "%"]) (BackendSpecificFilter "ILIKE")
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v

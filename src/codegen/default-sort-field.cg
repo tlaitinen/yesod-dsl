@@ -1,1 +1,2 @@
-"~{fieldName f}" -> case (sortJsonMsg_direction s) of "ASC" -> Just $ Asc ~{entityFieldTypeName e f} ; "DESC" -> Just $ Desc ~{entityFieldTypeName e f} ; _ -> Nothing
+            "~{fieldName f}" -> case (sortJsonMsg_direction sjm) of "ASC" -> [ asc (~{entityFieldTypeName e f}) ; "DESC" -> return $ desc (~{vn} ^. ~{entityFieldTypeName e f}) ; _ -> return ()
+            "~{vn}.~{fieldName f}" -> case (sortJsonMsg_direction sjm) of "ASC" -> [ asc (~{entityFieldTypeName e f}) ; "DESC" -> return $ desc (~{vn} ^. ~{entityFieldTypeName e f}) ; _ -> return ()

@@ -119,7 +119,6 @@ data HandlerParam = Public
                   | Join JoinType EntityName VariableName
                          (Maybe (FieldRef, BinOp, FieldRef))
                   | Where Expr
-                  | MapBy FunctionName
                   | OrderBy [(FieldRef,SortDir)]
                   | ReturnEntity VariableName
                   | ReturnFields [(ParamName, FieldRef)]
@@ -165,6 +164,18 @@ handlerJoins :: [HandlerParam] -> [(JoinType, EntityName, VariableName,
 handlerJoins = (map (\(Join jt en vn je) -> (jt,en,vn,je))) . (filter isJoin)
     where isJoin (Join _ _ _ _) = True
           isJoin _ = False
+
+handlerEntities :: [HandlerParam] -> [(EntityName, VariableName)]
+handlerEntities = mapMaybe match
+    where match (SelectFrom en vn) = Just (en, vn)
+          match (Join _ en vn _) = Just (en ,vn)
+          match _ = Nothing
+
+handlerFields :: Module -> [HandlerParam] -> [(Entity, VariableName, Field)]
+handlerFields m ps = [ (e,vn,f) | e <- modEntities m,
+                                  (en,vn) <- handlerEntities ps,
+                                  entityName e == en,
+                                  f <- entityFields e ]
 
 
 handlerVariableEntity :: [HandlerParam] -> VariableName -> Maybe EntityName
@@ -259,7 +270,9 @@ fieldChecks = (map (\(FieldCheck f) -> f)) . (filter isCheck) . fieldOptions
     where isCheck (FieldCheck _) = True
           isCheck _ = False
 
-
+lookupEntity :: Module -> EntityName -> Maybe Entity
+lookupEntity m en = listToMaybe [ e | e <- modEntities m, entityName e == en ]
+         
 lookupField :: Module -> EntityName -> FieldName -> Maybe Field
 lookupField m en fn = listToMaybe [ f | e <- modEntities m,
                                     f <- entityFields e,
