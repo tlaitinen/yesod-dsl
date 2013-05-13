@@ -4,6 +4,6 @@ checkResult msg f = do
    return $ if result then Nothing else (Just msg)
 
 class Validatable a where
-    validate :: forall m. (PersistQuery m, PersistEntityBackend a ~ PersistMonadBackend m) => a -> m [Text]
+    validate :: forall m. (P.PersistQuery m, P.PersistEntityBackend a ~ P.PersistMonadBackend m) => a -> m [Text]
 
 class ValidationFunction a where
