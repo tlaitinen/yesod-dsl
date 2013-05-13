@@ -203,7 +203,7 @@ hsOrderBy ps (f,d) = dir d ++ "(" ++ hsFieldRef ps f ++ ")"
 hsValExpr :: [HandlerParam] -> ValExpr -> String
 hsValExpr ps ve = case ve of
     FieldExpr fr -> hsFieldRef ps fr
-    ConstExpr fv -> show fv
+    ConstExpr fv -> "(val " ++ show fv ++ ")"
 
 hsExpr :: [HandlerParam] -> Expr -> String
 hsExpr ps expr = case expr of
@@ -220,11 +220,12 @@ getHandlerSQLExpr m ps p = T.unpack $ case p of
     _ -> ""
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String
-getHandler m r ps = T.unpack $(codegenFile "codegen/get-handler-footer.cg")
-    ++ (concatMap (getHandlerParam m r ps) ps)
+getHandler m r ps = 
+    (concatMap (getHandlerParam m r ps) ps)
     ++ (T.unpack $(codegenFile "codegen/get-handler-select.cg"))
     ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
     ++ (concatMap (getHandlerSQLExpr m ps) ps)
+    ++ (T.unpack $(codegenFile "codegen/get-handler-footer.cg"))
     where 
         (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
         joins = handlerJoins ps 

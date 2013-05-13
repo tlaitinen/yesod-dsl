@@ -51,7 +51,6 @@ tokens :-
     "resource" { mkT TResource }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
-    "map-by" { mkT TMapBy }
     "before-handler" { mkT TBeforeHandler }
     "after-handler" { mkT TAfterHandler }
     "inner" { mkT TInner }
@@ -64,7 +63,7 @@ tokens :-
     "on" { mkT TOn }
     "as" { mkT TAs }
     "public" { mkT TPublic }
-    "select-from" { mkT TSelectFrom }
+    "select" { mkT TSelect }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -79,7 +78,8 @@ tokens :-
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
     "text-search-filter" { mkT TTextSearchFilter }
-    "order-by" { mkT TOrderBy }
+    "order" { mkT TOrder }
+    "by" { mkT TBy }
     "and" { mkT TAnd }
     "or" { mkT TOr }
     "asc" { mkT TAsc }
@@ -88,7 +88,8 @@ tokens :-
     "where" { mkT TWhere }
     "return" { mkT TReturn }
     "default" { mkT TDefault }
-    "instance-of" { mkT TInstanceOf }
+    "instance" { mkT TInstance }
+    "of" { mkT TOf }
     "deriving" { mkT TDeriving }
 	$digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
@@ -135,7 +136,8 @@ data TokenType = TSemicolon
                | TInt     Int
                | TFloat   Double
                | TSlash
-               | TOrderBy
+               | TOrder
+               | TBy
                | TAsc
                | TDesc
                | TCheck
@@ -162,11 +164,11 @@ data TokenType = TSemicolon
                | TGet
                | TPut
                | TPost
-               | TInstanceOf
+               | TInstance
+               | TOf
                | TDelete
                | TPublic
-               | TMapBy
-               | TSelectFrom
+               | TSelect
                | TAnd
                | TOr
                | TBeforeHandler

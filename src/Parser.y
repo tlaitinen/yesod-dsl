@@ -68,11 +68,11 @@ import System.Exit
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
     return { Tk _ TReturn }
-    instanceof { Tk _ TInstanceOf }
-    mapby { Tk _ TMapBy }
+    instance { Tk _ TInstance }
+    of { Tk _ TOf }
     beforehandler { Tk _ TBeforeHandler }
     afterhandler { Tk _ TAfterHandler }
-    selectfrom { Tk _ TSelectFrom }
+    select { Tk _ TSelect }
     join { Tk _ TJoin }
     inner { Tk _ TInner }
     outer { Tk _ TOuter }
@@ -84,7 +84,8 @@ import System.Exit
     as { Tk _ TAs }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     textsearchfilter { Tk _ TTextSearchFilter }
-    orderby { Tk _ TOrderBy }
+    order { Tk _ TOrder }
+    by { Tk _ TBy }
     asc { Tk _ TAsc }
     desc { Tk _ TDesc }
     where { Tk _ TWhere }
@@ -155,15 +156,14 @@ handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
              | entity upperId { HandlerEntity $2 }
-             | selectfrom upperId as lowerId { SelectFrom $2 $4 }
+             | select upperId as lowerId { SelectFrom $2 $4 }
              | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
              | where expr { Where $2 }
              | beforehandler lowerId { BeforeHandler $2 }
              | afterhandler lowerId { AfterHandler $2 }
-             | mapby lowerId { MapBy $2 }
              | defaultfiltersort { DefaultFilterSort }
              | textsearchfilter stringval fieldRefList { TextSearchFilter $2 (reverse $3) }
-             | orderby sortbylist { OrderBy (reverse $2) }
+             | order by sortbylist { OrderBy (reverse $3) }
              | return lowerId { ReturnEntity $2 }
              | return lbrace returnfields rbrace { ReturnFields (reverse $3) }
              
@@ -195,14 +195,14 @@ jointype : inner join { InnerJoin }
          | full outer join { FullOuterJoin }
          
 sortbylist : sortbylistitem { [$1] }
-        | sortbylist sortbylistitem { $2 : $1 }
+        | sortbylist comma sortbylistitem { $3 : $1 }
 sortbylistitem : fieldRef sortdir { ($1, $2) }
 
 sortdir : asc { SortAsc }
         | desc  { SortDesc }
               
 maybeInstances : { [] }
-               | instanceof instances semicolon { $2 }
+               | instance of instances semicolon { (reverse $3) }
 
 instances : upperId { [$1] }
             | instances comma upperId { $3 : $1 }
