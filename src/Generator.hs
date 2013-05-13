@@ -253,14 +253,15 @@ getHandler m r ps =
         rjoins = reverse joins
 
 putHandler :: Module -> Resource -> [HandlerParam] -> String
-putHandler m r ps = T.unpack $(codegenFile "codegen/put-handler-footer.cg")
+putHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
+            ++ (T.unpack $(codegenFile "codegen/put-handler-footer.cg"))
 
 postHandler :: Module -> Resource -> [HandlerParam] -> String
-postHandler m r ps = T.unpack $(codegenFile "codegen/post-handler-footer.cg")
+postHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
+            ++ (T.unpack $(codegenFile "codegen/post-handler-footer.cg"))
 
 deleteHandler :: Module -> Resource -> [HandlerParam] -> String
 deleteHandler m r ps = T.unpack $(codegenFile "codegen/delete-handler-footer.cg")
-
 
 handler :: Module -> Resource -> Handler -> String
 handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")

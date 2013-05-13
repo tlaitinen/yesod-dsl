@@ -1,0 +1,8 @@
+    yReq <- getRequest
+    let wReq = reqWaiRequest yReq
+    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
+    let jsonBody = maybeResult $ parse json (L.fromChunks bss)
+    _ <- case jsonBody of
+         Nothing -> sendResponseStatus status400 "Expected JSON object in request body"
+         _ -> return ()
+
