@@ -1,0 +1,5 @@
+        case defaultFilterJson of 
+            Just xs -> mapM_ (\fjm ->             
+~{fields}
+                ) xs
+            Nothing -> return ()  

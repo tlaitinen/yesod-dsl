@@ -1,3 +1,0 @@
-do
-    f <- lookupGetParam "~{paramName}"
-    return $ maybe [] textSearchFilter~{entityName e}~{paramName} f

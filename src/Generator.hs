@@ -169,8 +169,8 @@ defaultSortFields m ps = T.unpack $(codegenFile "codegen/default-sort-fields.cg"
     where fields = concatMap defaultSortField (handlerFields m ps)
 
 getHandlerParam :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
-getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort.cg")  -- TODO
-getHandlerParam m r ps (TextSearchFilter pn fs) = "" 
+getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort.cg")
+getHandlerParam m r ps (TextSearchFilter pn fs) = T.unpack $(codegenFile "codegen/text-search-filter-param.cg")
 getHandlerParam _ _ _ _ = ""        
 
 
@@ -229,10 +229,13 @@ hsExpr ps expr = case expr of
     OrExpr e1 e2 -> "(" ++ hsExpr ps e1 ++ ") ||. (" ++ hsExpr ps e2 ++ ")"
     BinOpExpr e1 op e2 -> hsValExpr ps e1 ++ " " ++ hsBinOp op ++ hsValExpr ps e2
 
+textSearchFilterField :: [HandlerParam] -> ParamName -> FieldRef -> String
+textSearchFilterField ps pn f = T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
+
 getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
 getHandlerSQLExpr m ps p = case p of
     DefaultFilterSort -> defaultFilterFields m ps ++ defaultSortFields m ps 
-    TextSearchFilter pn fields -> "" -- TODO
+    TextSearchFilter pn fs -> let fields = concatMap (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
     (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
     OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")
     _ -> ""

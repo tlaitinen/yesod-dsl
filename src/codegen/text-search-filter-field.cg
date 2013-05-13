@@ -1,1 +1,1 @@
-defaultContainsFilterOp ~{entityFieldTypeName e f} query
+            where_ ((~{hsFieldRef ps f}) like (val qs)) 

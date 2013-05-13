@@ -1,2 +1,3 @@
-textSearchFilter~{entityName e}~{paramName} :: Text -> [Filter ~{entityName e}]
-textSearchFilter~{entityName e}~{paramName} query = [~{fieldFilters}]
+        case textSearchFilter_~{pn} of 
+            Just qs-> do
+~{fields}            Nothing -> return ()  
