@@ -1,4 +1,4 @@
     defaultFilterParam <- lookupGetParam "filter"
     let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
     defaultSortParam <- lookupGetParam "sort"
-    let defaultSortJsin = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUTf8) defaultSortParam) :: Maybe [SortJsonMsg]
+    let defaultSortJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultSortParam) :: Maybe [SortJsonMsg]

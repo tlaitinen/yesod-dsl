@@ -1,1 +1,1 @@
-    return $ emptyObject
+    return $ A.Null

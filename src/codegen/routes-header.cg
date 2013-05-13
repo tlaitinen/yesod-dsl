@@ -1,1 +1,2 @@
+data Generated = Generated
 mkYesodSubData "Generated" [parseRoutes|

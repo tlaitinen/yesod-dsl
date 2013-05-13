@@ -2,23 +2,33 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GADTs #-}
 module Generated(generatedSubSite) where
 import Database.Esqueleto
-import qualified Database.Persistent as P
-import Yesod.Auth
-import Model.Validation
+import qualified Database.Persist as P
+import Database.Persist.TH
+import Yesod.Auth (requireAuthId)
+import Yesod.Core
+import Yesod.Persist (runDB)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH
 import Data.Int
 import Data.Word
 import Data.Time
 import Data.Text.Encoding (encodeUtf8)
+import Data.Typeable (Typeable)
+import qualified Data.Attoparsec as AP
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
-import Model.Json
 import qualified Data.Text.Read
-import Data.Aeson.Types (emptyObject)
 import qualified Data.Text as T
+import Data.Text (Text)
 import Control.Monad (mzero)
 import Control.Monad.Trans.Resource (runResourceT)
 import qualified Data.ByteString as B
@@ -28,7 +38,9 @@ import qualified Network.Wai as W
 import Data.Conduit.Lazy (lazyConsume)
 import Network.HTTP.Types (status200, status400)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
-    
+import Control.Applicative ((<$>), (<*>))  
+import qualified Data.HashMap.Lazy as HML
+
 data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_type :: Text,
     filterJsonMsg_value :: Text,
@@ -36,7 +48,7 @@ data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_comparison :: Text
 } 
 instance FromJSON FilterJsonMsg where
-    parseJSON (Object v) = FilterJsonMsg <$>
+    parseJSON (A.Object v) = FilterJsonMsg <$>
         v .: "type" <*>
         v .: "value" <*>
         v .: "field" <*>
@@ -113,19 +125,5 @@ instance PathPiece UTCTime where
 instance PathPiece ZonedTime where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show
-
-
-getRangeSelectOpts :: forall (m :: * -> *) v. MonadHandler m => m [SelectOpt v]
-getRangeSelectOpts = do
-    start <- lookupGetParam "start"
-    limit <- lookupGetParam "limit"
-    return $ mkOpts (parseInt start) (parseInt limit)
-        where
-            parseInt (Just s) = case (Data.Text.Read.decimal s) of
-              Right (x,_) -> Just x
-              _ -> Nothing
-            parseInt _ = Nothing
-            mkOpts (Just s) (Just l) = [ OffsetBy s, LimitTo l ]
-            mkOpts _ _ = []
 
                  

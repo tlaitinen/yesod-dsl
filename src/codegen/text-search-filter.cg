@@ -1,3 +1,3 @@
         case textSearchFilter_~{pn} of 
-            Just qs-> do
+            Just qs -> do
 ~{fields}            Nothing -> return ()  

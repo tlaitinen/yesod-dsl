@@ -1,8 +1,0 @@
-get~{entityName e}ManyR :: Handler Value
-get~{entityName e}ManyR = do
-~{unlines $ indent $ maybeRequireAuth params}
-~{unlines $ indent $ genFilters e params}
-~{unlines $ indent $ genSelectOpts e params}
-    entities <- runDB $ selectList (concat filters) (concat selectOpts)
-~{unlines $ indent $ postHooks " entities" params}
-    return $ object [ "entities" .= myToJSON entities ]    

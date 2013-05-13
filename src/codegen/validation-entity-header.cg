@@ -1,3 +1,2 @@
 instance Validatable ~{entityName e} where
-    validate e = do
-        errors <- sequence [
+    validate e = catMaybes [

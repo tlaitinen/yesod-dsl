@@ -1,1 +1,1 @@
-    return $ object [ "id" .= toJSON key ]
+    return $ object [ "id" .= toJSON ("TODO" :: Text) ] -- key ]

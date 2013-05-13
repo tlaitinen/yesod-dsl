@@ -1,0 +1,6 @@
+        case defaultOffset of
+            Just o -> offset o
+            Nothing -> return ()
+        case defaultLimit of
+            Just l -> limit l
+            Nothing -> return ()

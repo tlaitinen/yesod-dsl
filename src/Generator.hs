@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator (generate) where
+module Generator (generate, hsRouteName) where
 
 import System.IO (FilePath)
 import AST
@@ -94,8 +94,8 @@ classes m = concatMap (classInstances m) (modClasses m)
 
 hsRouteName :: [PathPiece] -> String
 hsRouteName = f . routeName 
-    where f ('/':x:xs) = toUpper x : f xs
-          f ('#':xs) = f xs
+    where f ('/':'#':xs) = f xs
+          f ('/':x:xs) = toUpper x : f xs
           f (x:xs) = x : f xs
           f [] = "R"
 
@@ -170,6 +170,7 @@ defaultSortFields m ps = T.unpack $(codegenFile "codegen/default-sort-fields.cg"
 
 getHandlerParam :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
 getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort.cg")
+    ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
 getHandlerParam m r ps (TextSearchFilter pn fs) = T.unpack $(codegenFile "codegen/text-search-filter-param.cg")
 getHandlerParam _ _ _ _ = ""        
 
@@ -235,6 +236,7 @@ textSearchFilterField ps pn f = T.unpack $(codegenFile "codegen/text-search-filt
 getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
 getHandlerSQLExpr m ps p = case p of
     DefaultFilterSort -> defaultFilterFields m ps ++ defaultSortFields m ps 
+                       ++ (T.unpack $(codegenFile "codegen/offset-limit.cg"))
     TextSearchFilter pn fs -> let fields = concatMap (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
     (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
     OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")

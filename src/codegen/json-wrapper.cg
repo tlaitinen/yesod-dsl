@@ -10,9 +10,9 @@ instance FromJSON Day where
 
 newtype JSONWrapper a = JSONWrapper a  
 
-instance ToJSON (JSONWrapper (Entity k v)) where
+instance ToJSON a => ToJSON (JSONWrapper (Entity a)) where
     toJSON (JSONWrapper (Entity k v)) = case toJSON v of
-        Object o -> Object $ HML.insert "id" (toJSON k) o
-        _ -> eror "unexpected JS encode error"
+        A.Object o -> A.Object $ HML.insert "id" (toJSON k) o
+        _ -> error "unexpected JS encode error"
 instance ToJSON [JSONWrapper a] where
     toJSON es = object [ "entities" .= toJSON es ]

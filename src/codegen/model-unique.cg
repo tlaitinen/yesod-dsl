@@ -1,1 +1,1 @@
-    ~{name} ~{intercalate " " fields}
+    Unique~{name} ~{intercalate " " fields} !force
