@@ -8,13 +8,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 
 module Generated where
 import Database.Esqueleto
 import qualified Database.Persist as P
 import Database.Persist.TH
-import Yesod.Auth (requireAuthId, YesodAuth, AuthId)
+import Yesod.Auth (requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
 import Yesod.Core
 import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)

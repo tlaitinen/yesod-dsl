@@ -1,5 +1,5 @@
-    e~{show pId} <- case AP.maybeResult (A.fromJSON $ A.object [
+    e~{show pId} <- case (A.fromJSON $ A.object [
 ~{mapFields e fields}            
             ]) of
-        AP.Success e -> return e
-        Error err -> sendResponseStatus status400 ("JSON decoding error : " ++ err)
+        A.Success e -> return e
+        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type ~{entityName e} from JSON object in the request body : " ++ err)
