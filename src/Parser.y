@@ -231,7 +231,8 @@ instances : upperId { [$1] }
 classDef : class upperId lbrace
              fields
             uniques
-            rbrace { Class (mkLoc $1) $2 (reverse $4) (reverse $5) }
+            checks
+            rbrace { Class (mkLoc $1) $2 (reverse $4) (reverse $5) (reverse $6) }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
@@ -243,8 +244,7 @@ fieldOptions : { [] }
              | fieldOptionsList { $1 }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
-fieldOption : check lowerId { FieldCheck $2 }
-            | default value { FieldDefault $2 }
+fieldOption : default value { FieldDefault $2 }
 
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }
@@ -261,7 +261,10 @@ deriveDef :  deriving upperId  { $2  }
 
 checks : { [] }
         | checks checkDef semicolon { $2 : $1 }
-checkDef :  check lowerId { $2 }
+checkDef :  check lowerId fieldIdListEmpty { Check $2 (reverse $3) }
+
+fieldIdListEmpty : { [] }
+            | fieldIdList { $1 }
 
 fieldIdList : lowerId { [$1] }
             | fieldIdList comma lowerId { $3 : $1 }
@@ -298,7 +301,7 @@ parseModules handled (path:paths)
         catch (do rest <- parseModules (path:handled) (paths ++ modImports mod)
                   return ((path,mod):rest))
               (\(ParseError msg) -> do 
-                    putStrLn $ path ++ ": " ++ msg
+                    hPutStrLn stderr $ path ++ ": " ++ msg
                     exitWith (ExitFailure 1))
 parseModules _ [] = return []
 

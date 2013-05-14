@@ -1,1 +1,6 @@
-    ~{func} :: forall m. (P.PersistQuery m, P.PersistEntityBackend a ~ P.PersistMonadBackend m) => a -> m Bool
+    ~{func} :: (P.PersistMonadBackend (b (HandlerT master IO)) ~ P.PersistEntityBackend ~{entityName e}, 
+                b ~ YesodPersistBackend master,
+                P.PersistQuery (b (HandlerT master IO)),
+                P.PersistUnique (b (HandlerT master IO)),
+                YesodPersist master)
+            => Entity ~{entityName e} -> ~{concatMap addTypeArrow types} HandlerT master IO Bool

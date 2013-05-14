@@ -1,2 +1,12 @@
-~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} :: ~{hsRouteType (resRoute r)}HandlerT Generated (HandlerT master IO) A.Value
+~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} :: forall master u. (ValidationFunctions master, 
+    Yesod master,
+    YesodPersist master,
+    YesodAuth master,
+    YesodPersistBackend master ~ SqlPersistT,
+    P.PersistStore (YesodPersistBackend master (HandlerT master IO)),
+    AuthId master ~ KeyBackend (P.PersistMonadBackend (YesodPersistBackend master (HandlerT master IO))) u,
+   Typeable u,
+   P.PersistEntity u,
+   P.PersistEntityBackend u ~ PersistMonadBackend (YesodPersistBackend master (HandlerT master IO))) 
+    => ~{hsRouteType (resRoute r)}HandlerT Generated (HandlerT master IO) A.Value
 ~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} ~{hsRouteParams (resRoute r)} = do

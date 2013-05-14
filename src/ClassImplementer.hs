@@ -21,7 +21,7 @@ classLookup classes name =  find (\i -> name == className i) classes
 
 expandClassField :: Module -> Entity ->  Field -> [Field]
 expandClassField mod e f@(Field _ _ (EntityField iName)) 
-    | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to interface not allowed"
+    | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to class not allowed"
     | otherwise = [ Field {
                         fieldOptional = True,
                         fieldName = fieldName f ++ entityName re,
@@ -45,9 +45,10 @@ implInEntity :: Module -> [Class] -> Entity -> Entity
 implInEntity mod classes e 
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields mod e) $ entityFields e ++ extraFields,
-        entityUniques = entityUniques e ++ (map (addEntityName e) $ concatMap classUniques validClasses)
+        entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses),
+        entityChecks = entityChecks e ++ extraChecks e
     }
-    | otherwise        = entityError e $ "Invalid interfaces " 
+    | otherwise        = entityError e $ "Invalid classes " 
                                         ++ show invalidClassNames
     where
         instances = entityInstances e
@@ -56,7 +57,9 @@ implInEntity mod classes e
         instantiatedClasses = map (classLookup classes) instances
         validClasses = catMaybes instantiatedClasses
                                      
-        extraFields = concat $ map classFields validClasses
-        addEntityName e (Unique name fields) = Unique (entityName e ++ name) fields
+        extraFields = concatMap classFields validClasses
+        addEntityNameToUnique e (Unique name fields) = Unique (entityName e ++ name) fields
+        addEntityNameToCheck e (Check func fields) = Check ((lowerFirst . entityName) e ++ upperFirst func) fields
+        extraChecks e = map (addEntityNameToCheck e) $ concatMap classChecks validClasses
         
     

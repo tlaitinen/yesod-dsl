@@ -2,6 +2,7 @@ module AST where
 import Lexer
 import Data.Maybe
 import Data.List
+import Data.Char
 type ImportPath = FilePath
 
 data Module = Module {
@@ -148,8 +149,10 @@ data Entity = Entity {
     entityFields     :: [Field],
     entityUniques    :: [Unique],
     entityDeriving   :: [ClassName],
-    entityChecks     :: [FunctionName]
+    entityChecks     :: [Check]
 } deriving (Show)
+
+data Check = Check FunctionName [FieldName] deriving (Show)
 
 data Resource = Resource {
     resLoc :: Location,
@@ -218,14 +221,15 @@ data EnumType = EnumType {
     enumValues :: [String]
 } deriving (Show)
 
-
-
 data Class = Class {
     classLoc     :: Location,
     className    :: String,
     classFields  :: [Field],
-    classUniques :: [Unique]
+    classUniques :: [Unique],
+    classChecks  :: [Check]
 } deriving (Show)
+
+
 
 modLookup :: Module -> String -> ModDef
 modLookup mod name 
@@ -255,8 +259,7 @@ data Field = Field {
 } deriving (Show)
 type FunctionName = String
 
-data FieldOption = FieldCheck FunctionName
-                 | FieldDefault FieldValue
+data FieldOption = FieldDefault FieldValue
                  deriving (Show, Eq)
 
 data FieldValue = StringValue String
@@ -274,12 +277,6 @@ fieldDefault f = case find isDefault (fieldOptions f) of
     Just (FieldDefault fv) -> Just fv
     Nothing -> Nothing
     where isDefault (FieldDefault _) = True
-          isDefault _ = False
-
-fieldChecks :: Field -> [FunctionName]
-fieldChecks = (map (\(FieldCheck f) -> f)) . (filter isCheck) . fieldOptions
-    where isCheck (FieldCheck _) = True
-          isCheck _ = False
 
 lookupEntity :: Module -> EntityName -> Maybe Entity
 lookupEntity m en = listToMaybe [ e | e <- modEntities m, entityName e == en ]
@@ -289,3 +286,11 @@ lookupField m en fn = listToMaybe [ f | e <- modEntities m,
                                     f <- entityFields e,
                                     entityName e == en,
                                     fieldName f == fn ] 
+
+lowerFirst :: String -> String
+lowerFirst (a:b) = (toLower a):b
+lowerFirst a = a
+
+upperFirst :: String -> String
+upperFirst (a:b) = (toUpper a):b
+upperFirst a = a

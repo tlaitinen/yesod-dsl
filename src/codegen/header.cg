@@ -12,9 +12,9 @@ module Generated(generatedSubSite) where
 import Database.Esqueleto
 import qualified Database.Persist as P
 import Database.Persist.TH
-import Yesod.Auth (requireAuthId)
+import Yesod.Auth (requireAuthId, YesodAuth, AuthId)
 import Yesod.Core
-import Yesod.Persist (runDB)
+import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH
 import Data.Int
@@ -127,3 +127,5 @@ instance PathPiece ZonedTime where
     toPathPiece = T.pack . show
 
                  
+   
+
