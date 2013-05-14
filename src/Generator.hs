@@ -175,8 +175,8 @@ hsFieldRef ps (FieldRefId vn) = vn ++ " ^. "
 hsFieldRef ps (FieldRefNormal vn fn) = vn ++ " ^. " 
                  ++ (fromJust $ handlerVariableEntity ps vn) 
                  ++ (upperFirst fn)
-hsFieldRef _ FieldRefAuthId = "authId"
-hsFieldRef _ (FieldRefPathParam p) = "p" ++ show p
+hsFieldRef _ FieldRefAuthId = "(val authId)"
+hsFieldRef _ (FieldRefPathParam p) = "(val p" ++ show p ++ ")"
 
 isMaybeFieldRef :: Module -> [HandlerParam] -> FieldRef -> Bool
 isMaybeFieldRef m ps (FieldRefNormal vn fn) = fieldOptional $ fromJust $ lookupField m (fromJust $ handlerVariableEntity ps vn) fn

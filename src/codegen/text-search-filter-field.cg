@@ -1,1 +1,1 @@
-                where_ ((~{hsFieldRef ps f}) like (val qs)) 
+                where_ ((~{hsFieldRef ps f}) `like` (val qs)) 

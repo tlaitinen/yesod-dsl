@@ -8,7 +8,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
-module Generated(generatedSubSite) where
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
+
+module Generated where
 import Database.Esqueleto
 import qualified Database.Persist as P
 import Database.Persist.TH
@@ -69,7 +71,6 @@ defaultFilterOp "lt" = (<.)
 defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
-defaultFilterOp "like" = like
 defaultFilterOp _ = (==.)
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
