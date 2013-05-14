@@ -96,8 +96,8 @@ handlerParamName (Where e) = ["where"]
 handlerParamName (OrderBy fs) = ["order by"]
 handlerParamName (ReturnEntity _) = ["return"]
 handlerParamName (ReturnFields _) = ["return"]
-handlerParamName (Replace _ _ _) = ["replace"]
-handlerParamName (Insert _ _) = [""]
+handlerParamName (Replace _ _ _) = ["replace"] -- TODO: allow multiple replaces
+handlerParamName (Insert _ _) = ["insert"] -- TODO: allow multiple inserts
 groupByName :: [(Name, Location)] -> [(Name, [Location])]
 groupByName ns = nameGroups 
     where
