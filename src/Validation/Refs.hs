@@ -86,7 +86,7 @@ instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
                (Just en) -> [(l,i,FieldNS, en ++ "." ++ fn)]
                Nothing -> []
     getRefs (r,ht,l,i,(FieldRefPathParam pi)) = 
-        [(l,i,RouteNS, show (resRoute r) ++ " p" ++ show pi)]
+        [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]
     getRefs _ = []
 
 instance HasRefs (Resource, HandlerType, Location, Info, InputObject) where
@@ -99,7 +99,7 @@ instance HasRefs (Resource, HandlerType, Location, Info, InputFieldRef) where
     getRefs (r,ht,l,i,(InputFieldNormal vn fn)) = 
         [(l,i,InputNS, handlerName r ht ++ " " ++ vn)]
     getRefs (r,ht,l,i,(InputFieldPathParam pi)) = 
-        [(l,i,RouteNS, show (resRoute r) ++ " p" ++ show pi)]    
+        [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]    
     getRefs _ = []
 
 lookupEntityByVariable :: Resource -> HandlerType -> VariableName 

@@ -159,6 +159,12 @@ data Resource = Resource {
     resRoute :: [PathPiece],
     resHandlers :: [Handler]
 } deriving (Show)
+resPathParams :: Resource -> [PathPiece]
+resPathParams = (filter isPathParam) . resRoute
+    where isPathParam (PathId _) = True
+          isPathParam _ = False
+
+        
 
 handlerName :: Resource -> HandlerType -> String
 handlerName r ht = show (resRoute r) ++ " " ++ show ht

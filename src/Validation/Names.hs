@@ -35,6 +35,7 @@ instance HasNames Entity where
                ++ getNames [ (e, f) | f <- (entityFields e) ]
                ++ [([GlobalNS], uniqueName u, entityLoc e) 
                     | u <- entityUniques e ]
+               ++ [([GlobalNS], func, entityLoc e) | (Check func _) <- entityChecks e ]
 
 instance HasNames (Entity, Field) where
     getNames (e,f) = [([GlobalNS, FieldNS], entityName e ++ "." ++ fieldName f,
@@ -46,6 +47,8 @@ instance HasNames Class where
 
                ++ [([GlobalNS], uniqueName u, classLoc c) 
                   | u <- classUniques c ]
+               ++ [([GlobalNS], func, classLoc c) 
+                  | (Check func _) <- classChecks c] 
 
 
 
@@ -64,12 +67,9 @@ instance HasNames (EnumType, String) where
 instance HasNames Resource where
     getNames r = [([GlobalNS], show $ resRoute r, resLoc r)]
                ++ getNames [ (r, h) | h <- resHandlers r ]
-               ++ getNames [ (r, p, i) | (p,i) <- zip (resRoute r) ([1..] :: [Int]) ]
+               ++ [([GlobalNS, RouteNS], show (resRoute r) ++ " $" ++ show i,
+                    resLoc r) | i <- [1..length (resPathParams r)] ]
                
-instance HasNames (Resource, PathPiece, Int) where
-    getNames (r,p,i) = [([GlobalNS, RouteNS],
-                          show (resRoute r) ++ " p" ++ show i,
-                          resLoc r)]
 instance HasNames (Resource, Handler) where
     getNames (r,(Handler ht ps)) = [([GlobalNS], handlerName r ht, resLoc r)]
                                  ++ getNames [ (r,ht,p) | p <- ps ]
