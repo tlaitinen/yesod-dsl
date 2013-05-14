@@ -119,7 +119,8 @@ validationEntity e = T.unpack $(codegenFile "codegen/validation-entity-header.cg
 type TypeName = String
 validationFunction :: (Entity, FunctionName, [TypeName]) -> String
 validationFunction (e, func,types) = T.unpack $(codegenFile "codegen/validation-function.cg")
-    where addTypeArrow = (++ " -> ")
+    
+    where addTypeArrow = (++ " -> ") :: String -> String
 
 lookupFieldType :: Module -> EntityName -> FieldName -> String
 lookupFieldType m en fn = hsFieldType (fromJust $ lookupField m en fn)
@@ -143,11 +144,12 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
+maybeJust :: Bool -> String -> String
+maybeJust True s = "(Just " ++ s ++ ")"
+maybeJust False s = s
+
 defaultFilterField :: (Entity, VariableName, Field) -> String
 defaultFilterField (e,vn,f) = T.unpack $(codegenFile "codegen/default-filter-field.cg")
-    where maybeJust :: Bool -> String -> String
-          maybeJust True s = "(Just " ++ s ++ ")"
-          maybeJust False s = s
 
 defaultFilterFields :: Module -> [HandlerParam] -> String
 defaultFilterFields m ps = T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
@@ -177,6 +179,13 @@ hsFieldRef ps (FieldRefNormal vn fn) = vn ++ " ^. "
                  ++ (upperFirst fn)
 hsFieldRef _ FieldRefAuthId = "(val authId)"
 hsFieldRef _ (FieldRefPathParam p) = "(val p" ++ show p ++ ")"
+
+inputFieldRef :: [HandlerParam] -> InputFieldRef -> String
+-- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
+inputFieldRef ps InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
+inputFieldRef ps (InputFieldPathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
+inputFieldRef _ _ = undefined
+
 
 isMaybeFieldRef :: Module -> [HandlerParam] -> FieldRef -> Bool
 isMaybeFieldRef m ps (FieldRefNormal vn fn) = fieldOptional $ fromJust $ lookupField m (fromJust $ handlerVariableEntity ps vn) fn
@@ -245,13 +254,40 @@ getHandler m r ps =
         joins = handlerJoins ps 
         rjoins = reverse joins
 
-putHandler :: Module -> Resource -> [HandlerParam] -> String
-putHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
-            ++ (T.unpack $(codegenFile "codegen/put-handler-footer.cg"))
+updateHandlerRunDB :: Module -> Resource -> [HandlerParam] -> (Int,HandlerParam) -> String
+updateHandlerRunDB m r ps (pId,p) = case p of
+    (Replace en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
+    (Insert en io) -> T.unpack $(codegenFile "codegen/insert.cg")
+    _ -> ""
 
-postHandler :: Module -> Resource -> [HandlerParam] -> String
-postHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
-            ++ (T.unpack $(codegenFile "codegen/post-handler-footer.cg"))
+mapJsonInputField :: [InputField] -> (Entity,Field) -> String
+mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
+    where 
+        content = case matchInputField (fieldName f) of
+            InputFieldNormal fn -> T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+            InputFieldAuthId -> "authId"
+            InputFieldPathParam i -> "p" ++ show i
+            InputFieldConst v -> show v
+        matchInputField fn = fromJust $ listToMaybe [ inp | (pn,inp) <- ifields,
+                                                      pn == fn ]
+
+updateHandlerDecode :: Module -> Resource -> [HandlerParam] -> (Int,HandlerParam) -> String
+updateHandlerDecode m r ps (pId,p) = case p of
+    (Replace en fr io) -> readInputObject (fromJust $ lookupEntity m en) io
+    (Insert en io) -> readInputObject (fromJust $ lookupEntity m en) io
+    where readInputObject e (Just fields) = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
+
+          readInputObject e Nothing = T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
+          mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
+                                      [ (e,f) | f <- entityFields e ]
+
+updateHandler :: Module -> Resource -> [HandlerParam] -> String
+updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
+            ++ (concatMap (updateHandlerDecode m r ps) $ zip [1..] ps)
+            ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
+            ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
+            ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))
+
 
 deleteHandler :: Module -> Resource -> [HandlerParam] -> String
 deleteHandler m r ps = T.unpack $(codegenFile "codegen/delete-handler-footer.cg")
@@ -263,8 +299,8 @@ handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg"
             else (T.unpack $(codegenFile "codegen/handler-requireauth.cg"))
     ++ (case ht of
             GetHandler -> getHandler m r ps
-            PutHandler -> putHandler m r ps
-            PostHandler -> postHandler m r ps
+            PutHandler -> updateHandler m r ps
+            PostHandler -> updateHandler m r ps
             DeleteHandler -> deleteHandler m r ps)
 
 generate :: Module -> String

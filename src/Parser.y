@@ -74,8 +74,6 @@ import System.Exit
     afterhandler { Tk _ TAfterHandler }
     select { Tk _ TSelect }
     from { Tk _ TFrom }
-    read { Tk _ TRead }
-    json { Tk _ TJson }
     join { Tk _ TJoin }
     inner { Tk _ TInner }
     outer { Tk _ TOuter }
@@ -164,9 +162,10 @@ handlerParams : { [] }
 handlerParam : public { Public }
              | select from upperId as lowerId { SelectFrom $3 $5 }
              | delete from upperId as lowerId where expr { DeleteFrom $3 $5 $7 }
-             | read json as lowerId { ReadJson $4 }
-             | replace upperId identified by fieldRef with inputJson { Replace $2 $5 $7 } 
-             | insert upperId from inputJson { Insert $2 $4 }
+             | replace upperId identified by inputRef with inputJson { Replace $2 $5 (Just $7) } 
+             | replace upperId identified by inputRef { Replace $2 $5 Nothing }
+             | insert upperId from inputJson { Insert $2 (Just $4) }
+             | insert upperId { Insert $2 Nothing }
              | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
              | where expr { Where $2 }
              | defaultfiltersort { DefaultFilterSort }
@@ -175,13 +174,13 @@ handlerParam : public { Public }
              | return lowerId { ReturnEntity $2 }
              | return lbrace outputJsonFields rbrace { ReturnFields (reverse $3) }
              
-inputJson: lowerId { InputJsonVariable $1 }
-          | lbrace inputJsonFields rbrace { InputJsonFields $2 }
-inputJsonField : stringval colon inputRef { ($1, $3) }
+inputJson:  lbrace inputJsonFields rbrace { $2 }
+inputJsonField : lowerId equals inputRef { ($1, $3) }
 
-inputRef: lowerId dot lowerId { InputFieldNormal $1 $3 }
+inputRef: lowerId { InputFieldNormal $1 }
         | pathParam { InputFieldPathParam $1 }
         | authId { InputFieldAuthId }
+        | value { InputFieldConst $1 }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }

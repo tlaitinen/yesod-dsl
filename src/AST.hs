@@ -117,9 +117,8 @@ data HandlerParam = Public
                   | TextSearchFilter ParamName [FieldRef]
                   | SelectFrom EntityName VariableName
                   | DeleteFrom EntityName VariableName Expr
-                  | Replace EntityName FieldRef InputObject
-                  | Insert EntityName InputObject
-                  | ReadJson VariableName
+                  | Replace EntityName InputFieldRef (Maybe [InputField])
+                  | Insert EntityName (Maybe [InputField])
                   | Join JoinType EntityName VariableName
                          (Maybe (FieldRef, BinOp, FieldRef))
                   | Where Expr
@@ -127,13 +126,12 @@ data HandlerParam = Public
                   | ReturnEntity VariableName
                   | ReturnFields [(ParamName, FieldRef)]
                   deriving (Show, Eq) 
-data InputObject = InputJsonVariable VariableName 
-                 | InputJsonFields [(ParamName, InputFieldRef)] 
-                  deriving (Show, Eq)
+type InputField = (ParamName, InputFieldRef)
 
-data InputFieldRef = InputFieldNormal VariableName FieldName
+data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldAuthId
                    | InputFieldPathParam Int
+                   | InputFieldConst FieldValue
                     deriving (Show, Eq)
                     
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
@@ -271,7 +269,11 @@ data FieldOption = FieldDefault FieldValue
 data FieldValue = StringValue String
                 | IntValue Int
                 | FloatValue Double
-                deriving (Show, Eq)
+                deriving (Eq)
+instance Show FieldValue where
+    show (StringValue s) = "\"" ++ s ++ "\""
+    show (IntValue i) = show i
+    show (FloatValue d) = show d
 
 fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)

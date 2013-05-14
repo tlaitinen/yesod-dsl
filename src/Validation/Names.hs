@@ -77,10 +77,6 @@ instance HasNames (Resource, HandlerType, HandlerParam) where
     getNames (r,ht,p) = [([GlobalNS],
                           handlerName r ht ++ " "++ pn,
                           resLoc r) | pn <- handlerParamName p]
-                      ++ [([InputNS], handlerName r ht ++ " " ++ pn,
-                           resLoc r) | isReadJson p, pn <- handlerParamName p]
-        where isReadJson (ReadJson _) = True    
-              isReadJson _ = False        
 
      
 
@@ -89,15 +85,14 @@ handlerParamName Public = ["public"]
 handlerParamName DefaultFilterSort = ["default-filter-sort"]
 handlerParamName (TextSearchFilter pn _) = ["text-search-filter " ++ pn, "input query string " ++ pn]
 handlerParamName (SelectFrom _ v) = [v, "select from"]
-handlerParamName (ReadJson v) = [v, "read"]
 handlerParamName (DeleteFrom _ v _) = [v, "delete"]
 handlerParamName (Join _ en v _) =  [v]
 handlerParamName (Where e) = ["where"]
 handlerParamName (OrderBy fs) = ["order by"]
 handlerParamName (ReturnEntity _) = ["return"]
 handlerParamName (ReturnFields _) = ["return"]
-handlerParamName (Replace _ _ _) = ["replace"] -- TODO: allow multiple replaces
-handlerParamName (Insert _ _) = ["insert"] -- TODO: allow multiple inserts
+handlerParamName (Replace _ _ _) = [""]
+handlerParamName (Insert _ _) = [""] 
 groupByName :: [(Name, Location)] -> [(Name, [Location])]
 groupByName ns = nameGroups 
     where

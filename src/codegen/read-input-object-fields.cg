@@ -1,0 +1,5 @@
+    e~{show pId} <- case AP.maybeResult (A.fromJSON $ A.object [
+~{mapFields e fields}            
+            ]) of
+        AP.Success e -> return e
+        Error err -> sendResponseStatus status400 ("JSON decoding error : " ++ err)

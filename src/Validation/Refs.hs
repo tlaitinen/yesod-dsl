@@ -89,15 +89,13 @@ instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
         [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]
     getRefs _ = []
 
-instance HasRefs (Resource, HandlerType, Location, Info, InputObject) where
-    getRefs (r,ht,l,i,(InputJsonVariable vn)) =
-        [(l,i,InputNS, handlerName r ht ++ " " ++ vn)]
-    getRefs (r,ht,l,i,(InputJsonFields fields)) =
-        getRefs [ (r,ht,l,i,f) | (pn,f) <- fields ]
+instance HasRefs (Resource, HandlerType, Location, Info, Maybe [InputField]) where
+    getRefs (r,ht,l,i,Just io) = getRefs [ (r,ht,l,i,f) | (pn,f) <- io ]
+    getRefs _ = []
+
     
 instance HasRefs (Resource, HandlerType, Location, Info, InputFieldRef) where
-    getRefs (r,ht,l,i,(InputFieldNormal vn fn)) = 
-        [(l,i,InputNS, handlerName r ht ++ " " ++ vn)]
+    getRefs (r,ht,l,i,(InputFieldNormal fn)) = []
     getRefs (r,ht,l,i,(InputFieldPathParam pi)) = 
         [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]    
     getRefs _ = []

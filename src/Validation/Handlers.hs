@@ -15,11 +15,9 @@ handlerErrors m = (concatMap notAllowedError $
     where             
         
         allowed _ Public = True
-        allowed PutHandler (ReadJson _) = True
-        allowed PostHandler (ReadJson _) = True
         allowed PostHandler (Insert _ _) = True
-        -- TODO allowed PostHandler (Replace _ _ _) = True
-        -- TODO allowed PutHandler (Insert _ _) = True
+        allowed PostHandler (Replace _ _ _) = True
+        allowed PutHandler (Insert _ _) = True
         allowed PutHandler (Replace _ _ _) = True
         allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed GetHandler DefaultFilterSort = True
@@ -36,11 +34,8 @@ handlerErrors m = (concatMap notAllowedError $
             | ht == GetHandler = mapMaybe (requireMatch ps) [
            (\p -> case p of (SelectFrom _ _) -> True; _ -> False, "select from"),
            (\p -> case p of (ReturnEntity _) -> True ; (ReturnFields _) -> True ; _ -> False, "return")]
-            | ht == PutHandler = mapMaybe (requireMatch ps) [
-              (\p -> case p of (Replace _ _ _) -> True ; _ -> False, "replace")]
-            | ht == PostHandler = mapMaybe (requireMatch ps) [   
-           (\p -> case p of (Insert _ _) -> True ; _ -> False, "insert"),
-           (\p -> case p of (ReadJson _) -> True ; _ -> False, "read json")] 
+            | ht == PutHandler || ht == PostHandler = mapMaybe (requireMatch ps) [   
+           (\p -> case p of (Insert _ _) -> True ; (Replace _ _ _ ) -> True ; _ -> False, "insert or replace")]
             | otherwise = []
         requireMatch ps (f,err) = case listToMaybe (filter f ps) of
             Just _ -> Nothing

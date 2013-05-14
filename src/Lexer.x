@@ -67,8 +67,6 @@ tokens :-
     "replace" { mkT TReplace }
     "insert" { mkT TInsert }
     "from" { mkT TFrom }
-    "read" { mkT TRead }
-    "json" { mkT TJson }
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
@@ -180,8 +178,6 @@ data TokenType = TSemicolon
                | TDelete
                | TPublic
                | TSelect
-               | TRead
-               | TJson
                | TFrom
                | TAnd
                | TOr
