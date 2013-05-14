@@ -1,13 +1,19 @@
 module Validation.Handlers (handlerErrors) where
 import AST
 import Validation.Names
-
+import Data.Maybe
 handlerErrors :: Module -> String
-handlerErrors m = concatMap handlerError $ 
+handlerErrors m = (concatMap notAllowedError $ 
                     [ (r, ht, resLoc r, p)
                     | r <- modResources m, (Handler ht ps) <- resHandlers r,
-                      p <- ps, not $ allowed ht p ] 
+                      p <- ps, not $ allowed ht p ])
+                ++ (concatMap missingError $
+                     [ (r, ht, resLoc r, pt)
+                    | r <- modResources m, (Handler ht ps) <- resHandlers r,
+                      pt <- missing ht ps ])
+                        
     where             
+        
         allowed _ Public = True
         allowed PutHandler (ReadJson _) = True
         allowed PostHandler (ReadJson _) = True
@@ -25,6 +31,22 @@ handlerErrors m = concatMap handlerError $
         allowed GetHandler (ReturnEntity _) = True
         allowed GetHandler (ReturnFields _) = True
         allowed _ _ = False
-        handlerError (r, ht, l, p) = show p ++ " not allowed in " 
+
+        missing ht ps  
+            | ht == GetHandler = mapMaybe (requireMatch ps) [
+           (\p -> case p of (SelectFrom _ _) -> True; _ -> False, "select from"),
+           (\p -> case p of (ReturnEntity _) -> True ; (ReturnFields _) -> True ; _ -> False, "return")]
+            | ht == PutHandler || ht == PostHandler = mapMaybe (requireMatch ps) [   
+           (\p -> case p of (Insert _ _) -> True ; (Replace _ _ _) -> True ; _ -> False, "insert or replace"),
+           (\p -> case p of (ReadJson _) -> True ; _ -> False, "read json")] 
+            | otherwise = []
+        requireMatch ps (f,err) = case listToMaybe (filter f ps) of
+            Just _ -> Nothing
+            Nothing -> Just err     
+        notAllowedError (r, ht, l, p) = show p ++ " not allowed in " 
                                    ++ show ht ++ " of " ++ show (resRoute r)
                                    ++ " in " ++ show l ++ "\n"
+        missingError (r,ht,l,p) = "Missing " ++ p ++ " in " ++ show ht 
+                                ++ " of " ++ show (resRoute r) ++ " in "
+                                ++ show l ++ "\n"
+
