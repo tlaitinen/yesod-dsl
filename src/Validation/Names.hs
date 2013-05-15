@@ -33,7 +33,7 @@ instance HasNames Module where
 instance HasNames Entity where
     getNames e = [([GlobalNS, EntityNS, FieldTypeNS], entityName e, entityLoc e)]
                ++ getNames [ (e, f) | f <- (entityFields e) ]
-               ++ [([GlobalNS], uniqueName u, entityLoc e) 
+               ++ [([GlobalNS], "Unique" ++ uniqueName u, entityLoc e) 
                     | u <- entityUniques e ]
 
 instance HasNames (Entity, Field) where

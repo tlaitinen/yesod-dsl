@@ -1,1 +1,1 @@
-share [mkPersist sqlSettings, mkMigrate "migrateGenerated" ] [persistUpperCase|
+share [mkPersist sqlOnlySettings, mkMigrate "migrateGenerated" ] [persistUpperCase|
