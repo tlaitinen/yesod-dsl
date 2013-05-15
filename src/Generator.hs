@@ -4,6 +4,7 @@
 module Generator (generate, hsRouteName) where
 
 import System.IO (FilePath)
+import Data.String.Utils (rstrip)    
 import AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
@@ -94,18 +95,18 @@ routes m = T.unpack $(codegenFile "codegen/routes-header.cg")
          ++ (T.unpack $(codegenFile "codegen/routes-footer.cg"))
 
 validationFieldCheck :: Entity -> Field -> FunctionName -> String
-validationFieldCheck e f func = T.unpack $(codegenFile "codegen/validation-field.cg")
+validationFieldCheck e f func = rstrip $ T.unpack $(codegenFile "codegen/validation-field.cg")
 
 validationEntityCheck :: Entity -> FunctionName -> String
-validationEntityCheck e func = T.unpack $(codegenFile "codegen/validation-entity.cg")
+validationEntityCheck e func = rstrip $ T.unpack $(codegenFile "codegen/validation-entity.cg")
     where fieldRef f = "(" ++ (lowerFirst . entityName) e ++ upperFirst f ++ " v)"
 
 validationEntity :: Entity -> String
 validationEntity e = T.unpack $(codegenFile "codegen/validation-entity-header.cg")
-                   ++ (intercalate ", " $ [ validationFieldCheck e f func
+                   ++ (intercalate ",\n " $ [ validationFieldCheck e f func
                                           | f <- entityFields e,
                                             func <- fieldChecks f])
-                   ++ (intercalate ", " $ [ validationEntityCheck e func |
+                   ++ (intercalate ",\n " $ [ validationEntityCheck e func |
                                               func <- entityChecks e ])
                    ++ (T.unpack $(codegenFile "codegen/validation-entity-footer.cg"))
 
@@ -241,12 +242,19 @@ getHandlerSQLExpr m ps p = case p of
     OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")
     _ -> ""
 
+getHandlerSQLReturn :: [HandlerParam] -> String
+getHandlerSQLReturn ps = T.unpack $ case handlerReturn ps of
+    Left vn -> $(codegenFile "codegen/select-return-entity.cg")
+    Right fs -> let fields = [ fr | (_,fr) <- fs ] in $(codegenFile "codegen/select-return-fields.cg") 
+    
+
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 
     (concatMap (getHandlerParam m r ps) ps)
     ++ (T.unpack $(codegenFile "codegen/get-handler-select.cg"))
     ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
     ++ (concatMap (getHandlerSQLExpr m ps) ps)
+    ++ (getHandlerSQLReturn ps)
     ++ (T.unpack $(codegenFile "codegen/get-handler-footer.cg"))
     where 
         (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps

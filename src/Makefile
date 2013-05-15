@@ -1,6 +1,4 @@
 all:
-	happy -g Parser.y
-	alex -g Lexer.x
 	ghc --make main.hs -o yesod-generate-rest
 
 

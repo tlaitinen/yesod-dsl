@@ -194,6 +194,13 @@ handlerFields m ps = [ (e,vn,f) | e <- modEntities m,
                                   entityName e == en,
                                   f <- entityFields e ]
 
+handlerReturn :: [HandlerParam] -> Either VariableName [(ParamName, FieldRef)]
+handlerReturn ps = case filter match ps of
+    ((ReturnEntity vn):_) -> Left vn
+    ((ReturnFields fs):_) -> Right fs
+    where match (ReturnEntity _) = True
+          match (ReturnFields _) = True
+          match _ = False
 
 handlerVariableEntity :: [HandlerParam] -> VariableName -> Maybe EntityName
 handlerVariableEntity ps vn = case filter match ps of
