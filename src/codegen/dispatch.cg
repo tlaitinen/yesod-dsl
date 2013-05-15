@@ -7,10 +7,13 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE UndecidableInstances #-}
 module Handler.~{moduleName m} 
     ( module Handler.~{moduleName m}.Internal ) where
 import Handler.~{moduleName m}.Internal
 import Yesod.Core
+import Yesod.Auth
+import Prelude
 type ~{moduleName m}Route = Route ~{moduleName m}
-instance YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
+instance YesodAuthPersist master => YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
     yesodSubDispatch = $(mkYesodSubDispatch resources~{moduleName m})
