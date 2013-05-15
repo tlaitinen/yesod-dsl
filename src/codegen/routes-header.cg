@@ -1,2 +1,7 @@
+
 data Generated = Generated
+
+getGenerated :: a -> Generated
+getGenerated = const Generated
+
 mkYesodSubData "Generated" [parseRoutes|
