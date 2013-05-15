@@ -238,13 +238,13 @@ hsExpr ps expr = case expr of
     BinOpExpr e1 op e2 -> hsValExpr ps e1 ++ " " ++ hsBinOp op ++ hsValExpr ps e2
 
 textSearchFilterField :: [HandlerParam] -> ParamName -> FieldRef -> String
-textSearchFilterField ps pn f = T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
+textSearchFilterField ps pn f = rstrip $ T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
 
 getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
 getHandlerSQLExpr m ps p = case p of
     DefaultFilterSort -> defaultFilterFields m ps ++ defaultSortFields m ps 
                        ++ (T.unpack $(codegenFile "codegen/offset-limit.cg"))
-    TextSearchFilter pn fs -> let fields = concatMap (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
+    TextSearchFilter pn fs -> let fields = map (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
     (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
     OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")
     Limit limit -> T.unpack $(codegenFile "codegen/get-handler-limit.cg")
