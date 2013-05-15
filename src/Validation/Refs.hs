@@ -58,6 +58,11 @@ instance HasRefs (Resource, HandlerType, HandlerParam) where
                 | f <- fs ]
     getRefs (r,ht,(SelectFrom en vn)) = 
         [(resLoc r, "select-from in " ++ handlerInfo r ht, EntityNS, en)]
+    getRefs (r,ht,(DeleteFrom en vn me)) =
+        [(resLoc r, "delete-from in " ++ handlerInfo r ht, EntityNS, en)]
+        ++ (case me of 
+                (Just e) -> getRefs (r,ht,resLoc r, "where-expression of delete in " ++ handlerInfo r ht, e)
+                _ -> [])
     getRefs (r,ht,(Join jt en vn je)) =
         [(resLoc r, show jt ++ " in " ++ handlerInfo r ht, EntityNS, en)]
         ++ getRefs (r,ht,resLoc r, "join condition in " ++ show jt ++ " in " 

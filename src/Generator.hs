@@ -304,10 +304,17 @@ updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))
 
+deleteHandlerRunDB :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
+deleteHandlerRunDB m r ps p = T.unpack $ case p of
+    DeleteFrom en vn Nothing -> let maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") in $(codegenFile "codegen/delete.cg")
+    DeleteFrom en vn (Just e) -> let maybeExpr = hsExpr ps e in $(codegenFile "codegen/delete.cg")
+    _ -> ""
 
 deleteHandler :: Module -> Resource -> [HandlerParam] -> String
-deleteHandler m r ps = T.unpack $(codegenFile "codegen/delete-handler-footer.cg")
-
+deleteHandler m r ps = 
+            (T.unpack $(codegenFile "codegen/rundb.cg" ))
+            ++ (concatMap (deleteHandlerRunDB m r ps) ps)
+            ++ (T.unpack $(codegenFile "codegen/delete-handler-footer.cg"))
 handler :: Module -> Resource -> Handler -> String
 handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")
     ++ if Public `elem` ps 

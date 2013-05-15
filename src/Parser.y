@@ -161,8 +161,9 @@ handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
              | select from upperId as lowerId { SelectFrom $3 $5 }
-             | delete from upperId as lowerId where expr { DeleteFrom $3 $5 $7 }
              | replace upperId identified by inputRef with inputJson { Replace $2 $5 (Just $7) } 
+             | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
+             | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
              | replace upperId identified by inputRef { Replace $2 $5 Nothing }
              | insert upperId from inputJson { Insert $2 (Just $4) }
              | insert upperId { Insert $2 Nothing }

@@ -116,7 +116,7 @@ data HandlerParam = Public
                   | DefaultFilterSort
                   | TextSearchFilter ParamName [FieldRef]
                   | SelectFrom EntityName VariableName
-                  | DeleteFrom EntityName VariableName Expr
+                  | DeleteFrom EntityName VariableName (Maybe Expr)
                   | Replace EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField])
                   | Join JoinType EntityName VariableName
@@ -206,9 +206,12 @@ handlerVariableEntity :: [HandlerParam] -> VariableName -> Maybe EntityName
 handlerVariableEntity ps vn = case filter match ps of
     ((SelectFrom en _):_) -> Just en
     ((Join _ en _ _):_) -> Just en
+    ((DeleteFrom en _ _):_) -> Just en
     _ -> Nothing
    where match (SelectFrom _ vn') = vn == vn'
          match (Join _ _ vn' _) = vn == vn'
+         match (DeleteFrom _ vn' _) = vn == vn' 
+         match _= False
 
 data PathPiece = PathText String
                | PathId EntityName
