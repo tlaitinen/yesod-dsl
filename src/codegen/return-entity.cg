@@ -1,1 +1,1 @@
-    return $ toJSON $ map JSONWrapper result
+    return $ A.object [ "result" .=  map JSONWrapper result ]
