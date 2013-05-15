@@ -230,8 +230,7 @@ instances : upperId { [$1] }
 classDef : class upperId lbrace
              fields
             uniques
-            checks
-            rbrace { Class (mkLoc $1) $2 (reverse $4) (reverse $5) (reverse $6) }
+            rbrace { Class (mkLoc $1) $2 (reverse $4) (reverse $5)  }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
@@ -243,7 +242,8 @@ fieldOptions : { [] }
              | fieldOptionsList { $1 }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
-fieldOption : default value { FieldDefault $2 }
+fieldOption : check lowerId { FieldCheck $2 }
+            | default value { FieldDefault $2 }
 
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }
@@ -260,10 +260,8 @@ deriveDef :  deriving upperId  { $2  }
 
 checks : { [] }
         | checks checkDef semicolon { $2 : $1 }
-checkDef :  check lowerId fieldIdListEmpty { Check $2 (reverse $3) }
+checkDef :  check lowerId { $2  }
 
-fieldIdListEmpty : { [] }
-            | fieldIdList { $1 }
 
 fieldIdList : lowerId { [$1] }
             | fieldIdList comma lowerId { $3 : $1 }

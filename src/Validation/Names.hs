@@ -6,7 +6,7 @@ module Validation.Names (names,
 import AST
 import Data.List
 
-data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS | InputNS | RouteNS deriving (Eq, Ord)
+data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS | InputNS | RouteNS | CustomNS String deriving (Eq, Ord)
 type Name = String
 type NameList = [(NameSpace, [(Name, [Location])])]
 
@@ -35,11 +35,13 @@ instance HasNames Entity where
                ++ getNames [ (e, f) | f <- (entityFields e) ]
                ++ [([GlobalNS], uniqueName u, entityLoc e) 
                     | u <- entityUniques e ]
-               ++ [([GlobalNS], func, entityLoc e) | (Check func _) <- entityChecks e ]
 
 instance HasNames (Entity, Field) where
     getNames (e,f) = [([GlobalNS, FieldNS], entityName e ++ "." ++ fieldName f,
                       entityLoc e)]
+                   ++ [([CustomNS $ "fieldCheck " ++ func], 
+                         show (hsFieldType f),
+                         entityLoc e) | func <- fieldChecks f] 
                
 instance HasNames Class where 
     getNames c = [([GlobalNS, ClassNS, EntityNS, FieldTypeNS], className c, classLoc c)]
@@ -47,8 +49,6 @@ instance HasNames Class where
 
                ++ [([GlobalNS], uniqueName u, classLoc c) 
                   | u <- classUniques c ]
-               ++ [([GlobalNS], func, classLoc c) 
-                  | (Check func _) <- classChecks c] 
 
 
 

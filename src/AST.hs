@@ -147,10 +147,9 @@ data Entity = Entity {
     entityFields     :: [Field],
     entityUniques    :: [Unique],
     entityDeriving   :: [ClassName],
-    entityChecks     :: [Check]
+    entityChecks     :: [FunctionName]
 } deriving (Show)
 
-data Check = Check FunctionName [FieldName] deriving (Show)
 
 data Resource = Resource {
     resLoc :: Location,
@@ -229,8 +228,7 @@ data Class = Class {
     classLoc     :: Location,
     className    :: String,
     classFields  :: [Field],
-    classUniques :: [Unique],
-    classChecks  :: [Check]
+    classUniques :: [Unique]
 } deriving (Show)
 
 
@@ -261,9 +259,25 @@ data Field = Field {
     fieldName     :: FieldName,
     fieldContent  :: FieldContent
 } deriving (Show)
+
+baseFieldType :: Field -> String
+baseFieldType f = case fieldContent f of
+    (NormalField ft _) -> show ft
+    (EntityField en) -> en ++ "Id"
+
+boolToMaybe :: Bool -> String
+boolToMaybe True = "Maybe "
+boolToMaybe False = ""
+
+hsFieldType :: Field -> String
+hsFieldType f = (boolToMaybe . fieldOptional) f
+              ++ baseFieldType f
+
+
 type FunctionName = String
 
-data FieldOption = FieldDefault FieldValue
+data FieldOption = FieldCheck FunctionName
+                 | FieldDefault FieldValue
                  deriving (Show, Eq)
 
 data FieldValue = StringValue String
@@ -285,6 +299,12 @@ fieldDefault f = case find isDefault (fieldOptions f) of
     Just (FieldDefault fv) -> Just fv
     Nothing -> Nothing
     where isDefault (FieldDefault _) = True
+          isDefault _  = False
+
+fieldChecks :: Field -> [FunctionName]
+fieldChecks f = map (\(FieldCheck func) -> func) $ filter isCheck (fieldOptions f)
+    where isCheck (FieldCheck _) = True
+          isCheck _ = False
 
 lookupEntity :: Module -> EntityName -> Maybe Entity
 lookupEntity m en = listToMaybe [ e | e <- modEntities m, entityName e == en ]

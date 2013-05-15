@@ -15,19 +15,6 @@ recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
 
 
-baseFieldType :: Field -> String
-baseFieldType f = case fieldContent f of
-    (NormalField ft _) -> show ft
-    (EntityField en) -> en ++ "Id"
-
-boolToMaybe :: Bool -> String
-boolToMaybe True = "Maybe "
-boolToMaybe False = ""
-
-hsFieldType :: Field -> String
-hsFieldType f = (boolToMaybe . fieldOptional) f
-              ++ baseFieldType f
-
 persistFieldType :: Field -> String
 persistFieldType f = baseFieldType f 
                    ++ " " ++ (boolToMaybe . fieldOptional) f
@@ -106,30 +93,42 @@ routes m = T.unpack $(codegenFile "codegen/routes-header.cg")
          ++ (concatMap routeResource (modResources m))
          ++ (T.unpack $(codegenFile "codegen/routes-footer.cg"))
 
-validationEntityCheck :: Entity -> FunctionName -> [FieldName] -> String
-validationEntityCheck e func fields = T.unpack $(codegenFile "codegen/validation-entity.cg")
+validationFieldCheck :: Entity -> Field -> FunctionName -> String
+validationFieldCheck e f func = T.unpack $(codegenFile "codegen/validation-field.cg")
+
+validationEntityCheck :: Entity -> FunctionName -> String
+validationEntityCheck e func = T.unpack $(codegenFile "codegen/validation-entity.cg")
     where fieldRef f = "(" ++ (lowerFirst . entityName) e ++ upperFirst f ++ " v)"
 
 validationEntity :: Entity -> String
 validationEntity e = T.unpack $(codegenFile "codegen/validation-entity-header.cg")
-                   ++ (intercalate ", " $ [ validationEntityCheck e func fields
-                                              | (Check func fields) <- entityChecks e ])
+                   ++ (intercalate ", " $ [ validationFieldCheck e f func
+                                          | f <- entityFields e,
+                                            func <- fieldChecks f])
+                   ++ (intercalate ", " $ [ validationEntityCheck e func |
+                                              func <- entityChecks e ])
                    ++ (T.unpack $(codegenFile "codegen/validation-entity-footer.cg"))
 
 type TypeName = String
-validationFunction :: (Entity, FunctionName, [TypeName]) -> String
-validationFunction (e, func,types) = T.unpack $(codegenFile "codegen/validation-function.cg")
+
+validationFieldFunction :: (Field, FunctionName) -> String
+validationFieldFunction (f,func) = T.unpack $(codegenFile "codegen/validation-function-field.cg")
+
+validationEntityFunction :: (Entity, FunctionName) -> String
+validationEntityFunction (e, func) = T.unpack $(codegenFile "codegen/validation-function-entity.cg")
     
-    where addTypeArrow = (++ " -> ") :: String -> String
 
 lookupFieldType :: Module -> EntityName -> FieldName -> String
 lookupFieldType m en fn = hsFieldType (fromJust $ lookupField m en fn)
 validation :: Module -> String
 validation m = T.unpack $(codegenFile "codegen/validation-header.cg")
-             ++ (concatMap validationFunction $ 
-                   [ (e, func, map (lookupFieldType m (entityName e)) fields) 
-                     | e <- modEntities m,  
-                       (Check func fields) <- entityChecks e ])
+             ++ (concatMap validationFieldFunction $ 
+                    nubBy (\(_,f1) (_,f2) -> f1 == f2)
+                    [ (f,func) | e <- modEntities m,
+                             f <- entityFields e,
+                             func <- fieldChecks f ])
+             ++ (concatMap validationEntityFunction $ 
+                   [ (e, func) | e <- modEntities m,   func <- entityChecks e ])
              ++ (concatMap validationEntity (modEntities m))
 
 hsRouteParams :: [PathPiece] -> String

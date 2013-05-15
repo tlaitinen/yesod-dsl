@@ -1,1 +1,1 @@
-                checkResult "~{entityName e} ~{func}" (~{func} e ~{intercalate " " (map fieldRef fields)}) 
+                checkResult "~{entityName e} ~{func}" $ ~{func} e

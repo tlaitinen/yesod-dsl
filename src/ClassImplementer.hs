@@ -46,7 +46,7 @@ implInEntity mod classes e
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields mod e) $ entityFields e ++ extraFields,
         entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses),
-        entityChecks = entityChecks e ++ extraChecks e
+        entityChecks = entityChecks e 
     }
     | otherwise        = entityError e $ "Invalid classes " 
                                         ++ show invalidClassNames
@@ -59,7 +59,5 @@ implInEntity mod classes e
                                      
         extraFields = concatMap classFields validClasses
         addEntityNameToUnique e (Unique name fields) = Unique (entityName e ++ name) fields
-        addEntityNameToCheck e (Check func fields) = Check ((lowerFirst . entityName) e ++ upperFirst func) fields
-        extraChecks e = map (addEntityNameToCheck e) $ concatMap classChecks validClasses
         
     
