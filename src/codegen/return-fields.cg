@@ -1,5 +1,6 @@
     return $ object [ 
             "result" .= map (\~{intercalate " " params} -> object [
 ~{intercalate ",\n" fields}
-            ]) result
+            ]) result,
+            "totalCount" .= (T.pack $ show (head (count :: [Int64])))
         ]

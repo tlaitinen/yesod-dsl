@@ -1,1 +1,1 @@
-    return $ A.object [ "result" .=  map JSONWrapper result ]
+    return $ A.object [ "result" .=  map JSONWrapper result, "totalCount" .= (T.pack $ show (head (count :: [Int64]))) ]
