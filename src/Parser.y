@@ -73,6 +73,8 @@ import System.Exit
     of { Tk _ TOf }
     beforehandler { Tk _ TBeforeHandler }
     afterhandler { Tk _ TAfterHandler }
+    limit { Tk _ TLimit }
+    offset { Tk _ TOffset } 
     select { Tk _ TSelect }
     from { Tk _ TFrom }
     join { Tk _ TJoin }
@@ -177,6 +179,8 @@ handlerParam : public { Public }
              | defaultfiltersort { DefaultFilterSort }
              | textsearchfilter stringval fieldRefList { TextSearchFilter $2 (reverse $3) }
              | order by sortbylist { OrderBy (reverse $3) }
+             | limit intval { Limit $2 }
+             | offset intval { Offset $2 }
              | return lowerId { ReturnEntity $2 }
              | return lbrace outputJsonFields rbrace { ReturnFields (reverse $3) }
              

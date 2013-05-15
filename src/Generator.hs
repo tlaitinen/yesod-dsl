@@ -247,6 +247,8 @@ getHandlerSQLExpr m ps p = case p of
     TextSearchFilter pn fs -> let fields = concatMap (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
     (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
     OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")
+    Limit limit -> T.unpack $(codegenFile "codegen/get-handler-limit.cg")
+    Offset offset -> T.unpack $(codegenFile "codegen/get-handler-offset.cg")
     _ -> ""
 
 getHandlerSQLReturn :: [HandlerParam] -> String

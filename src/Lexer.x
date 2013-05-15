@@ -90,112 +90,113 @@ tokens :-
     "or" { mkT TOr }
     "asc" { mkT TAsc }
     "desc" { mkT TDesc }
-    "limit" { mkT TLimit }
-    "where" { mkT TWhere }
-    "return" { mkT TReturn }
-    "default" { mkT TDefault }
-    "instance" { mkT TInstance }
-    "of" { mkT TOf }
-    "deriving" { mkT TDeriving }
-	$digit+ 		{ mkTvar (TInt . read) }
-    $digit+ "." $digit+ { mkTvar (TFloat . read) }
-	$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
-    @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
-    $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
-    @fieldName { mkTvar (TLowerId . stripQuotes) }
-    @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
-    @authId { mkT TAuthId }
-    
+"limit" { mkT TLimit }
+"offset" { mkT TOffset }
+"where" { mkT TWhere }
+"return" { mkT TReturn }
+"default" { mkT TDefault }
+"instance" { mkT TInstance }
+"of" { mkT TOf }
+"deriving" { mkT TDeriving }
+$digit+ 		{ mkTvar (TInt . read) }
+$digit+ "." $digit+ { mkTvar (TFloat . read) }
+$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
+@entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
+$upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
+@fieldName { mkTvar (TLowerId . stripQuotes) }
+@pathParam { mkTvar (TPathParam . (read . (drop 1))) }
+@authId { mkT TAuthId }
+
 {
 
-data Token = Tk AlexPosn TokenType
-    deriving (Show)
+data Token = Tk AlexPosn TokenType deriving (Show)
 data TokenType = TSemicolon
-               | TColon
-               | TLBrace
-               | TRBrace
-               | TLParen
-               | TRParen
-               | TLBrack
-               | TRBrack
-               | TEquals
-               | TNe 
-               | TLt
-               | TGt
-               | TLe
-               | TGe
-               | TLike
-               | TPipe
-               | TComma
-               | TDot
-               | TImport
-               | TEnum
-               | TModule
-               | TEntity
-               | TUnique
-               | TClass
-               | TResource
-               | THash
-               | TLimit 
-               | TString  String
-               | TLowerId String
-               | TUpperId String
-               | TInt     Int
-               | TFloat   Double
-               | TSlash
-               | TOrder
-               | TIdentified 
-               | TReplace
-               | TInsert
-               | TWith 
-               | TBy
-               | TAsc
-               | TDesc
-               | TCheck
-               | TWord32
-               | TWord64
-               | TInt32
-               | TInt64
-               | TText
-               | TBool
-               | TDouble
-               | TMaybe
-               | TTime
-               | TDate
-               | TDateTime
-               | TZonedTime
-               | TJoin
-               | TLeft
-               | TRight
-               | TInner
-               | TOuter
-               | TFull
-               | TCross
-               | TOn
-               | TGet
-               | TPut
-               | TPost
-               | TInstance
-               | TOf
-               | TDelete
-               | TPublic
-               | TSelect
-               | TFrom
-               | TAnd
-               | TOr
-               | TBeforeHandler
-               | TAfterHandler
-               | TDefaultFilterSort
-               | TTextSearchFilter
-               | TWhere
-               | TAs
-               | TReturn
-               | TDeriving
-               | TDefault
-               | TPathParam Int
-               | TAuthId 
-               | TEntityId String
-        deriving (Show)
+           | TColon
+           | TLBrace
+           | TRBrace
+           | TLParen
+           | TRParen
+           | TLBrack
+           | TRBrack
+           | TEquals
+           | TNe 
+           | TLt
+           | TGt
+           | TLe
+           | TGe
+           | TLike
+           | TPipe
+           | TComma
+           | TDot
+           | TImport
+           | TEnum
+           | TModule
+           | TEntity
+           | TUnique
+           | TClass
+           | TResource
+           | THash
+           | TLimit 
+           | TOffset
+           | TString  String
+           | TLowerId String
+           | TUpperId String
+           | TInt     Int
+           | TFloat   Double
+           | TSlash
+           | TOrder
+           | TIdentified 
+           | TReplace
+           | TInsert
+           | TWith 
+           | TBy
+           | TAsc
+           | TDesc
+           | TCheck
+           | TWord32
+           | TWord64
+           | TInt32
+           | TInt64
+           | TText
+           | TBool
+           | TDouble
+           | TMaybe
+           | TTime
+           | TDate
+           | TDateTime
+           | TZonedTime
+           | TJoin
+           | TLeft
+           | TRight
+           | TInner
+           | TOuter
+           | TFull
+           | TCross
+           | TOn
+           | TGet
+           | TPut
+           | TPost
+           | TInstance
+           | TOf
+           | TDelete
+           | TPublic
+           | TSelect
+           | TFrom
+           | TAnd
+           | TOr
+           | TBeforeHandler
+           | TAfterHandler
+           | TDefaultFilterSort
+           | TTextSearchFilter
+           | TWhere
+           | TAs
+           | TReturn
+           | TDeriving
+           | TDefault
+           | TPathParam Int
+           | TAuthId 
+           | TEntityId String
+    deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)
 

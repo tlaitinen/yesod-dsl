@@ -28,6 +28,8 @@ handlerErrors m = (concatMap notAllowedError $
         allowed GetHandler (SelectFrom _ _) = True
         allowed GetHandler (ReturnEntity _) = True
         allowed GetHandler (ReturnFields _) = True
+        allowed GetHandler (Limit _) = True
+        allowed GetHandler (Offset _) = True
         allowed _ _ = False
 
         missing ht ps  

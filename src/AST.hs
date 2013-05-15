@@ -125,6 +125,8 @@ data HandlerParam = Public
                          (Maybe (FieldRef, BinOp, FieldRef))
                   | Where Expr
                   | OrderBy [(FieldRef,SortDir)]
+                  | Limit Int
+                  | Offset Int
                   | ReturnEntity VariableName
                   | ReturnFields [(ParamName, FieldRef)]
                   deriving (Show, Eq) 

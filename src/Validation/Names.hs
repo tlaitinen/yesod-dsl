@@ -90,6 +90,8 @@ handlerParamName (ReturnEntity _) = ["return"]
 handlerParamName (ReturnFields _) = ["return"]
 handlerParamName (Replace _ _ _) = [""]
 handlerParamName (Insert _ _) = [""] 
+handlerParamName (Limit _) = ["limit"]
+handlerParamName (Offset _) = ["offset"]
 groupByName :: [(Name, Location)] -> [(Name, [Location])]
 groupByName ns = nameGroups 
     where
