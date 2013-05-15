@@ -9,7 +9,7 @@ class Validatable a where
                  P.PersistQuery (b (HandlerT master IO)),
                  P.PersistUnique (b (HandlerT master IO)),
                  YesodPersist master,
-                 ValidationFunctions master) 
+                 ~{moduleName m}Validation master) 
              => Entity a -> HandlerT master IO [Text]
 
-class Yesod master => ValidationFunctions master where
+class Yesod master => ~{moduleName m}Validation master where

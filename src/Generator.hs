@@ -23,8 +23,12 @@ persistFieldType :: Field -> String
 persistFieldType f = baseFieldType f 
                    ++ " " ++ (boolToMaybe . fieldOptional) f
                    ++ (maybeDefault . fieldDefault) f
-    where maybeDefault (Just d) = " default='" ++ show d ++ "'"
+    where maybeDefault (Just d) = " default='" ++ stripQuotes (show d) ++ "'"
           maybeDefault _ = " "
+          stripQuotes ('"':xs)  = take ((length xs) -1) xs
+          stripQuotes xs = xs
+
+
 classFieldName :: Class -> Field -> String
 classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 
