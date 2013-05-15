@@ -7,7 +7,6 @@ import ClassImplementer
 import AST
 import Data.List
 import Generator
-import SyncFiles
 import System.Directory
 import Control.Monad
 import System.IO

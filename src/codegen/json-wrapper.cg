@@ -15,4 +15,4 @@ instance ToJSON a => ToJSON (JSONWrapper (Entity a)) where
         A.Object o -> A.Object $ HML.insert "id" (toJSON k) o
         _ -> error "unexpected JS encode error"
 instance ToJSON [JSONWrapper a] where
-    toJSON es = object [ "entities" .= toJSON es ]
+    toJSON es = object [ "result" .= toJSON es ]

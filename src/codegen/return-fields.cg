@@ -1,0 +1,5 @@
+    return $ object [ 
+            "result" .= map (\~{intercalate " " params} -> object [
+~{intercalate ",\n" fields}
+            ]) result
+        ]

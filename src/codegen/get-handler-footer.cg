@@ -1,1 +1,0 @@
-    return $ toJSON $ map JSONWrapper entities

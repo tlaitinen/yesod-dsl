@@ -247,6 +247,15 @@ getHandlerSQLReturn ps = T.unpack $ case handlerReturn ps of
     Left vn -> $(codegenFile "codegen/select-return-entity.cg")
     Right fs -> let fields = [ fr | (_,fr) <- fs ] in $(codegenFile "codegen/select-return-fields.cg") 
     
+getReturn :: [HandlerParam] -> String
+getReturn ps = T.unpack $ case handlerReturn ps of
+    Left vn -> $(codegenFile "codegen/return-entity.cg")
+    Right fs -> let
+        params = [ pn | (pn,_) <- fs ]
+        fields = map mapReturnField params
+        in $(codegenFile "codegen/return-fields.cg")
+    where
+        mapReturnField pn = rstrip $ T.unpack $(codegenFile "codegen/return-field.cg")
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 
@@ -255,7 +264,7 @@ getHandler m r ps =
     ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
     ++ (concatMap (getHandlerSQLExpr m ps) ps)
     ++ (getHandlerSQLReturn ps)
-    ++ (T.unpack $(codegenFile "codegen/get-handler-footer.cg"))
+    ++ (getReturn ps)
     where 
         (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
         joins = handlerJoins ps 

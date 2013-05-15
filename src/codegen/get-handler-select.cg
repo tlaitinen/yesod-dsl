@@ -1,1 +1,1 @@
-    entities <- lift $ runDB $ select $ from $ \(~{selectFromVariable}~{concatMap getHandlerJoinDef joins}) -> do
+    result <- lift $ runDB $ select $ from $ \(~{selectFromVariable}~{concatMap getHandlerJoinDef joins}) -> do
