@@ -240,6 +240,13 @@ hsExpr ps expr = case expr of
 textSearchFilterField :: [HandlerParam] -> ParamName -> FieldRef -> String
 textSearchFilterField ps pn f = rstrip $ T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
 
+getHandlerCountExpr :: Module -> [HandlerParam] -> HandlerParam -> String
+getHandlerCountExpr m ps p = case p of
+    DefaultFilterSort -> defaultFilterFields m ps
+    TextSearchFilter pn fs -> let fields = map (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
+    (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
+    _ -> ""
+
 getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
 getHandlerSQLExpr m ps p = case p of
     DefaultFilterSort -> defaultFilterFields m ps ++ defaultSortFields m ps 
@@ -272,7 +279,7 @@ getHandler m r ps =
     (concatMap (getHandlerParam m r ps) ps)
     ++ (let result = "count" :: String in  T.unpack $(codegenFile "codegen/get-handler-select.cg"))
     ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
-    ++ (concatMap (getHandlerSQLExpr m ps) ps)
+    ++ (concatMap (getHandlerCountExpr m ps) ps)
     ++ (T.unpack $(codegenFile "codegen/select-return-count.cg"))   
     ++ (let result = "result" :: String in T.unpack $(codegenFile "codegen/get-handler-select.cg"))
     ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
