@@ -1,4 +1,2 @@
 |]
 
-instance YesodSubDispatch Generated (HandlerT master IO) where
-    yesodSubDispatch = $(mkYesodSubDispatch resourcesAuth) 

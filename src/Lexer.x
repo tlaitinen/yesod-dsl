@@ -46,6 +46,7 @@ tokens :-
     "delete" { mkT TDelete }
     "import" { mkT TImport }
     "enum" { mkT TEnum }
+    "module" { mkT TModule }
     "entity" { mkT TEntity }
     "class" { mkT TClass  }
     "resource" { mkT TResource }
@@ -129,6 +130,7 @@ data TokenType = TSemicolon
                | TDot
                | TImport
                | TEnum
+               | TModule
                | TEntity
                | TUnique
                | TClass

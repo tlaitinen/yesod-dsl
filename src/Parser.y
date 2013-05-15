@@ -16,6 +16,7 @@ import System.Exit
 %error { parseError }
 
 %token
+    module { Tk _ TModule }
     import     { Tk _ TImport }
     enum       { Tk _ TEnum }
     pipe       { Tk _ TPipe }
@@ -101,11 +102,15 @@ import System.Exit
     entityId { Tk _ (TEntityId $$) }
 %%
 
-dbModule : imports defs { Module (reverse $1) ((reverse . getEntities) $2) 
-                                    ((reverse . getClasses) $2)
-                                    ((reverse . getEnums) $2)
-                                    ((reverse . getResources) $2)}
+dbModule : maybeModuleName 
+           imports defs { Module $1 (reverse $2) ((reverse . getEntities) $3) 
+                                    ((reverse . getClasses) $3)
+                                    ((reverse . getEnums) $3)
+                                    ((reverse . getResources) $3)}
 
+
+maybeModuleName : { Nothing }
+                | module upperId semicolon { Just $2 }
 imports : { [] }
         | imports importStmt { $2 : $1 }
 

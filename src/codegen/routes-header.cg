@@ -1,7 +1,7 @@
 
-data Generated = Generated
+data ~{moduleName m} = ~{moduleName m}
 
-getGenerated :: a -> Generated
-getGenerated = const Generated
+get~{moduleName m} :: a -> ~{moduleName m}
+get~{moduleName m} = const ~{moduleName m}
 
-mkYesodSubData "Generated" [parseRoutes|
+mkYesodSubData "~{moduleName m}" [parseRoutes|

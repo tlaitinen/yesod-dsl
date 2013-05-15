@@ -1,1 +1,1 @@
-share [mkPersist sqlOnlySettings, mkMigrate "migrateGenerated" ] [persistUpperCase|
+share [mkPersist sqlOnlySettings, mkMigrate "migrate~{moduleName m}" ] [persistUpperCase|

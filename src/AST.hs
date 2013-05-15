@@ -6,6 +6,7 @@ import Data.Char
 type ImportPath = FilePath
 
 data Module = Module {
+    modName :: Maybe String,
     modImports   :: [ImportPath],
     modEntities  :: [Entity],
     modClasses :: [Class],
@@ -14,6 +15,7 @@ data Module = Module {
 }
     deriving (Show)
 emptyModule = Module {
+    modName = Nothing,
     modImports = [],
     modEntities = [],
     modClasses = [],

@@ -1,7 +1,7 @@
 module ModuleMerger (mergeModules) where
 import AST
 import Data.List
-
+import Data.Maybe
     
 mergeModules :: [(FilePath,Module)] -> Module
 mergeModules mods = foldl merge emptyModule mods'
@@ -9,6 +9,7 @@ mergeModules mods = foldl merge emptyModule mods'
 
 merge :: Module -> Module -> Module
 merge mod1 mod2 = Module {
+        modName = listToMaybe $ mapMaybe modName [mod1, mod2],
         modImports = [],
         modEntities = modEntities mod1 ++ modEntities mod2,
         modClasses = modClasses mod1 ++ modClasses mod2,

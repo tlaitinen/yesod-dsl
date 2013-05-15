@@ -1,9 +1,9 @@
 all:
-	ghc --make main.hs -o yesod-generate-rest
+	ghc --make main.hs -o yesod-dsl
 
 
 clean:
-	rm -f *.o *.hi yesod-generate-rest Parser.hs Lexer.hs
+	rm -f *.o *.hi yesod-dsl Parser.hs Lexer.hs
 	happy -g Parser.y
 	alex -g Lexer.x
 

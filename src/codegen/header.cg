@@ -11,7 +11,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 
-module Handler.Generated where
+module Handler.~{moduleName m}.Internal where
 import Prelude
 import Database.Esqueleto
 import qualified Database.Persist as P

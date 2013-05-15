@@ -3,7 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Generator (generate, hsRouteName) where
 
-import System.IO (FilePath)
+import System.IO (FilePath, writeFile)
+import System.FilePath (joinPath)    
+import System.Directory (createDirectoryIfMissing)
 import Data.String.Utils (rstrip)    
 import AST
 import Text.Shakespeare.Text hiding (toText)
@@ -14,7 +16,8 @@ import Data.Maybe
 import Data.Char
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
-
+moduleName :: Module -> String
+moduleName = fromJust . modName
 
 persistFieldType :: Field -> String
 persistFieldType f = baseFieldType f 
@@ -326,15 +329,20 @@ handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg"
             PostHandler -> updateHandler m r ps
             DeleteHandler -> deleteHandler m r ps)
 
-generate :: Module -> String
-generate m = T.unpack $(codegenFile "codegen/header.cg")
-         ++ (concatMap enum $ modEnums m)
-         ++ models m
-         ++ classes m
-         ++ routes m
-         ++ validation m
-         ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))
-         ++ (concat [ handler m r h | r <- modResources m, h <- resHandlers r ])
+generate :: Module -> IO ()
+generate m = do
+    createDirectoryIfMissing True (joinPath ["Handler", moduleName m])
+    writeFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
+        T.unpack $(codegenFile "codegen/header.cg")
+            ++ (concatMap enum $ modEnums m)
+            ++ models m
+            ++ classes m
+            ++ validation m
+            ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))
+            ++ (concat [ handler m r h | r <- modResources m, h <- resHandlers r ])
+            ++ routes m
+    writeFile (joinPath ["Handler", moduleName m ++ ".hs"]) $ 
+        T.unpack $(codegenFile "codegen/dispatch.cg")
                             
 
 

@@ -1,0 +1,16 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies, TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+module Handler.~{moduleName m} 
+    ( module Handler.~{moduleName m}.Internal ) where
+import Handler.~{moduleName m}.Internal
+import Yesod.Core
+type ~{moduleName m}Route = Route ~{moduleName m}
+instance YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
+    yesodSubDispatch = $(mkYesodSubDispatch resources~{moduleName m})
