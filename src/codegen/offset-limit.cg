@@ -2,5 +2,5 @@
             Just o -> offset o
             Nothing -> return ()
         case defaultLimit of
-            Just l -> limit l
+            Just l -> limit (min 10000 l)
             Nothing -> return ()

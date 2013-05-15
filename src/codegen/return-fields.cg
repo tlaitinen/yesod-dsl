@@ -2,5 +2,5 @@
             "result" .= map (\~{intercalate " " params} -> object [
 ~{intercalate ",\n" fields}
             ]) result,
-            "totalCount" .= (T.pack $ show (head (count)))
+            "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show v) (head (count)))
         ]
