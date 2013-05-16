@@ -204,8 +204,8 @@ maybeWhere : { Nothing }
 maybeOrder: { [] }
           | order by orderByList { (reverse $3) }
 
-maybeLimitOffset: { Nothing }
-                | limit intval maybeOffset { Just ($2,$3) }
+maybeLimitOffset: { (10000,0) }
+                | limit intval maybeOffset {  ($2,$3) }
 maybeOffset: { 0 }
            | offset intval { $2 }
 

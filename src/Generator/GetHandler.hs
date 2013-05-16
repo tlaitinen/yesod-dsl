@@ -87,6 +87,31 @@ baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/
     where ctx = ctx' 
               ++ [(joinEntity j, joinAlias j) | j <- joins]
 
+textSearchFilter :: Module -> Context -> TextSearchParams -> String
+textSearchFilter m ctx (pn, fieldRefs) = T.unpack $(codegenFile "codegen/text-search-filter.cg")
+    where fields = map (hsFieldRef ctx) fieldRefs
+selectOrderingLimitOffset :: Module -> Bool -> SelectQuery -> String
+selectOrderingLimitOffset m defaultFilterSort sq = 
+    (T.unpack $(codegenFile "codegen/offset-limit.cg"))
+    ++ (T.unpack $(codegenFile "codegen/default-offset-limit.cg"))
+    where (limit,offset) = sqLimitOffset sq
+    
+selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
+selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
+                                                f <- entityFields e ]
+    where  
+           en = fromJust $ ctxLookupEntity ctx vn
+           e = fromJust $ lookupEntity m en    
+selectFieldRefs m ctx (SelectField vn fn _) = [FieldRefNormal vn fn]
+                                
+
+
+selectReturnFields :: Module -> Context -> SelectQuery -> String
+selectReturnFields m ctx sq = T.unpack $(codegenFile "codegen/select-return-fields.cg")
+    where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
+        
+
+    
 getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> [TextSearchParams] -> String
 getHandlerSelect m sq defaultFilterSort ifFilters textSearches = 
     baseSelectQuery m ctx sq
@@ -94,13 +119,18 @@ getHandlerSelect m sq defaultFilterSort ifFilters textSearches =
         then baseDefaultFilterSort m ctx  
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
         else "")
+   ++ (concatMap (textSearchFilter m ctx) textSearches)  
    ++ (T.unpack $(codegenFile "codegen/base-select-query-return.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
+   ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
     where (_,selectVar) = sqFrom sq
           ctx = sqAliases sq
+          orderingLimitOffset = selectOrderingLimitOffset m defaultFilterSort sq
+          returnFields = selectReturnFields m ctx sq
     
 getHandlerReturn :: Module -> SelectQuery -> String
 getHandlerReturn m sq = "    return A.Null\n"
+
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 

@@ -135,7 +135,7 @@ data SelectQuery = SelectQuery {
     sqJoins        :: [Join],
     sqWhere        :: Maybe Expr,
     sqOrder        :: [(FieldRef, SortDir)],
-    sqLimitOffset  :: Maybe (Int, Int)
+    sqLimitOffset  :: (Int, Int)
 } deriving (Show, Eq)    
 
 sqAliases :: SelectQuery -> [(EntityName, VariableName)]
@@ -145,6 +145,7 @@ data SelectField = SelectAllFields EntityName
                  | SelectField EntityName FieldName (Maybe VariableName)
                  deriving (Show, Eq)
 
+    
 data Join = Join {
     joinType   :: JoinType,
     joinEntity :: EntityName,
@@ -212,7 +213,6 @@ data FieldRef = FieldRefId VariableName
               | FieldRefAuthId
               | FieldRefLocalParam
               | FieldRefPathParam Int deriving (Show, Eq) 
-
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
