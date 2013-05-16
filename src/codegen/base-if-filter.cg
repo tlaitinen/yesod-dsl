@@ -1,4 +1,4 @@
-        case getDefaultFilter "~{pn}" of
+        case getDefaultFilter defaultFilterJson "~{pn}" of
             Just localParam -> from $ \(~{selectVar} ~{concatMap joinDef joins}) -> do
 ~{indent 8 (concatMap (mapJoinExpr m ctx) joins)}
                 where_ $ ~{hsExpr ctx expr}

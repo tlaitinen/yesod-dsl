@@ -1,0 +1,4 @@
+    count <- lift $ runDB $ do
+        baseQuery
+        let countRows' = countRows
+        return $ (countRows' :: SqlExpr (Database.Esqueleto.Value Int))

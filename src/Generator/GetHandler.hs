@@ -94,25 +94,19 @@ getHandlerSelect m sq defaultFilterSort ifFilters textSearches =
         then baseDefaultFilterSort m ctx  
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
         else "")
+   ++ (T.unpack $(codegenFile "codegen/base-select-query-return.cg"))
+   ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
     where (_,selectVar) = sqFrom sq
           ctx = sqAliases sq
     
-    
+getHandlerReturn :: Module -> SelectQuery -> String
+getHandlerReturn m sq = "    return A.Null\n"
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 
     (concatMap (getHandlerParam m r ctx) ps)
     ++ (getHandlerSelect m sq defaultFilterSort ifFilters textSearches)
-
- --   ++ (let result = "count" :: String in  T.unpack $(codegenFile "codegen/get-handler-select.cg"))
- --   ++ (concatMap (mapJoinExpr m ps) rjoins)
-  --  ++ (concatMap (getHandlerCountExpr m ps) ps)
-   -- ++ (T.unpack $(codegenFile "codegen/select-return-count.cg"))   
-  --  ++ (let result = "result" :: String in T.unpack $(codegenFile "codegen/get-handler-select.cg"))
-  --  ++ (concatMap (mapJoinExpr m ps) rjoins)
-  --  ++ (concatMap (getHandlerSQLExpr m ps) ps)
-  --  ++ (getHandlerSQLReturn ps)
-  --  ++ (getReturn ps)
+    ++ (getHandlerReturn m sq)
     where 
         (Select sq) = (fromJust . listToMaybe . (filter isSelect)) ps
         ctx = sqAliases sq

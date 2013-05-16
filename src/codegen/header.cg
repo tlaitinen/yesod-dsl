@@ -132,4 +132,7 @@ instance PathPiece ZonedTime where
 
                  
    
-
+getDefaultFilter defaultFilterJson p = do 
+    j <- defaultFilterJson
+    v <- DL.find (\fjm -> filterJsonMsg_field fjm == p) j
+    fromPathPiece (filterJsonMsg_value v)

@@ -33,7 +33,7 @@ hsFieldRef ctx (FieldRefNormal vn fn) = vn ++ " ^. "
                  ++ (upperFirst fn)
 hsFieldRef _ FieldRefAuthId = "(val authId)"
 hsFieldRef _ (FieldRefPathParam p) = "(val p" ++ show p ++ ")"
-hsFieldRef _ FieldRefLocalParam = "(val (fromPathPiece localParam))"
+hsFieldRef _ FieldRefLocalParam = "(val localParam)"
 
 hsOrderBy :: Context -> (FieldRef, SortDir) -> String
 hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx f ++ ")"
