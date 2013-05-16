@@ -119,13 +119,15 @@ data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue deriving (Show, Eq)
 data HandlerParam = Public 
                   | DefaultFilterSort
-                  | TextSearchFilter ParamName [FieldRef]
+                  | TextSearchFilter TextSearchParams
                   | Select SelectQuery 
-                  | IfFilter ParamName [Join] Expr
+                  | IfFilter IfFilterParams
                   | DeleteFrom EntityName VariableName (Maybe Expr)
                   | Replace EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField])
                   deriving (Show, Eq) 
+type TextSearchParams = (ParamName,[FieldRef])
+type IfFilterParams = (ParamName,[Join],Expr)
 
 data SelectQuery = SelectQuery {
     sqFields       :: [SelectField],

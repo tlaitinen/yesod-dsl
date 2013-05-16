@@ -53,7 +53,7 @@ instance HasRefs (Resource, HandlerType, HandlerParam) where
         ++ getRefs (r, ht, resLoc r, "replace-with in " ++ handlerInfo r ht, fr)
         ++ getRefs (r, ht, resLoc r, "replace-from in " ++ handlerInfo r ht, io)
                         
-    getRefs (r,ht,(TextSearchFilter p fs)) = 
+    getRefs (r,ht,(TextSearchFilter (p,fs))) = 
         getRefs [(r,ht,resLoc r, "text-search-filter in " ++ handlerInfo r ht, f)
                 | f <- fs ]
     getRefs (r,ht,(Select sq)) = getRefs (r,ht,sq)

@@ -42,14 +42,14 @@ defaultSortFields m ps = T.unpack $(codegenFile "codegen/default-sort-fields.cg"
     where fields = concatMap defaultSortField (handlerFields m ps)
 
 getHandlerParam :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
-getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort.cg")
+getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getHandlerParam m r ps (TextSearchFilter pn fs) = T.unpack $(codegenFile "codegen/text-search-filter-param.cg")
+getHandlerParam m r ps (TextSearchFilter (pn, fs)) = T.unpack $(codegenFile "codegen/text-search-filter-param.cg")
 getHandlerParam _ _ _ _ = ""        
 
 
-getHandlerJoinDef :: (JoinType, EntityName, VariableName, (Maybe (FieldRef, BinOp, FieldRef))) -> String
-getHandlerJoinDef (jt, _, vn, _) = T.unpack $(codegenFile "codegen/get-handler-join-def.cg")
+joinDef :: Join-> String
+joinDef (Join jt _ vn _) = rstrip $ T.unpack $(codegenFile "codegen/join-def.cg")
 
 
 isMaybeFieldRef :: Module -> [HandlerParam] -> FieldRef -> Bool
@@ -60,65 +60,73 @@ makeJustField :: Bool -> String -> String
 makeJustField True f = "(just " ++ f ++ ")"
 makeJustField False f = f
 
-getHandlerJoinExpr :: Module -> [HandlerParam] -> (JoinType, EntityName, VariableName, (Maybe (FieldRef, BinOp, FieldRef))) -> String
-getHandlerJoinExpr m ps (_, en, vn, (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/get-handler-join-expr.cg")
+mapJoinExpr :: Module -> [HandlerParam] -> Join -> String
+mapJoinExpr m ps (Join _ en vn (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/join-expr.cg")
     where f1just = f1maybe == False && f2maybe == True
           f2just = f2maybe == False && f1maybe == True
           f1maybe = isMaybeFieldRef m ps f1
           f2maybe = isMaybeFieldRef m ps f2
-getHandlerJoinExpr m _ _ = ""
+mapJoinExpr m _ _ = ""
+
+indent :: [String] -> [String]
+indent = map ("   "++)
+mapJoinExprIndent :: Module -> [HandlerParam] -> Join -> String
+mapJoinExprIndent m ps = unlines . indent . lines . (mapJoinExpr m ps)
+
+
 textSearchFilterField :: [HandlerParam] -> ParamName -> FieldRef -> String
 textSearchFilterField ps pn f = rstrip $ T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
 
-getHandlerCountExpr :: Module -> [HandlerParam] -> HandlerParam -> String
-getHandlerCountExpr m ps p = case p of
-    DefaultFilterSort -> defaultFilterFields m ps
-    TextSearchFilter pn fs -> let fields = map (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
-    -- (Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
-    _ -> ""
-
-getHandlerSQLExpr :: Module -> [HandlerParam] -> HandlerParam -> String
-getHandlerSQLExpr m ps p = case p of
-    DefaultFilterSort -> defaultFilterFields m ps ++ defaultSortFields m ps 
-                       ++ (T.unpack $(codegenFile "codegen/offset-limit.cg"))
-    TextSearchFilter pn fs -> let fields = map (textSearchFilterField ps pn) fs in T.unpack $(codegenFile "codegen/text-search-filter.cg")
-    --(Where expr) -> T.unpack $(codegenFile "codegen/get-handler-where-expr.cg")
-   -- OrderBy fields -> T.unpack $(codegenFile "codegen/get-handler-order-by.cg")
-    --Limit limit -> T.unpack $(codegenFile "codegen/get-handler-limit.cg")
-   -- Offset offset -> T.unpack $(codegenFile "codegen/get-handler-offset.cg")
-    _ -> ""
-
-getHandlerSQLReturn :: [HandlerParam] -> String
-getHandlerSQLReturn ps = ""
---T.unpack $ case handlerReturn ps of
---    Left vn -> $(codegenFile "codegen/select-return-entity.cg")
---    Right fs -> let fields = [ fr | (_,fr) <- fs ] in $(codegenFile "codegen/select-return-fields.cg") 
-   
     
-getReturn :: [HandlerParam] -> String
-getReturn ps =""
---T.unpack $ case handlerReturn ps of
---    Left vn -> $(codegenFile "codegen/return-entity.cg")
---    Right fs -> let
---        params = [ pn | (pn,_) <- fs ]
---        fields = map mapReturnField params
- --       in $(codegenFile "codegen/return-fields.cg")
---    where
- --       mapReturnField pn = rstrip $ T.unpack $(codegenFile "codegen/return-field.cg")
+baseSelectQuery :: Module -> [HandlerParam] -> SelectQuery -> String
+baseSelectQuery m ps sq = T.unpack $(codegenFile "codegen/base-select-query.cg")
+    where (selectEntity, selectVar) = sqFrom sq 
+          maybeWhere = case sqWhere sq of
+             Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
+             Nothing -> ""
+
+baseDefaultFilterSort :: Module -> [HandlerParam] -> String
+baseDefaultFilterSort = defaultFilterFields
+
+baseIfFilter :: Module -> [HandlerParam] -> VariableName -> IfFilterParams -> String
+baseIfFilter m ps selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
+
+getHandlerSelect :: Module -> [HandlerParam] -> SelectQuery -> Bool -> [IfFilterParams] -> String
+getHandlerSelect m ps sq defaultFilterSort ifFilters = 
+    baseSelectQuery m ps sq
+   ++ (if defaultFilterSort 
+        then baseDefaultFilterSort m ps  
+             ++ (concatMap (baseIfFilter m ps selectVar) ifFilters)
+        else "")
+    where (_,selectVar) = sqFrom sq
+    
+    
 
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 
     (concatMap (getHandlerParam m r ps) ps)
+    ++ (getHandlerSelect m ps sq defaultFilterSort ifFilters)
+
  --   ++ (let result = "count" :: String in  T.unpack $(codegenFile "codegen/get-handler-select.cg"))
- --   ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
+ --   ++ (concatMap (mapJoinExpr m ps) rjoins)
   --  ++ (concatMap (getHandlerCountExpr m ps) ps)
    -- ++ (T.unpack $(codegenFile "codegen/select-return-count.cg"))   
   --  ++ (let result = "result" :: String in T.unpack $(codegenFile "codegen/get-handler-select.cg"))
-  --  ++ (concatMap (getHandlerJoinExpr m ps) rjoins)
+  --  ++ (concatMap (mapJoinExpr m ps) rjoins)
   --  ++ (concatMap (getHandlerSQLExpr m ps) ps)
   --  ++ (getHandlerSQLReturn ps)
   --  ++ (getReturn ps)
     where 
+        (Select sq) = (fromJust . listToMaybe . (filter isSelect)) ps
+        isSelect (Select _) = True
+        isSelect _ = False
+    
+        defaultFilterSort = DefaultFilterSort `elem` ps
+
+        ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
+        isIfFilter (IfFilter _) = True
+        isIfFilter _ = False
+        
    --     (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
        -- joins = handlerJoins ps 
        -- rjoins = reverse joins

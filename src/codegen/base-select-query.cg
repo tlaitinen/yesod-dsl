@@ -1,0 +1,4 @@
+        let baseQuery = select $ from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
+~{concatMap (mapJoinExpr m ps) (sqJoins sq)}
+        let ~{selectVar}' = ~{selectVar} :: ~{selectEntity}
+~{maybeWhere}

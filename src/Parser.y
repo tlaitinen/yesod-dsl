@@ -181,8 +181,8 @@ handlerParam : public { Public }
              | insert upperId from inputJson { Insert $2 (Just $4) }
              | insert upperId { Insert $2 Nothing }
              | defaultfiltersort { DefaultFilterSort }
-             | if filter stringval joins where expr { IfFilter $3 (reverse $4) $6 }
-             | textsearchfilter stringval fieldRefList { TextSearchFilter $2 (reverse $3) }
+             | if filter stringval joins where expr { IfFilter ($3 ,(reverse $4) ,$6) }
+             | textsearchfilter stringval fieldRefList { TextSearchFilter ($2, (reverse $3)) }
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 
 moreSelectFields: { [] }

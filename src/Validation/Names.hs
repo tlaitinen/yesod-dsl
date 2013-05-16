@@ -80,11 +80,12 @@ instance HasNames (Resource, HandlerType, HandlerParam) where
 handlerParamName :: HandlerParam -> [String]
 handlerParamName Public = ["public"]
 handlerParamName DefaultFilterSort = ["default-filter-sort"]
-handlerParamName (TextSearchFilter pn _) = ["text-search-filter " ++ pn, "input query string " ++ pn]
+handlerParamName (TextSearchFilter (pn, _)) = ["text-search-filter " ++ pn, "input query string " ++ pn]
 handlerParamName (Select sq) = ["select from"] ++ [ vn | (_,vn) <- sqAliases sq ]
 handlerParamName (DeleteFrom _ v _) = [v, "delete"]
 handlerParamName (Replace _ _ _) = [""]
 handlerParamName (Insert _ _) = [""] 
+handlerParamName (IfFilter (pn,_,_)) = ["filter " ++ pn]
 groupByName :: [(Name, Location)] -> [(Name, [Location])]
 groupByName ns = nameGroups 
     where
