@@ -1,1 +1,0 @@
-    ~{result} <- lift $ runDB $ select $ from $ \(~{selectFromVariable}~{concatMap getHandlerJoinDef joins}) -> do

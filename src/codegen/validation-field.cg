@@ -1,1 +1,0 @@
-                checkResult "~{entityName e}.~{fieldName f} ~{func}" (~{func} $ ~{entityFieldName e f} v)

@@ -1,5 +1,0 @@
-    e~{show pId} <- case (A.fromJSON $ A.object [
-~{mapFields e fields}            
-            ]) of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type ~{entityName e} from JSON object in the request body : " ++ err)

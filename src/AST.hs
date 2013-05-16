@@ -14,6 +14,9 @@ data Module = Module {
     modResources :: [Resource]
 }
     deriving (Show)
+moduleName :: Module -> String
+moduleName = fromJust . modName
+
 emptyModule = Module {
     modName = Nothing,
     modImports = [],
@@ -117,19 +120,36 @@ data ValExpr = FieldExpr FieldRef
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | TextSearchFilter ParamName [FieldRef]
-                  | SelectFrom EntityName VariableName
+                  | Select SelectQuery 
+                  | IfFilter ParamName [Join] Expr
                   | DeleteFrom EntityName VariableName (Maybe Expr)
                   | Replace EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField])
-                  | Join JoinType EntityName VariableName
-                         (Maybe (FieldRef, BinOp, FieldRef))
-                  | Where Expr
-                  | OrderBy [(FieldRef,SortDir)]
-                  | Limit Int
-                  | Offset Int
-                  | ReturnEntity VariableName
-                  | ReturnFields [(ParamName, FieldRef)]
                   deriving (Show, Eq) 
+
+data SelectQuery = SelectQuery {
+    sqFields       :: [SelectField],
+    sqFrom         :: (EntityName, VariableName),
+    sqJoins        :: [Join],
+    sqWhere        :: Maybe Expr,
+    sqOrder        :: [(FieldRef, SortDir)],
+    sqLimitOffset  :: Maybe (Int, Int)
+} deriving (Show, Eq)    
+
+sqAliases :: SelectQuery -> [(EntityName, VariableName)]
+sqAliases sq = sqFrom sq : [ (joinEntity j, joinAlias j) | j <- sqJoins sq]
+
+data SelectField = SelectAllFields EntityName
+                 | SelectField EntityName FieldName (Maybe VariableName)
+                 deriving (Show, Eq)
+
+data Join = Join {
+    joinType   :: JoinType,
+    joinEntity :: EntityName,
+    joinAlias  :: VariableName,
+    joinExpr   :: Maybe (FieldRef, BinOp, FieldRef)
+} deriving (Show, Eq)
+
 type InputField = (ParamName, InputFieldRef)
 
 data InputFieldRef = InputFieldNormal FieldName
@@ -173,31 +193,21 @@ handlerName r ht = show (resRoute r) ++ " " ++ show ht
 routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)
 
-handlerSelectFrom :: [HandlerParam] -> Maybe (EntityName, VariableName)
-handlerSelectFrom ps = case find isSelectFrom ps of
-    Just (SelectFrom en vn) -> Just (en, vn)
+handlerSelectFrom :: [HandlerParam] -> Maybe SelectQuery
+handlerSelectFrom ps = case find isSelect ps of
+    Just (Select sq) -> Just sq
     Nothing -> Nothing
-    where isSelectFrom (SelectFrom _ _) = True
-          isSelectFrom _ = False
-
+    where isSelect (Select _) = True
+          isSelect _ = False
+{-
 handlerJoins :: [HandlerParam] -> [(JoinType, EntityName, VariableName,
                                    (Maybe (FieldRef, BinOp, FieldRef)))]
 handlerJoins = (map (\(Join jt en vn je) -> (jt,en,vn,je))) . (filter isJoin)
     where isJoin (Join _ _ _ _) = True
           isJoin _ = False
+          -}
 
-handlerEntities :: [HandlerParam] -> [(EntityName, VariableName)]
-handlerEntities = mapMaybe match
-    where match (SelectFrom en vn) = Just (en, vn)
-          match (Join _ en vn _) = Just (en ,vn)
-          match _ = Nothing
-
-handlerFields :: Module -> [HandlerParam] -> [(Entity, VariableName, Field)]
-handlerFields m ps = [ (e,vn,f) | e <- modEntities m,
-                                  (en,vn) <- handlerEntities ps,
-                                  entityName e == en,
-                                  f <- entityFields e ]
-
+{-
 handlerReturn :: [HandlerParam] -> Either VariableName [(ParamName, FieldRef)]
 handlerReturn ps = case filter match ps of
     ((ReturnEntity vn):_) -> Left vn
@@ -205,18 +215,7 @@ handlerReturn ps = case filter match ps of
     where match (ReturnEntity _) = True
           match (ReturnFields _) = True
           match _ = False
-
-handlerVariableEntity :: [HandlerParam] -> VariableName -> Maybe EntityName
-handlerVariableEntity ps vn = case filter match ps of
-    ((SelectFrom en _):_) -> Just en
-    ((Join _ en _ _):_) -> Just en
-    ((DeleteFrom en _ _):_) -> Just en
-    _ -> Nothing
-   where match (SelectFrom _ vn') = vn == vn'
-         match (Join _ _ vn' _) = vn == vn'
-         match (DeleteFrom _ vn' _) = vn == vn' 
-         match _= False
-
+-}
 data PathPiece = PathText String
                | PathId EntityName
 instance Show PathPiece where

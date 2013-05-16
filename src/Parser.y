@@ -64,6 +64,10 @@ import System.Exit
     zonedtime { Tk _ TZonedTime }
     maybe { Tk _ TMaybe }
     get { Tk _ TGet }
+    filter { Tk _ TFilter }
+    if {  Tk _ TIf }
+    then { Tk _ TThen }
+    asterisk { Tk _ TAsterisk }
     put { Tk _ TPut }
     post { Tk _ TPost }
     delete { Tk _ TDelete }
@@ -167,23 +171,49 @@ handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
-             | select from upperId as lowerId { SelectFrom $3 $5 }
+             | select selectFields from upperId as lowerId 
+               joins maybeWhere maybeOrder maybeLimitOffset 
+              { Select (SelectQuery $2 ($4,$6) (reverse $7) $8 $9 $10) }
              | replace upperId identified by inputRef with inputJson { Replace $2 $5 (Just $7) } 
              | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
              | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
              | replace upperId identified by inputRef { Replace $2 $5 Nothing }
              | insert upperId from inputJson { Insert $2 (Just $4) }
              | insert upperId { Insert $2 Nothing }
-             | jointype upperId as lowerId maybeJoinOn { Join $1 $2 $4 $5 }
-             | where expr { Where $2 }
              | defaultfiltersort { DefaultFilterSort }
+             | if filter stringval joins where expr { IfFilter $3 (reverse $4) $6 }
              | textsearchfilter stringval fieldRefList { TextSearchFilter $2 (reverse $3) }
-             | order by sortbylist { OrderBy (reverse $3) }
-             | limit intval { Limit $2 }
-             | offset intval { Offset $2 }
-             | return lowerId { ReturnEntity $2 }
-             | return lbrace outputJsonFields rbrace { ReturnFields (reverse $3) }
-             
+selectFields: selectField moreSelectFields { $1 : (reverse $2) }
+
+moreSelectFields: { [] }
+                | moreSelectFields comma selectField { $3 : $1 }
+
+selectField: lowerId dot asterisk { SelectAllFields $1 }                    
+           | lowerId dot lowerId maybeSelectAlias { SelectField $1 $3 $4 }
+       
+maybeSelectAlias: { Nothing }
+                | as lowerId { Just $2 }
+joins : { [] }
+      | joins jointype upperId as lowerId maybeJoinOn { (Join $2 $3 $5 $6):$1 }
+
+maybeWhere : { Nothing }
+           | where expr { Just $2 }
+
+maybeOrder: { [] }
+          | order by orderByList { (reverse $3) }
+
+maybeLimitOffset: { Nothing }
+                | limit intval maybeOffset { Just ($2,$3) }
+maybeOffset: { 0 }
+           | offset intval { $2 }
+
+orderByList : orderByListitem { [$1] }
+        | orderByList comma orderByListitem { $3 : $1 }
+orderByListitem : fieldRef orderByDir { ($1, $2) }
+
+orderByDir : asc { SortAsc }
+        | desc  { SortDesc }
+ 
 inputJson:  lbrace inputJsonFields rbrace { $2 }
 inputJsonField : lowerId equals inputRef { ($1, $3) }
 
@@ -194,12 +224,7 @@ inputRef: lowerId { InputFieldNormal $1 }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }
- 
-outputJsonField : stringval colon fieldRef { ($1, $3) }
-
-outputJsonFields : outputJsonField { [$1] }
-           | outputJsonFields comma outputJsonField  { $3:$1 }
-             
+            
 binop : equals { Eq }
       | ne { Ne }
       | lt { Lt }
@@ -224,13 +249,7 @@ jointype : inner join { InnerJoin }
          | right outer join { RightOuterJoin }
          | full outer join { FullOuterJoin }
          
-sortbylist : sortbylistitem { [$1] }
-        | sortbylist comma sortbylistitem { $3 : $1 }
-sortbylistitem : fieldRef sortdir { ($1, $2) }
-
-sortdir : asc { SortAsc }
-        | desc  { SortDesc }
-              
+             
 maybeInstances : { [] }
                | instance of instances semicolon { (reverse $3) }
 

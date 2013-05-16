@@ -1,1 +1,0 @@
-    ~{classFieldName c f} = ~{entityFieldName e f}

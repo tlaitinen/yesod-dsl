@@ -40,6 +40,7 @@ tokens :-
     \| { mkT TPipe }
     \/ { mkT TSlash }
     \# { mkT THash }
+    \* { mkT TAsterisk }
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
@@ -81,6 +82,9 @@ tokens :-
     "DateTime" { mkT TDateTime }
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
+    "filter" { mkT TFilter }
+    "if" { mkT TIf }
+    "then" { mkT TThen }
     "text-search-filter" { mkT TTextSearchFilter }
     "order" { mkT TOrder }
     "identified" { mkT TIdentified }
@@ -187,6 +191,10 @@ data TokenType = TSemicolon
            | TBeforeHandler
            | TAfterHandler
            | TDefaultFilterSort
+           | TIf
+           | TThen
+           | TAsterisk
+           | TFilter
            | TTextSearchFilter
            | TWhere
            | TAs

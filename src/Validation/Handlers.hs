@@ -22,20 +22,13 @@ handlerErrors m = (concatMap notAllowedError $
         allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (TextSearchFilter _ _) = True
-        allowed GetHandler (Join _ _ _ _) = True
-        allowed GetHandler (Where _) = True
-        allowed GetHandler (OrderBy _) = True
-        allowed GetHandler (SelectFrom _ _) = True
-        allowed GetHandler (ReturnEntity _) = True
-        allowed GetHandler (ReturnFields _) = True
-        allowed GetHandler (Limit _) = True
-        allowed GetHandler (Offset _) = True
+        allowed GetHandler (Select _) = True
+        allowed GetHandler (IfFilter _ _ _) = True
         allowed _ _ = False
 
         missing ht ps  
             | ht == GetHandler = mapMaybe (requireMatch ps) [
-           (\p -> case p of (SelectFrom _ _) -> True; _ -> False, "select from"),
-           (\p -> case p of (ReturnEntity _) -> True ; (ReturnFields _) -> True ; _ -> False, "return")]
+           (\p -> case p of (Select _) -> True; _ -> False, "select from")]
             | ht == PutHandler || ht == PostHandler = mapMaybe (requireMatch ps) [   
            (\p -> case p of (Insert _ _) -> True ; (Replace _ _ _ ) -> True ; _ -> False, "insert or replace")]
             | otherwise = []

@@ -1,4 +1,0 @@
-    defaultOffsetParam <- lookupGetParam "start"
-    defaultLimitParam <- lookupGetParam "limit"
-    let defaultOffset = maybe Nothing fromPathPiece defaultOffsetParam
-    let defaultLimit = maybe Nothing fromPathPiece defaultLimitParam

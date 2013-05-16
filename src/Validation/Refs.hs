@@ -56,32 +56,36 @@ instance HasRefs (Resource, HandlerType, HandlerParam) where
     getRefs (r,ht,(TextSearchFilter p fs)) = 
         getRefs [(r,ht,resLoc r, "text-search-filter in " ++ handlerInfo r ht, f)
                 | f <- fs ]
-    getRefs (r,ht,(SelectFrom en vn)) = 
-        [(resLoc r, "select-from in " ++ handlerInfo r ht, EntityNS, en)]
+    getRefs (r,ht,(Select sq)) = getRefs (r,ht,sq)
     getRefs (r,ht,(DeleteFrom en vn me)) =
         [(resLoc r, "delete-from in " ++ handlerInfo r ht, EntityNS, en)]
         ++ (case me of 
                 (Just e) -> getRefs (r,ht,resLoc r, "where-expression of delete in " ++ handlerInfo r ht, e)
                 _ -> [])
-    getRefs (r,ht,(Join jt en vn je)) =
-        [(resLoc r, show jt ++ " in " ++ handlerInfo r ht, EntityNS, en)]
-        ++ getRefs (r,ht,resLoc r, "join condition in " ++ show jt ++ " in " 
-                            ++ handlerInfo r ht, je)
-    getRefs (r,ht,(Where e)) = 
-        getRefs (r,ht,resLoc r, "where-expression in " ++ handlerInfo r ht, e)
-    getRefs (r,ht,(OrderBy fs)) = 
-        getRefs [(r,ht,resLoc r, "order-by in " ++ handlerInfo r ht,
-                  f) | (f,_) <- fs ]
-    getRefs (r,ht,(ReturnEntity vn)) = 
-        [(resLoc r, "return-expression in " ++ handlerInfo r ht, 
-          GlobalNS, 
-          handlerName r ht ++ " " ++ vn)]
-    getRefs (r,ht,(ReturnFields fs)) =
-        getRefs [(r,ht,
-                  (resLoc r), "return-expression in " ++ handlerInfo r ht, f)
-                | (_, f) <- fs ]
     getRefs _ = []            
-                  
+
+instance HasRefs (Resource, HandlerType, SelectQuery) where
+    getRefs (r,ht,sq) = let
+        l= resLoc r
+        i = "select query in " ++ handlerName r ht
+        (en,vn) = sqFrom sq
+        in [(l,i,EntityNS,en), 
+            (l,i,GlobalNS, handlerName r ht ++ " " ++ vn)]
+           ++ (case sqWhere sq of
+                  Just e -> getRefs (r,ht,l,i,e)
+                  Nothing -> [])
+           ++ getRefs [ (r,ht,l,i,j) | j <- sqJoins sq ]
+           ++ getRefs [ (r,ht,l,i,fr) | (fr,_) <- sqOrder sq ]
+           
+instance HasRefs (Resource, HandlerType, Location, Info, Join) where
+    getRefs (r,ht,l,i,j) = [(l,i,EntityNS, joinEntity j)]
+                         ++ [(l,i,GlobalNS, handlerName r ht ++ " " 
+                                    ++ joinAlias j)]
+                         ++ (case joinExpr j of
+                                Just (fr1, _, fr2) ->
+                                    getRefs [(r,ht,l,i,fr1), (r,ht,l,i,fr2)]
+                                Nothing -> [])
+
 instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
     getRefs (r,ht,l,i,(FieldRefId vn)) = 
         [(l,i,GlobalNS, handlerName r ht ++ " " ++ vn)]
@@ -108,16 +112,15 @@ instance HasRefs (Resource, HandlerType, Location, Info, InputFieldRef) where
 lookupEntityByVariable :: Resource -> HandlerType -> VariableName 
                        -> Maybe EntityName
 lookupEntityByVariable r ht vn = 
-    case find (\(ht',vn',_) -> ht == ht' && vn == vn') aliases of
-        (Just (_, _, en)) -> Just en
+    case find (\(_, vn') -> vn == vn') aliases of
+        (Just (en,_)) -> Just en
         Nothing -> Nothing 
     where   
-        aliases = mapMaybe getAlias [ (ht,p) 
-                                    | (Handler ht ps) <- resHandlers r,
-                                    p <- ps ] 
-        getAlias (ht,(SelectFrom en vn)) = Just (ht,vn,en)
-        getAlias (ht,(Join _ en vn _)) = Just (ht,vn,en)
-        getAlias _ = Nothing    
+        aliases = concatMap getAlias [ p 
+                                    | (Handler ht' ps) <- resHandlers r,
+                                    p <- ps, ht == ht' ] 
+        getAlias (Select sq) = sqAliases sq
+        getAlias _ = []
 
 instance HasRefs (Resource, HandlerType, Location, Info, (Maybe (FieldRef, BinOp, FieldRef))) where
     getRefs (r,ht,l, i, (Just (f1, _, f2))) = getRefs (r,ht,l,i,f1) ++ getRefs (r,ht,l,i,f2)

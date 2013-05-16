@@ -1,1 +1,0 @@
-((~{hsFieldRef ps f}) `like` (val (T.concat ["%",qs,"%"]))) 

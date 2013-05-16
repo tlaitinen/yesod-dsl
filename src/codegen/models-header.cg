@@ -1,1 +1,0 @@
-share [mkPersist sqlOnlySettings, mkMigrate "migrate~{moduleName m}" ] [persistLowerCase|
