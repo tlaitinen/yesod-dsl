@@ -106,6 +106,7 @@ import System.Exit
     pathParam { Tk _ (TPathParam $$) }
     authId { Tk _ TAuthId }
     entityId { Tk _ (TEntityId $$) }
+    localParam { Tk _ TLocalParam }
 %%
 
 dbModule : maybeModuleName 
@@ -165,6 +166,7 @@ fieldRef : lowerId { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
           | pathParam { FieldRefPathParam $1 }
           | authId { FieldRefAuthId }
+          | localParam { FieldRefLocalParam }
     
 handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 
@@ -181,7 +183,7 @@ handlerParam : public { Public }
              | insert upperId from inputJson { Insert $2 (Just $4) }
              | insert upperId { Insert $2 Nothing }
              | defaultfiltersort { DefaultFilterSort }
-             | if filter stringval joins where expr { IfFilter ($3 ,(reverse $4) ,$6) }
+             | if filter stringval then joins where expr { IfFilter ($3 ,(reverse $5) ,$7) }
              | textsearchfilter stringval fieldRefList { TextSearchFilter ($2, (reverse $3)) }
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 

@@ -110,6 +110,7 @@ $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
 @fieldName { mkTvar (TLowerId . stripQuotes) }
 @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
 @authId { mkT TAuthId }
+ "$$"  { mkT TLocalParam }
 
 {
 
@@ -204,6 +205,7 @@ data TokenType = TSemicolon
            | TPathParam Int
            | TAuthId 
            | TEntityId String
+           | TLocalParam
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

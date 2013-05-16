@@ -201,23 +201,6 @@ handlerSelectFrom ps = case find isSelect ps of
     Nothing -> Nothing
     where isSelect (Select _) = True
           isSelect _ = False
-{-
-handlerJoins :: [HandlerParam] -> [(JoinType, EntityName, VariableName,
-                                   (Maybe (FieldRef, BinOp, FieldRef)))]
-handlerJoins = (map (\(Join jt en vn je) -> (jt,en,vn,je))) . (filter isJoin)
-    where isJoin (Join _ _ _ _) = True
-          isJoin _ = False
-          -}
-
-{-
-handlerReturn :: [HandlerParam] -> Either VariableName [(ParamName, FieldRef)]
-handlerReturn ps = case filter match ps of
-    ((ReturnEntity vn):_) -> Left vn
-    ((ReturnFields fs):_) -> Right fs
-    where match (ReturnEntity _) = True
-          match (ReturnFields _) = True
-          match _ = False
--}
 data PathPiece = PathText String
                | PathId EntityName
 instance Show PathPiece where
@@ -227,7 +210,9 @@ instance Show PathPiece where
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
               | FieldRefAuthId
+              | FieldRefLocalParam
               | FieldRefPathParam Int deriving (Show, Eq) 
+
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id

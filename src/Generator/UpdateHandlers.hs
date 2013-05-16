@@ -11,7 +11,7 @@ import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
 import Generator.Esqueleto
 import Generator.Common
-inputFieldRef :: [HandlerParam] -> InputFieldRef -> String
+inputFieldRef :: Context -> InputFieldRef -> String
 -- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
 inputFieldRef ps InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
 inputFieldRef ps (InputFieldPathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
@@ -24,6 +24,7 @@ updateHandlerRunDB m r ps (pId,p) = case p of
     (Replace en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
     (Insert en io) -> T.unpack $(codegenFile "codegen/insert.cg")
     _ -> ""
+    where ctx = []
 
 mapJsonInputField :: [InputField] -> (Entity,Field) -> String
 mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
@@ -38,8 +39,8 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
 
 updateHandlerDecode :: Module -> Resource -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerDecode m r ps (pId,p) = case p of
-    (Replace en fr io) -> readInputObject (fromJust $ lookupEntity m en) io
-    (Insert en io) -> readInputObject (fromJust $ lookupEntity m en) io
+    (Replace en fr io) -> let ctx = [] in readInputObject (fromJust $ lookupEntity m en) io
+    (Insert en io) -> let ctx = [] in readInputObject (fromJust $ lookupEntity m en) io
     where readInputObject e (Just fields) = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
 
           readInputObject e Nothing = T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
@@ -55,8 +56,14 @@ updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
 
 deleteHandlerRunDB :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
 deleteHandlerRunDB m r ps p = T.unpack $ case p of
-    DeleteFrom en vn Nothing -> let maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") in $(codegenFile "codegen/delete.cg")
-    DeleteFrom en vn (Just e) -> let maybeExpr = hsExpr ps e in $(codegenFile "codegen/delete.cg")
+    DeleteFrom en vn Nothing -> let 
+            maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
+            ctx = [(en,vn)]
+        in $(codegenFile "codegen/delete.cg")
+    DeleteFrom en vn (Just e) -> 
+        let maybeExpr = hsExpr ctx e 
+            ctx = [(en,vn)]
+        in $(codegenFile "codegen/delete.cg")
     _ -> ""
 
 deleteHandler :: Module -> Resource -> [HandlerParam] -> String
