@@ -1,0 +1,3 @@
+        case textSearchFilter_~{pn} of 
+            Just qs -> where_ (~{intercalate ") ||. (" fields})
+            Nothing -> return ()  

@@ -1,0 +1,1 @@
+    textSearchFilter_~{pn} <- lookupGetParam "~{pn}"

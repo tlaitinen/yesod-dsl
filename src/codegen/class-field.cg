@@ -1,0 +1,1 @@
+    ~{classFieldName c f} :: a -> ~{hsFieldType f}

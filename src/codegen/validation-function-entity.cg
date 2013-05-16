@@ -1,0 +1,6 @@
+    ~{func} :: (P.PersistMonadBackend (b (HandlerT master IO)) ~ P.PersistEntityBackend ~{entityName e}, 
+                b ~ YesodPersistBackend master,
+                P.PersistQuery (b (HandlerT master IO)),
+                P.PersistUnique (b (HandlerT master IO)),
+                YesodPersist master)
+            => Entity ~{entityName e} -> HandlerT master IO Bool

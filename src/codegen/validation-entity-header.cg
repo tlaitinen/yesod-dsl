@@ -1,0 +1,3 @@
+instance Validatable ~{entityName e} where
+    validate e@(Entity _ v) = do
+        results <- sequence [

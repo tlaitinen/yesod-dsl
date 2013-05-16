@@ -1,0 +1,134 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+module Handler.~{moduleName m}.Internal where
+import Prelude
+import Database.Esqueleto
+import qualified Database.Persist as P
+import Database.Persist.TH
+import Yesod.Auth (requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
+import Yesod.Core
+import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
+import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
+import Data.Aeson.TH
+import Data.Int
+import Data.Word
+import Data.Time
+import Data.Text.Encoding (encodeUtf8)
+import Data.Typeable (Typeable)
+import qualified Data.Attoparsec as AP
+import qualified Data.Aeson as A
+import qualified Data.ByteString.Lazy as LBS
+import Data.Maybe
+import qualified Data.Text.Read
+import qualified Data.Text as T
+import Data.Text (Text)
+import Control.Monad (mzero)
+import Control.Monad.Trans.Resource (runResourceT)
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy as L
+import qualified Network.HTTP.Conduit as C
+import qualified Network.Wai as W
+import Data.Conduit.Lazy (lazyConsume)
+import Network.HTTP.Types (status200, status400)
+import Blaze.ByteString.Builder.ByteString (fromByteString)
+import Control.Applicative ((<$>), (<*>))  
+import qualified Data.HashMap.Lazy as HML
+
+data FilterJsonMsg = FilterJsonMsg {
+    filterJsonMsg_type :: Text,
+    filterJsonMsg_value :: Text,
+    filterJsonMsg_field :: Text,
+    filterJsonMsg_comparison :: Text
+} 
+instance FromJSON FilterJsonMsg where
+    parseJSON (A.Object v) = FilterJsonMsg <$>
+        v .: "type" <*>
+        v .: "value" <*>
+        v .: "field" <*>
+        v .:? "comparison" .!= "eq"
+    parseJSON _ = mzero
+
+data SortJsonMsg = SortJsonMsg {
+    sortJsonMsg_property :: Text,
+    sortJsonMsg_direction :: Text
+}
+
+$(deriveJSON (drop 12) ''SortJsonMsg)
+
+-- defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
+defaultFilterOp "eq" = (==.)
+defaultFilterOp "neq" = (!=.)
+defaultFilterOp "lt" = (<.)
+defaultFilterOp "gt" = (>.)
+defaultFilterOp "le" = (<=.)
+defaultFilterOp "ge" = (>=.)
+defaultFilterOp _ = (==.)
+safeRead :: forall a. Read a => Text -> Maybe a
+safeRead s = case (reads $ T.unpack s) of
+   [(v,_)] -> Just v
+   _ -> Nothing
+
+instance PathPiece Int32 where
+    fromPathPiece s = 
+        case Data.Text.Read.decimal s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+    toPathPiece = T.pack . show
+
+instance PathPiece Word32 where
+    fromPathPiece s =
+        case Data.Text.Read.decimal s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+
+    toPathPiece = T.pack . show
+
+instance PathPiece Word64 where
+    fromPathPiece s = 
+        case Data.Text.Read.decimal s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+
+    toPathPiece = T.pack . show
+
+instance PathPiece Double where
+    fromPathPiece s = 
+        case Data.Text.Read.double s of
+            Right (i, _) -> Just i
+            Left _ -> Nothing
+    toPathPiece = T.pack . show
+
+instance PathPiece Bool where
+    fromPathPiece "true" = Just True
+    fromPathPiece "false" = Just False
+    fromPathPiece "True" = Just True
+    fromPathPiece "False" = Just False
+    fromPathPiece  _ = Nothing
+    toPathPiece = T.pack . show
+
+instance PathPiece TimeOfDay where
+    fromPathPiece = safeRead
+    toPathPiece = T.pack . show
+
+instance PathPiece UTCTime where
+    fromPathPiece = safeRead
+    toPathPiece = T.pack . show
+
+instance PathPiece ZonedTime where
+    fromPathPiece = safeRead
+    toPathPiece = T.pack . show
+
+                 
+   
+

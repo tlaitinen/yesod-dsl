@@ -1,0 +1,25 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE QuasiQuotes, TypeFamilies, TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+module Handler.~{moduleName m} 
+    ( module Handler.~{moduleName m}.Internal ) where
+import Handler.~{moduleName m}.Internal
+import Yesod.Core
+import Yesod.Auth
+import Yesod.Persist
+import Database.Esqueleto
+import Prelude
+type ~{moduleName m}Route = Route ~{moduleName m}
+ 
+instance (YesodAuthPersist master,
+          ~{moduleName m}Validation master,
+          YesodPersistBackend master ~ SqlPersistT) => YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
+    yesodSubDispatch = $(mkYesodSubDispatch resources~{moduleName m})

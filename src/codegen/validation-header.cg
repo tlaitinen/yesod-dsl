@@ -1,0 +1,15 @@
+checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m (Maybe Text)
+checkResult msg f = do
+   result <- f
+   return $ if result then Nothing else (Just msg)
+
+class Validatable a where
+    validate :: forall master b. (P.PersistMonadBackend (b (HandlerT master IO)) ~ P.PersistEntityBackend a,
+                 b ~ YesodPersistBackend master,
+                 P.PersistQuery (b (HandlerT master IO)),
+                 P.PersistUnique (b (HandlerT master IO)),
+                 YesodPersist master,
+                 ~{moduleName m}Validation master) 
+             => Entity a -> HandlerT master IO [Text]
+
+class Yesod master => ~{moduleName m}Validation master where

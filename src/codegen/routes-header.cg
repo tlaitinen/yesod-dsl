@@ -1,0 +1,7 @@
+
+data ~{moduleName m} = ~{moduleName m}
+
+get~{moduleName m} :: a -> ~{moduleName m}
+get~{moduleName m} = const ~{moduleName m}
+
+mkYesodSubData "~{moduleName m}" [parseRoutes|

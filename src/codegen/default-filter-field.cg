@@ -1,0 +1,6 @@
+                "~{fieldName f}" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (~{vn} ^. ~{entityFieldTypeName e f}) (val ~{maybeJust (fieldOptional f) "v"}) 
+                    _        -> return ()
+                "~{vn}.~{fieldName f}" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (~{vn} ^. ~{entityFieldTypeName e f}) (val ~{maybeJust (fieldOptional f) "v"})
+                    _        -> return ()

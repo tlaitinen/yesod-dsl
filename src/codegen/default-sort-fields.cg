@@ -1,0 +1,6 @@
+        case defaultSortJson of 
+            Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
+~{fields}
+                _ -> return ()
+                ) xs
+            Nothing -> return ()  
