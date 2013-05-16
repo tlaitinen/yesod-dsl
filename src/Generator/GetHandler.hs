@@ -89,11 +89,14 @@ baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/
 
 textSearchFilter :: Module -> Context -> TextSearchParams -> String
 textSearchFilter m ctx (pn, fieldRefs) = T.unpack $(codegenFile "codegen/text-search-filter.cg")
-    where fields = map (hsFieldRef ctx) fieldRefs
+    where fields = map (textSearchFilterField ctx pn)
+                       fieldRefs
 selectOrderingLimitOffset :: Module -> Bool -> SelectQuery -> String
 selectOrderingLimitOffset m defaultFilterSort sq = 
     (T.unpack $(codegenFile "codegen/offset-limit.cg"))
-    ++ (T.unpack $(codegenFile "codegen/default-offset-limit.cg"))
+    ++ (if defaultFilterSort
+            then T.unpack $(codegenFile "codegen/default-offset-limit.cg")
+            else "")
     where (limit,offset) = sqLimitOffset sq
     
 selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
@@ -120,7 +123,7 @@ getHandlerSelect m sq defaultFilterSort ifFilters textSearches =
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
         else "")
    ++ (concatMap (textSearchFilter m ctx) textSearches)  
-   ++ (T.unpack $(codegenFile "codegen/base-select-query-return.cg"))
+   ++ returnFields
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
     where (_,selectVar) = sqFrom sq

@@ -1,4 +1,3 @@
     results <- lift $ runDB $ do
         baseQuery
 ~{orderingLimitOffset}
-~{returnFields}
