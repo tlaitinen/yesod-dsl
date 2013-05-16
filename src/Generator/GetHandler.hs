@@ -63,10 +63,9 @@ mapJoinExpr m ctx (Join _ en vn (Just (f1, op, f2))) = T.unpack $(codegenFile "c
           f2maybe = isMaybeFieldRef m ctx f2
 mapJoinExpr m _ _ = ""
 
-indent :: [String] -> [String]
-indent = map ("   "++)
-mapJoinExprIndent :: Module -> Context -> Join -> String
-mapJoinExprIndent m ctx = unlines . indent . lines . (mapJoinExpr m ctx)
+indent :: Int -> String -> String
+indent x = unlines . (map ((replicate x ' ')++)) . lines
+
 
 
 textSearchFilterField :: Context -> ParamName -> FieldRef -> String
@@ -84,7 +83,9 @@ baseDefaultFilterSort :: Module -> Context -> String
 baseDefaultFilterSort = defaultFilterFields
 
 baseIfFilter :: Module -> Context -> VariableName -> IfFilterParams -> String
-baseIfFilter m ctx selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
+baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
+    where ctx = ctx' 
+              ++ [(joinEntity j, joinAlias j) | j <- joins]
 
 getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> [TextSearchParams] -> String
 getHandlerSelect m sq defaultFilterSort ifFilters textSearches = 

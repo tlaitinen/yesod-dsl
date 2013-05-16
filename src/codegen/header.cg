@@ -33,6 +33,7 @@ import Data.Maybe
 import qualified Data.Text.Read
 import qualified Data.Text as T
 import Data.Text (Text)
+import qualified Data.List as DL
 import Control.Monad (mzero)
 import Control.Monad.Trans.Resource (runResourceT)
 import qualified Data.ByteString as B

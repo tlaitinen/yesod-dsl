@@ -2,3 +2,5 @@
     let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
     defaultSortParam <- lookupGetParam "sort"
     let defaultSortJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultSortParam) :: Maybe [SortJsonMsg]
+    let getDefaultFilter p = case defaultFilterJson of Just xs -> DL.find (\fjm -> filterJsonMsg_field fjm == p) xs ; Nothing -> Nothing
+            
