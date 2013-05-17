@@ -123,18 +123,28 @@ getHandlerSelect m sq defaultFilterSort ifFilters textSearches =
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
         else "")
    ++ (concatMap (textSearchFilter m ctx) textSearches)  
-   ++ returnFields
+   ++ (selectReturnFields m ctx sq)
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
     where (_,selectVar) = sqFrom sq
           ctx = sqAliases sq
           orderingLimitOffset = selectOrderingLimitOffset m defaultFilterSort sq
-          returnFields = selectReturnFields m ctx sq
     
+
+
 getHandlerReturn :: Module -> SelectQuery -> String
-getHandlerReturn m sq = "    return A.Null\n"
-
-
+getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
+    where 
+          ctx = sqAliases sq
+          fieldNames = zip (concatMap expand (sqFields sq)) ([1..]:: [Int])
+          expand (SelectAllFields vn) = map fieldName $ entityFields e
+                where en = fromJust $ ctxLookupEntity ctx vn
+                      e = fromJust $ lookupEntity m en    
+          expand (SelectField _ fn an') = [ maybe fn id an' ]
+          resultFields = map (\(_,i) -> "f"++ show i)  fieldNames
+          mappedResultFields = concatMap mapResultField fieldNames
+          mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
+            
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 
     (concatMap (getHandlerParam m r ctx) ps)
