@@ -1,3 +1,9 @@
-    let baseQuery = from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
+    let baseQuery limited = from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
 ~{concatMap (mapJoinExpr m ctx) (sqJoins sq)}        let ~{selectVar}Id' = ~{selectVar} ^. ~{selectEntity}Id
 ~{maybeWhere}
+        _ <- if limited
+            then do
+                offset ~{show offset}
+                limit ~{show limit}
+~{indent 16 $ maybeDefaultLimitOffset}                 
+            else return ()

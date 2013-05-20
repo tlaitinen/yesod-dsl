@@ -63,6 +63,15 @@ mapJoinExpr m ctx (Join _ en vn (Just (f1, op, f2))) = T.unpack $(codegenFile "c
           f2maybe = isMaybeFieldRef m ctx f2
 mapJoinExpr m _ _ = ""
 
+implicitJoinExpr :: Module -> Context -> Join -> String
+implicitJoinExpr m ctx (Join _ en vn (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/implicit-join-expr.cg")
+    where f1just = f1maybe == False && f2maybe == True
+          f2just = f2maybe == False && f1maybe == True
+          f1maybe = isMaybeFieldRef m ctx f1
+          f2maybe = isMaybeFieldRef m ctx f2
+implicitJoinExpr m _ _ = ""
+
+
 indent :: Int -> String -> String
 indent x = unlines . (map ((replicate x ' ')++)) . lines
 
@@ -72,13 +81,6 @@ textSearchFilterField :: Context -> ParamName -> FieldRef -> String
 textSearchFilterField ctx pn f = rstrip $ T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
 
     
-baseSelectQuery :: Module -> Context -> SelectQuery -> String
-baseSelectQuery m ctx sq = T.unpack $(codegenFile "codegen/base-select-query.cg")
-    where (selectEntity, selectVar) = sqFrom sq 
-          maybeWhere = case sqWhere sq of
-             Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
-             Nothing -> ""
-
 baseDefaultFilterSort :: Module -> Context -> String
 baseDefaultFilterSort = defaultFilterFields
 
@@ -117,7 +119,7 @@ selectReturnFields m ctx sq = T.unpack $(codegenFile "codegen/select-return-fiel
     
 getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> [TextSearchParams] -> String
 getHandlerSelect m sq defaultFilterSort ifFilters textSearches = 
-    baseSelectQuery m ctx sq
+    (T.unpack $(codegenFile "codegen/base-select-query.cg"))
    ++ (if defaultFilterSort 
         then baseDefaultFilterSort m ctx  
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
@@ -126,10 +128,20 @@ getHandlerSelect m sq defaultFilterSort ifFilters textSearches =
    ++ (selectReturnFields m ctx sq)
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
-    where (_,selectVar) = sqFrom sq
+    where 
+          (limit, offset) = sqLimitOffset sq
           ctx = sqAliases sq
           orderingLimitOffset = selectOrderingLimitOffset m defaultFilterSort sq
-    
+          (selectEntity, selectVar) = sqFrom sq 
+          maybeWhere = case sqWhere sq of
+             Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
+             Nothing -> ""
+          maybeDefaultLimitOffset = 
+               if defaultFilterSort 
+                    then T.unpack $(codegenFile "codegen/default-offset-limit.cg")
+                    else ""
+
+
 
 
 getHandlerReturn :: Module -> SelectQuery -> String
@@ -141,7 +153,7 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
                 where en = fromJust $ ctxLookupEntity ctx vn
                       e = fromJust $ lookupEntity m en    
           expand (SelectField _ fn an') = [ maybe fn id an' ]
-          resultFields = map (\(_,i) -> "f"++ show i)  fieldNames
+          resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
           mappedResultFields = concatMap mapResultField fieldNames
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
             

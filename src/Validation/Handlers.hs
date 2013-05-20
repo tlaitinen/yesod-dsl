@@ -23,8 +23,10 @@ handlerErrors m = (concatMap notAllowedError $
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (TextSearchFilter _ ) = True
         allowed GetHandler (Select _) = True
-        allowed GetHandler (IfFilter (_, _, _)) = True
+        allowed GetHandler (IfFilter (_, joins, _)) = onlyInnerJoins joins
         allowed _ _ = False
+
+        onlyInnerJoins js = all (\j -> joinType j == InnerJoin) js
 
         missing ht ps  
             | ht == GetHandler = mapMaybe (requireMatch ps) [

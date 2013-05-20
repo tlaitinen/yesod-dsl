@@ -1,3 +1,1 @@
-    results <- lift $ runDB $ select $ do
-        baseQuery
-~{orderingLimitOffset}
+    results <- lift $ runDB $ select $ baseQuery True
