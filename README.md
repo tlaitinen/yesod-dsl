@@ -29,12 +29,13 @@ service may well be expressed succinctly using **yesod-dsl**.
 
 ## DSL syntax
 
-The syntax for the input of yesod-dsl is illustrated by the following example: 
-
+The syntax for the input of yesod-dsl is illustrated by the following complete
+example: 
 ```
-module MyModule;
+-- single-line comments with double-hyphens
+module MyModule; 
 
-import "other.ydsl";
+import "other.ydsl"; 
 
 class Named {
     name Text check nonEmpty;
@@ -144,9 +145,64 @@ resource /comments/#CommentId {
 
 ## Defining database entities
 
-As shown above, Persistent entities are defined in 
-'''entity {}''' blocks.
+As shown above, Persistent entities are defined in *entity {}* blocks. The
+entity {}-block has the following structure where brackets denote an optional
+value and "..." mean repeated syntactic element: 
 
+'''
+entity EntityName {
+    instance of Class1, ..., ClassN;
+
+    field1Name [Maybe] Field1Type [default defaultValue] [check functionName];
+    ...
+    fieldNName [Maybe] FieldNType [default defaultValue] [check functionName];
+    
+
+    unique Unique1Name unique1field1 ... unique1fieldN;
+    ...
+    unique UniqueNName uniqueNfield1 ... uniqueNfieldN;
+
+    deriving Class1;
+    ...
+    deriving ClassN;
+
+    check entityCheck1FunctionName;
+    check ...
+    check entityCheckNFunctionName;
+}
+'''
+
+An entity can be an instance of a class defined before or after the entity in the DSL files.
+
+Field names must begin with a lower-case letter. Single-quotes can be used to
+avoid clashes with reserved words of the DSL.
+
+Built-in values for FieldType are Word32, Word64, Int32, Int64, Text, Bool,
+Double, TimeOfDay, Day, UTCTime, ZonedTime. If the FieldType ends in "Id",
+then the prefix must be a valid entity or class name.
+
+A field with an "entity class" type is replaced with a number of fields
+referencing the Id field in each entity implementing the class. For this
+reason, such a field must have Maybe-qualified.
+ 
+The default value is passed to Persistent as such and taken into account in the
+database server. Examples of valid values are: "string", 1.3, and 4.
+
+Defining a field check-function adds a function to the type class
+ValidationFunctions which must be implemented by the Yesod master site using
+the generated subsite. Field check function is executed before modifying
+entities in the databas. If the check function returns False, the transaction
+is aborted and an error message is sent to the callee.
+
+Unique-statement names are prefixed with "Unique" in the resulting Persistent
+models-definition and !force-flag is added to allow using Maybe fields in
+unique definitions (we assume you know what you're doing).
+
+Deriving-statement can be used to tell Persistent to derive instances for
+built-in type classes, such as Typeable (required by Yesod.Auth's User entity).
+
+Entity-wise check-functions are similar to field check-functions but take the
+entity as a parameter instead of a single field.
 
 ## Enums
 
