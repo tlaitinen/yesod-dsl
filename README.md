@@ -1,18 +1,22 @@
 # yesod-dsl
 
 A domain specific language and a code generator desined to create RESTful
-JSON-only web services for managing an SQL database with [Yesod web framework](http://www.yesodweb.com/),
+JSON-only web services for managing an SQL database with [Yesod web
+framework](http://www.yesodweb.com/),
 [Persistent](http://www.yesodweb.com/book/persistent), and
 [Esqueleto](http://hackage.haskell.org/package/esqueleto-1.2).
 
 ## Features
  * generates a Yesod 1.2-compatible subsite
- * splitting database definitions into multiple files
  * generates boilerplate code for entity validation
  * supports following field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
  * generates RESTful JSON web service for managing entities 
- * can generate filtering and sorting code compatible with ExtJS grids
+ * generates filtering and sorting code compatible with ExtJS grids
+ * can
  * generates support code for implementing polymorphic relations and accessing common fields
+
 ## License
  * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
+
+
 
