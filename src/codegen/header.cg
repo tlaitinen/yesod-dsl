@@ -50,13 +50,15 @@ data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_type :: Text,
     filterJsonMsg_value :: Text,
     filterJsonMsg_field :: Text,
+    filterJsonMsg_property :: Text,
     filterJsonMsg_comparison :: Text
 } 
 instance FromJSON FilterJsonMsg where
     parseJSON (A.Object v) = FilterJsonMsg <$>
-        v .: "type" <*>
+        v .:? "type" .!= "string" <*> 
         v .: "value" <*>
-        v .: "field" <*>
+        v .:? "field" .!= "" <*>
+        v .:? "property" .!= "" <*>
         v .:? "comparison" .!= "eq"
     parseJSON _ = mzero
 
@@ -134,5 +136,5 @@ instance PathPiece ZonedTime where
    
 getDefaultFilter defaultFilterJson p = do 
     j <- defaultFilterJson
-    v <- DL.find (\fjm -> filterJsonMsg_field fjm == p) j
+    v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
     fromPathPiece (filterJsonMsg_value v)
