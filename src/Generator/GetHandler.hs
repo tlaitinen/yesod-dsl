@@ -108,7 +108,7 @@ selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) 
            en = fromJust $ ctxLookupEntity ctx vn
            e = fromJust $ lookupEntity m en    
 selectFieldRefs m ctx (SelectField vn fn _) = [FieldRefNormal vn fn]
-                                
+selectFieldRefs m ctx (SelectIdField vn _) = [FieldRefId vn ]
 
 
 selectReturnFields :: Module -> Context -> SelectQuery -> String
@@ -153,6 +153,7 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
                 where en = fromJust $ ctxLookupEntity ctx vn
                       e = fromJust $ lookupEntity m en    
           expand (SelectField _ fn an') = [ maybe fn id an' ]
+          expand (SelectIdField _ an') = [ maybe "id" id an' ]
           resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
           mappedResultFields = concatMap mapResultField fieldNames
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")

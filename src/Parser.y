@@ -105,6 +105,7 @@ import System.Exit
     default  { Tk _ TDefault }
     pathParam { Tk _ (TPathParam $$) }
     authId { Tk _ TAuthId }
+    idField { Tk _ TId }
     entityId { Tk _ (TEntityId $$) }
     localParam { Tk _ TLocalParam }
 %%
@@ -162,7 +163,7 @@ handlerdef : get handlerParamsBlock { Handler GetHandler $2 }
 fieldRefList : fieldRef { [$1] }
               | fieldRefList comma fieldRef { $3 : $1 }
 
-fieldRef : lowerId { FieldRefId $1 }
+fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
           | pathParam { FieldRefPathParam $1 }
           | authId { FieldRefAuthId }
@@ -191,6 +192,7 @@ moreSelectFields: { [] }
                 | moreSelectFields comma selectField { $3 : $1 }
 
 selectField: lowerId dot asterisk { SelectAllFields $1 }                    
+           | lowerId dot idField maybeSelectAlias { SelectIdField $1 $4 }
            | lowerId dot lowerId maybeSelectAlias { SelectField $1 $3 $4 }
        
 maybeSelectAlias: { Nothing }

@@ -104,6 +104,7 @@ tokens :-
 "deriving" { mkT TDeriving }
 $digit+ 		{ mkTvar (TInt . read) }
 $digit+ "." $digit+ { mkTvar (TFloat . read) }
+ "id" { mkT TId }
 $lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
 @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
 $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
@@ -192,6 +193,7 @@ data TokenType = TSemicolon
            | TBeforeHandler
            | TAfterHandler
            | TDefaultFilterSort
+           | TId
            | TIf
            | TThen
            | TAsterisk
