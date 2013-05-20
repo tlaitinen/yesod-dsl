@@ -27,6 +27,9 @@ instance HasRefs (Entity, Field) where
     getRefs (e,(Field _ n (EntityField en))) = 
         [(entityLoc e, "field " ++ n ++ " in entity " ++ entityName e, 
          FieldTypeNS, en)]
+    getRefs (e,(Field _ n (EnumField en))) = 
+        [(entityLoc e, "field " ++ n ++ " in entity " ++ entityName e,
+            EnumNS, en)]    
     getRefs _ = []
 
 instance HasRefs Class where
@@ -36,6 +39,10 @@ instance HasRefs (Class, Field) where
     getRefs (c,(Field _ n (EntityField en))) = 
         [(classLoc c, "field " ++ n ++ " in class " ++ className c, 
          FieldTypeNS, en)]
+    getRefs (c,(Field _ n (EnumField en))) = 
+        [(classLoc c, "field " ++ n ++ " in class " ++ className c, 
+         EnumNS, en)]
+ 
     getRefs _ = []
 
 instance HasRefs Resource where

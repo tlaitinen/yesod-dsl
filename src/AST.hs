@@ -250,8 +250,10 @@ moddefFields moddef = case moddef of
     
 type DefaultValue = String
 type IsListFlag = Bool
+type EnumName = String
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
+                    | EnumField EnumName
                 deriving (Show)
    
 
@@ -265,6 +267,7 @@ baseFieldType :: Field -> String
 baseFieldType f = case fieldContent f of
     (NormalField ft _) -> show ft
     (EntityField en) -> en ++ "Id"
+    (EnumField en) -> en
 
 boolToMaybe :: Bool -> String
 boolToMaybe True = "Maybe "

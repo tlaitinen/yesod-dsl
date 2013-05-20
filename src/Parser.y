@@ -269,7 +269,8 @@ fields : { [] }
               | fields field semicolon { $2 : $1 }
  
 field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField $3 (reverse $4)) } 
-      | lowerId maybeMaybe upperId { Field $2 $1 (EntityField $3) }
+      | lowerId maybeMaybe entityId { Field $2 $1 (EntityField $3) }
+      | lowerId maybeMaybe upperId { Field $2 $1 (EnumField $3) }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }
