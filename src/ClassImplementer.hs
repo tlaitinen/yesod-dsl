@@ -24,7 +24,7 @@ expandClassField mod e f@(Field _ _ (EntityField iName))
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to class not allowed"
     | otherwise = [ Field {
                         fieldOptional = True,
-                        fieldName = fieldName f ++ entityName re,
+                        fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
                         fieldContent = EntityField (entityName re)
 
                     } | re <- modEntities mod, iName `elem` (entityInstances re) ]
