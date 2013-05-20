@@ -134,7 +134,7 @@ data SelectQuery = SelectQuery {
     sqFrom         :: (EntityName, VariableName),
     sqJoins        :: [Join],
     sqWhere        :: Maybe Expr,
-    sqOrder        :: [(FieldRef, SortDir)],
+    sqOrderBy        :: [(FieldRef, SortDir)],
     sqLimitOffset  :: (Int, Int)
 } deriving (Show, Eq)    
 

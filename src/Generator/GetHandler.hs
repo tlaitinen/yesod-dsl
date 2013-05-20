@@ -93,14 +93,7 @@ textSearchFilter :: Module -> Context -> TextSearchParams -> String
 textSearchFilter m ctx (pn, fieldRefs) = T.unpack $(codegenFile "codegen/text-search-filter.cg")
     where fields = map (textSearchFilterField ctx pn)
                        fieldRefs
-selectOrderingLimitOffset :: Module -> Bool -> SelectQuery -> String
-selectOrderingLimitOffset m defaultFilterSort sq = 
-    (T.unpack $(codegenFile "codegen/offset-limit.cg"))
-    ++ (if defaultFilterSort
-            then T.unpack $(codegenFile "codegen/default-offset-limit.cg")
-            else "")
-    where (limit,offset) = sqLimitOffset sq
-    
+   
 selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
 selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
                                                 f <- entityFields e ]
@@ -129,13 +122,16 @@ getHandlerSelect m sq defaultFilterSort ifFilters textSearches =
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
     where 
+          orderByFields = sq
           (limit, offset) = sqLimitOffset sq
           ctx = sqAliases sq
-          orderingLimitOffset = selectOrderingLimitOffset m defaultFilterSort sq
           (selectEntity, selectVar) = sqFrom sq 
           maybeWhere = case sqWhere sq of
              Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
              Nothing -> ""
+          maybeDefaultSortFields = if defaultFilterSort 
+            then    defaultSortFields m ctx
+            else ""
           maybeDefaultLimitOffset = 
                if defaultFilterSort 
                     then T.unpack $(codegenFile "codegen/default-offset-limit.cg")

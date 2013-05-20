@@ -1,4 +1,4 @@
-                "~{fieldName f}" -> case (sortJsonMsg_direction sjm) of 
-                    "ASC"  -> orderBy [ asc (~{vn} ^. ~{entityFieldTypeName e f}) ] 
-                    "DESC" -> orderBy [ desc (~{vn} ^. ~{entityFieldTypeName e f}) ] 
-                    _      -> return ()
+"~{fieldName f}" -> case (sortJsonMsg_direction sjm) of 
+    "ASC"  -> orderBy [ asc (~{vn} ^. ~{entityFieldTypeName e f}) ] 
+    "DESC" -> orderBy [ desc (~{vn} ^. ~{entityFieldTypeName e f}) ] 
+    _      -> return ()

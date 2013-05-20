@@ -75,7 +75,7 @@ instance HasRefs (Resource, HandlerType, SelectQuery) where
                   Just e -> getRefs (r,ht,l,i,e)
                   Nothing -> [])
            ++ getRefs [ (r,ht,l,i,j) | j <- sqJoins sq ]
-           ++ getRefs [ (r,ht,l,i,fr) | (fr,_) <- sqOrder sq ]
+           ++ getRefs [ (r,ht,l,i,fr) | (fr,_) <- sqOrderBy sq ]
            
 instance HasRefs (Resource, HandlerType, Location, Info, Join) where
     getRefs (r,ht,l,i,j) = [(l,i,EntityNS, joinEntity j)]
