@@ -10,7 +10,6 @@ framework](http://www.yesodweb.com/),
  * generates a Yesod 1.2-compatible subsite
  * generates boilerplate code for entity validation
  * supports following field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
- * generates RESTful JSON web service for managing entities 
  * generates filtering and sorting code compatible with ExtJS grids
  * can
  * generates support code for implementing polymorphic relations and accessing common fields
