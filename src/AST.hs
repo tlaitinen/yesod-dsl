@@ -111,22 +111,22 @@ data JoinType = InnerJoin
               | FullOuterJoin
               deriving (Show, Eq)
 
-data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like deriving (Show,Eq)     
+data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike deriving (Show,Eq)     
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr
           | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
-           | ConstExpr FieldValue deriving (Show, Eq)
+           | ConstExpr FieldValue 
+           | ConcatExpr ValExpr ValExpr  
+           deriving (Show, Eq)
 data HandlerParam = Public 
                   | DefaultFilterSort
-                  | TextSearchFilter TextSearchParams
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
                   | DeleteFrom EntityName VariableName (Maybe Expr)
                   | Replace EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField])
                   deriving (Show, Eq) 
-type TextSearchParams = (ParamName,[FieldRef])
 type IfFilterParams = (ParamName,[Join],Expr)
 
 data SelectQuery = SelectQuery {

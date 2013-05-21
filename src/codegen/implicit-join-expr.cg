@@ -1,1 +1,1 @@
-        where_ (~{makeJustField f1just (hsFieldRef ctx f1)} ~{hsBinOp op} ~{makeJustField f2just (hsFieldRef ctx f2)})
+        where_ (~{makeJustField f1just (hsFieldRef ctx (Just op) f1)} ~{hsBinOp op} ~{makeJustField f2just (hsFieldRef ctx (Just op) f2)})

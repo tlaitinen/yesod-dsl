@@ -1,5 +1,5 @@
-        case getDefaultFilter defaultFilterJson "~{pn}" of
-            Just localParam -> from $ \(~{intercalate ", " (map joinAlias joins)}) -> do
+        case getDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" of
+            Just localParam -> ~{maybeFrom} 
 ~{indent 8 (concatMap (implicitJoinExpr m ctx) joins)}
                 where_ $ ~{hsExpr ctx expr}
             Nothing -> return ()

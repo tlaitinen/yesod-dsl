@@ -32,6 +32,7 @@ import System.Exit
     semicolon  { Tk _ TSemicolon }
     hash        { Tk _ THash }
     equals { Tk _ TEquals }
+    concat { Tk _ TConcat }
     ne { Tk _ TNe }
     lt { Tk _ TLt }
     gt { Tk _ TGt }
@@ -40,6 +41,7 @@ import System.Exit
     and { Tk _ TAnd }
     or { Tk _ TOr }
     like  { Tk _ TLike }
+    ilike { Tk _ TIlike }
     lbrace { Tk _ TLBrace }
     rbrace { Tk _ TRBrace }
     lparen { Tk _ TLParen }
@@ -93,7 +95,6 @@ import System.Exit
     insert { Tk _ TInsert }
     replace { Tk _ TReplace }
     defaultfiltersort { Tk _ TDefaultFilterSort }
-    textsearchfilter { Tk _ TTextSearchFilter }
     identified { Tk _ TIdentified }
     with { Tk _ TWith }
     order { Tk _ TOrder }
@@ -185,7 +186,6 @@ handlerParam : public { Public }
              | insert upperId { Insert $2 Nothing }
              | defaultfiltersort { DefaultFilterSort }
              | if filter stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
-             | textsearchfilter stringval fieldRefList { TextSearchFilter ($2, (reverse $3)) }
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 
 moreSelectFields: { [] }
@@ -236,6 +236,8 @@ binop : equals { Eq }
       | le { Le }
       | ge { Ge }
       | like { Like }
+      | ilike { Ilike }
+      
 
 expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
      | lparen expr rparen or lparen expr rparen { OrExpr $2 $6 }
@@ -243,6 +245,7 @@ expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
 
 valexpr : value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }
+        | valexpr concat valexpr { ConcatExpr $1 $3 }
 
 maybeJoinOn : { Nothing }
             | on fieldRef binop fieldRef { Just ($2,$3,$4) }

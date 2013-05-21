@@ -60,9 +60,6 @@ instance HasRefs (Resource, HandlerType, HandlerParam) where
         ++ getRefs (r, ht, resLoc r, "replace-with in " ++ handlerInfo r ht, fr)
         ++ getRefs (r, ht, resLoc r, "replace-from in " ++ handlerInfo r ht, io)
                         
-    getRefs (r,ht,(TextSearchFilter (p,fs))) = 
-        getRefs [(r,ht,resLoc r, "text-search-filter in " ++ handlerInfo r ht, f)
-                | f <- fs ]
     getRefs (r,ht,(Select sq)) = getRefs (r,ht,sq)
     getRefs (r,ht,(DeleteFrom en vn me)) =
         [(resLoc r, "delete-from in " ++ handlerInfo r ht, EntityNS, en)]
@@ -140,6 +137,7 @@ instance HasRefs (Resource, HandlerType, Location, Info, Expr) where
 
 instance HasRefs (Resource, HandlerType, Location, Info, ValExpr) where
     getRefs (r,ht,l, i, (FieldExpr f)) = getRefs (r,ht,l,i,f)
+    getRefs (r,ht,l,i, (ConcatExpr f1 f2)) = getRefs [(r,ht,l,i,f1),(r,ht,l,i,f2)]
     getRefs _ = []
 
 handlerInfo :: Resource-> HandlerType -> String

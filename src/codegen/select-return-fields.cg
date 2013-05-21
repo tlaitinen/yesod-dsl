@@ -1,1 +1,1 @@
-        return (~{intercalate ", " (map (hsFieldRef ctx) fields)})
+        return (~{intercalate ", " (map (hsFieldRef ctx Nothing) fields)})

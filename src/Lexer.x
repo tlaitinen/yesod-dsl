@@ -37,6 +37,8 @@ tokens :-
     \<\= { mkT TLe }
     \>\= { mkT TGe }
     "like" { mkT TLike }
+    "ilike" { mkT TIlike }
+    "||" { mkT TConcat }
     \| { mkT TPipe }
     \/ { mkT TSlash }
     \# { mkT THash }
@@ -85,7 +87,6 @@ tokens :-
     "filter" { mkT TFilter }
     "if" { mkT TIf }
     "then" { mkT TThen }
-    "text-search-filter" { mkT TTextSearchFilter }
     "order" { mkT TOrder }
     "identified" { mkT TIdentified }
     "with" { mkT TWith }
@@ -131,6 +132,7 @@ data TokenType = TSemicolon
            | TLe
            | TGe
            | TLike
+           | TIlike
            | TPipe
            | TComma
            | TDot
@@ -149,6 +151,7 @@ data TokenType = TSemicolon
            | TUpperId String
            | TInt     Int
            | TFloat   Double
+           | TConcat
            | TSlash
            | TOrder
            | TIdentified 
@@ -198,7 +201,6 @@ data TokenType = TSemicolon
            | TThen
            | TAsterisk
            | TFilter
-           | TTextSearchFilter
            | TWhere
            | TAs
            | TReturn

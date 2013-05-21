@@ -14,6 +14,7 @@
 module Handler.~{moduleName m}.Internal where
 import Prelude
 import Database.Esqueleto
+import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)
 import qualified Database.Persist as P
 import Database.Persist.TH
 import Yesod.Auth (requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
@@ -77,6 +78,8 @@ defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
+
+ilike = unsafeSqlBinOp " ILIKE "
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v
@@ -134,7 +137,11 @@ instance PathPiece ZonedTime where
 
                  
    
-getDefaultFilter defaultFilterJson p = do 
-    j <- defaultFilterJson
-    v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
-    fromPathPiece (filterJsonMsg_value v)
+getDefaultFilter maybeGetParam defaultFilterJson p = do
+    f <- maybe maybeGetParam Just getFilter
+    fromPathPiece f
+    where 
+        getFilter = do            
+            j <- defaultFilterJson
+            v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
+            return (filterJsonMsg_value v)

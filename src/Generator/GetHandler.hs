@@ -19,6 +19,7 @@ import Generator.Models
 getHandlerParam :: Module -> Resource -> Context -> HandlerParam -> String
 getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
+getHandlerParam m r ps (IfFilter (pn,_,_)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
 getHandlerParam _ _ _ _ = ""      
 
 
@@ -76,9 +77,6 @@ indent x = unlines . (map ((replicate x ' ')++)) . lines
 
 
 
-textSearchFilterField :: Context -> ParamName -> FieldRef -> String
-textSearchFilterField ctx pn f = rstrip $ T.unpack $(codegenFile "codegen/text-search-filter-field.cg")
-
     
 baseDefaultFilterSort :: Module -> Context -> String
 baseDefaultFilterSort = defaultFilterFields
@@ -87,11 +85,10 @@ baseIfFilter :: Module -> Context -> VariableName -> IfFilterParams -> String
 baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
     where ctx = ctx' 
               ++ [(joinEntity j, joinAlias j) | j <- joins]
+          maybeFrom = if null joins 
+                        then "do"
+                        else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
 
-textSearchFilter :: Module -> Context -> TextSearchParams -> String
-textSearchFilter m ctx (pn, fieldRefs) = T.unpack $(codegenFile "codegen/text-search-filter.cg")
-    where fields = map (textSearchFilterField ctx pn)
-                       fieldRefs
    
 selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
 selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
@@ -109,14 +106,13 @@ selectReturnFields m ctx sq = T.unpack $(codegenFile "codegen/select-return-fiel
         
 
     
-getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> [TextSearchParams] -> String
-getHandlerSelect m sq defaultFilterSort ifFilters textSearches = 
+getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> String
+getHandlerSelect m sq defaultFilterSort ifFilters = 
     (T.unpack $(codegenFile "codegen/base-select-query.cg"))
    ++ (if defaultFilterSort 
         then baseDefaultFilterSort m ctx  
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
         else "")
-   ++ (concatMap (textSearchFilter m ctx) textSearches)  
    ++ (selectReturnFields m ctx sq)
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
@@ -156,7 +152,7 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
 getHandler :: Module -> Resource -> [HandlerParam] -> String
 getHandler m r ps = 
     (concatMap (getHandlerParam m r ctx) ps)
-    ++ (getHandlerSelect m sq defaultFilterSort ifFilters textSearches)
+    ++ (getHandlerSelect m sq defaultFilterSort ifFilters)
     ++ (getHandlerReturn m sq)
     where 
         (Select sq) = (fromJust . listToMaybe . (filter isSelect)) ps
@@ -169,12 +165,4 @@ getHandler m r ps =
         ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
         isIfFilter (IfFilter _) = True
         isIfFilter _ = False
-
-        textSearches = map (\(TextSearchFilter p) -> p) $ filter isTextSearch ps
-        isTextSearch (TextSearchFilter _) = True
-        isTextSearch _ = False
-        
-   --     (selectFromEntity, selectFromVariable) = fromJust $ handlerSelectFrom ps
-       -- joins = handlerJoins ps 
-       -- rjoins = reverse joins
 

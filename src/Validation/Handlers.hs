@@ -21,7 +21,6 @@ handlerErrors m = (concatMap notAllowedError $
         allowed PutHandler (Replace _ _ _) = True
         allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed GetHandler DefaultFilterSort = True
-        allowed GetHandler (TextSearchFilter _ ) = True
         allowed GetHandler (Select _) = True
         allowed GetHandler (IfFilter (_, joins, _)) = onlyInnerJoins joins
         allowed _ _ = False
