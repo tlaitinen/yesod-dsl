@@ -84,7 +84,7 @@ tokens :-
     "UTCTime" { mkT TUTCTime }
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
-    "filter" { mkT TFilter }
+    "param" { mkT TParam }
     "if" { mkT TIf }
     "then" { mkT TThen }
     "order" { mkT TOrder }
@@ -200,7 +200,7 @@ data TokenType = TSemicolon
            | TIf
            | TThen
            | TAsterisk
-           | TFilter
+           | TParam
            | TWhere
            | TAs
            | TReturn

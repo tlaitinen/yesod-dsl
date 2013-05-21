@@ -66,7 +66,7 @@ import System.Exit
     zonedtime { Tk _ TZonedTime }
     maybe { Tk _ TMaybe }
     get { Tk _ TGet }
-    filter { Tk _ TFilter }
+    param { Tk _ TParam }
     if {  Tk _ TIf }
     then { Tk _ TThen }
     asterisk { Tk _ TAsterisk }
@@ -185,7 +185,7 @@ handlerParam : public { Public }
              | insert upperId from inputJson { Insert $2 (Just $4) }
              | insert upperId { Insert $2 Nothing }
              | defaultfiltersort { DefaultFilterSort }
-             | if filter stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
+             | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 
 moreSelectFields: { [] }
