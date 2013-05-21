@@ -141,7 +141,7 @@ entityDef : entity upperId lbrace
             maybeInstances
             fields
             uniques
-            derives
+            maybeDeriving
             checks
             rbrace { Entity (mkLoc $1) $2 (reverse $4) (reverse $5)
                             (reverse $6) (reverse $7) (reverse $8) }
@@ -291,9 +291,10 @@ uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
 uniqueDef :  unique upperId fieldIdList { Unique $2 (reverse $3) }
 
-derives : { [] }
-        | derives deriveDef semicolon { $2 : $1 }
-deriveDef :  deriving upperId  { $2  }
+maybeDeriving : { [] }
+             | deriving derives semicolon { (reverse $2) }
+derives : upperId { [$1] }
+        | derives comma upperId { $3 : $1 }
 
 checks : { [] }
         | checks checkDef semicolon { $2 : $1 }
