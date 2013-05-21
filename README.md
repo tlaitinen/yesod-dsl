@@ -157,7 +157,7 @@ As shown above, Persistent entities are defined in *entity {}* blocks. The
 entity {}-block has the following structure where brackets denote an optional
 value and "..." mean repeated syntactic element: 
 
-'''
+```
 entity EntityName {
     instance of Class1, ..., ClassN;
 
@@ -176,7 +176,7 @@ entity EntityName {
     ...
     check entityCheckNFunctionName;
 }
-'''
+```
 
 An entity can be an instance of a class defined before or after the entity in the DSL files.
 
@@ -214,15 +214,15 @@ entity as a parameter instead of a single field.
 
 Enumerated values are defined with *enum* keyword, for example:
 
-'''
+```
 enum TrafficLight = Red | Green | Blue;
-'''
+```
 
 The definition above is simply translated to:
-'''
+```
 data TrafficLight = Red | Green | Blue deriving (Show, Read, Eq);
 derivePersistField "TrafficLight"
-'''
+```
 ## Entity classes
 
 An entity class is defined in an *class {}*-block and is used for two purposes.
@@ -233,7 +233,7 @@ polymorphic relations among entities.
 The class {}-block has the following structure where brackets denote an
 optional value and "..." mean repeated syntactic element: 
 
-'''
+```
 class ClassName {
     field1Name [Maybe] Field1Type [default defaultValue] [check functionName];
     ...
@@ -243,7 +243,7 @@ class ClassName {
     ...
     unique UniqueNName uniqueNfield1 ... uniqueNfieldN;
 }
-'''
+```
 
 The fields and unique definitions are copied to every entity that is an
 instance of the entity class. The unique definitions are prefixed with the
@@ -258,7 +258,7 @@ The code generator generates two files that constitute a Yesod subsite: Handler/
 
 For the example above, the result is following:
 
-'''haskell
+```haskell
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE QuasiQuotes, TypeFamilies, TemplateHaskell #-}
@@ -284,11 +284,11 @@ instance (YesodAuthPersist master,
           MyModuleValidation master,
           YesodPersistBackend master ~ SqlPersistT) => YesodSubDispatch MyModule (HandlerT master IO) where
     yesodSubDispatch = $(mkYesodSubDispatch resourcesMyModule)
-'''
+```
 
 and
 
-'''haskell
+```haskell
 
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -809,4 +809,4 @@ mkYesodSubData "MyModule" [parseRoutes|
 /comments        CommentsR      GET POST
 /comments/#CommentId        CommentsCommentIdR      GET PUT DELETE
 |]
-'''
+```
