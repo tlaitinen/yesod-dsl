@@ -19,7 +19,6 @@ import Generator.Models
 getHandlerParam :: Module -> Resource -> Context -> HandlerParam -> String
 getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getHandlerParam m r ps (TextSearchFilter (pn, fs)) = T.unpack $(codegenFile "codegen/text-search-filter-param.cg")
 getHandlerParam _ _ _ _ = ""      
 
 

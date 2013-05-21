@@ -1,3 +1,3 @@
-        case textSearchFilter_~{pn} of 
+        case getDefaultFilter defaultFilterJson "~{pn}" of 
             Just qs -> where_ (~{intercalate ") ||. (" fields})
             Nothing -> return ()  

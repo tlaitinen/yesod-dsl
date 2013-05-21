@@ -1,7 +1,7 @@
-        vErrors <- validate e~{show pId}
+        vErrors <- lift $ validate e~{show pId}
         case vErrors of
             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
-                        "message" .= "Entity validation failed",
+                        "message" .= ("Entity validation failed" :: Text),
                         "errors" .= toJSON xs 
                     ])
             _ -> P.insert (e~{show pId} :: ~{en})
