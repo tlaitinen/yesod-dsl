@@ -3,7 +3,6 @@
 ~{maybeWhere}
         _ <- if limitOffsetOrder
             then do 
-                orderBy [ ~{intercalate ", " (map (hsOrderBy ctx) $ sqOrderBy sq)} ]
                 offset ~{show offset}
                 limit ~{show limit}
 ~{indent 16 $ maybeDefaultSortFields}

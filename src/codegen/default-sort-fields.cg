@@ -3,4 +3,4 @@ case defaultSortJson of
 ~{indent 12 $ fields}
             _ -> return ()
         ) xs
-    Nothing -> return ()  
+    Nothing -> orderBy [ ~{intercalate ", " (map (hsOrderBy ctx) $ sqOrderBy sq)} ]

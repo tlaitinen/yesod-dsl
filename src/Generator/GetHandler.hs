@@ -38,9 +38,10 @@ defaultFilterFields m ctx = T.unpack $(codegenFile "codegen/default-filter-field
 
 defaultSortField :: (Entity, VariableName, Field) -> String    
 defaultSortField (e,vn,f) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
-defaultSortFields :: Module -> Context -> String
-defaultSortFields m ps = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
+defaultSortFields :: Module -> Context -> SelectQuery -> String
+defaultSortFields m ps sq  = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where fields = concatMap defaultSortField (ctxFields m ps)
+          ctx = sqAliases sq
 
 
 joinDef :: Join-> String
@@ -125,7 +126,7 @@ getHandlerSelect m sq defaultFilterSort ifFilters =
              Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
              Nothing -> ""
           maybeDefaultSortFields = if defaultFilterSort 
-            then    defaultSortFields m ctx
+            then    defaultSortFields m ctx sq
             else ""
           maybeDefaultLimitOffset = 
                if defaultFilterSort 
