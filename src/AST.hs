@@ -62,7 +62,7 @@ type UniqueFlag = Bool
 type ParamName = String
 type EntityName = String
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
-               | FTBool | FTDouble | FTTime | FTDate | FTDateTime 
+               | FTBool | FTDouble | FTTime | FTDay | FTUTCTime 
                               | FTZonedTime
 instance Show FieldType where
     show FTWord32 = "Word32"
@@ -73,8 +73,8 @@ instance Show FieldType where
     show FTBool = "Bool"
     show FTDouble = "Double"
     show FTTime = "TimeOfDay"
-    show FTDate = "Day"
-    show FTDateTime = "UTCTime"
+    show FTDay = "Day"
+    show FTUTCTime = "UTCTime"
     show FTZonedTime = "ZonedTime"
 
 type FieldName = String 
