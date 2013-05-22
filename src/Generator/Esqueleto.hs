@@ -26,6 +26,11 @@ type Context = [(EntityName, VariableName)]
 ctxLookupEntity :: Context -> VariableName -> Maybe EntityName
 ctxLookupEntity ctx vn = maybe Nothing (\(en,_) -> Just en) $ find (\(_,vn') -> vn == vn') ctx 
 
+ctxLookupVariable :: Context -> EntityName -> Maybe VariableName
+ctxLookupVariable ctx en = maybe Nothing (\(_,vn) -> Just vn) $ find (\(en',_) -> en == en') ctx 
+
+
+
 coerceType :: Maybe BinOp -> String -> String
 coerceType (Just op)  s
     | op `elem` [Like, Ilike] = "(" ++ s ++ " :: Text)"

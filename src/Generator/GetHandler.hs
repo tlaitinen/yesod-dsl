@@ -36,12 +36,24 @@ defaultFilterFields :: Module -> Context -> String
 defaultFilterFields m ctx = T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
     where fields = concatMap defaultFilterField (ctxFields m ctx)
 
-defaultSortField :: (Entity, VariableName, Field) -> String    
-defaultSortField (e,vn,f) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
+defaultSortField :: (Entity, VariableName, Field, ParamName) -> String    
+defaultSortField (e,vn,f,pn) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
 defaultSortFields :: Module -> Context -> SelectQuery -> String
-defaultSortFields m ps sq  = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
-    where fields = concatMap defaultSortField (ctxFields m ps)
-          ctx = sqAliases sq
+defaultSortFields m ctx sq  = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
+    where fields = concatMap defaultSortField sortFields
+          sortFields = concatMap fromSelectField (sqFields sq)
+          fromSelectField (SelectAllFields vn) = 
+                [ (e,vn, f, fieldName f)
+                 | e <- modEntities m, 
+                   entityName e == (fromJust $ ctxLookupEntity ctx vn), 
+                   f <- entityFields e]
+          fromSelectField (SelectField vn fn an) = 
+                [ (e,vn, f, maybe (fieldName f) id an)
+                 | e <- modEntities m, 
+                   entityName e == (fromJust $ ctxLookupEntity ctx vn), 
+                   f <- entityFields e,
+                   fieldName f == fn ]
+          fromSelectField (SelectIdField en an) = [] -- TODO
 
 
 joinDef :: Join-> String
