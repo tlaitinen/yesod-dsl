@@ -369,7 +369,6 @@ instance (YesodAuthPersist master,
 and
 
 ```haskell
-
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -383,6 +382,7 @@ and
 {-# LANGUAGE ConstraintKinds #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Handler.MyModule.Internal where
 import Prelude
 import Database.Esqueleto
@@ -507,8 +507,12 @@ instance PathPiece ZonedTime where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show
 
-                 
-   
+instance PathPiece a => PathPiece [a] where
+    fromPathPiece s = do
+        parts <- safeRead s
+        values <- mapM fromPathPiece parts
+        return values
+
 getDefaultFilter maybeGetParam defaultFilterJson p = do
     f <- maybe maybeGetParam Just getFilter
     fromPathPiece f
@@ -588,6 +592,15 @@ instance FromJSON Day where
             (d, _):_ -> return d
             [] -> mzero 
 
+instance ToJSON TimeOfDay where
+    toJSON = toJSON . show
+
+instance FromJSON TimeOfDay where
+    parseJSON x = do
+        s <- parseJSON x
+        case reads s of
+            (d, _):_ -> return d
+            [] -> mzero
 getPersonsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
@@ -738,7 +751,13 @@ putPersonPersonIdR p1 = do
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Person from JSON object in the request body : " ++ err )
     _ <- lift $ runDB $ do
-        P.repsert p1 (e1 :: Person)
+       vErrors <- lift $ validate e1
+       case vErrors of
+            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                        "message" .= ("Entity validation failed" :: Text),
+                        "errors" .= toJSON xs 
+                    ])
+            _ -> P.repsert p1 (e1 :: Person)
     return $ A.Null
 deletePersonPersonIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
@@ -801,7 +820,13 @@ putBlogpostsBlogPostIdR p1 = do
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
     _ <- lift $ runDB $ do
-        P.repsert p1 (e1 :: BlogPost)
+       vErrors <- lift $ validate e1
+       case vErrors of
+            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                        "message" .= ("Entity validation failed" :: Text),
+                        "errors" .= toJSON xs 
+                    ])
+            _ -> P.repsert p1 (e1 :: BlogPost)
     return $ A.Null
 deleteBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
@@ -864,7 +889,13 @@ putCommentsCommentIdR p1 = do
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Comment from JSON object in the request body : " ++ err )
     _ <- lift $ runDB $ do
-        P.repsert p1 (e1 :: Comment)
+       vErrors <- lift $ validate e1
+       case vErrors of
+            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                        "message" .= ("Entity validation failed" :: Text),
+                        "errors" .= toJSON xs 
+                    ])
+            _ -> P.repsert p1 (e1 :: Comment)
     return $ A.Null
 deleteCommentsCommentIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
@@ -889,4 +920,5 @@ mkYesodSubData "MyModule" [parseRoutes|
 /comments        CommentsR      GET POST
 /comments/#CommentId        CommentsCommentIdR      GET PUT DELETE
 |]
+
 ```
