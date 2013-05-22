@@ -95,6 +95,8 @@ tokens :-
     "or" { mkT TOr }
     "asc" { mkT TAsc }
     "desc" { mkT TDesc }
+    "in" { mkT TIn }
+    "not" { mkT TNot }
 "limit" { mkT TLimit }
 "offset" { mkT TOffset }
 "where" { mkT TWhere }
@@ -144,6 +146,7 @@ data TokenType = TSemicolon
            | TClass
            | TResource
            | THash
+           | TIn
            | TLimit 
            | TOffset
            | TString  String
@@ -197,6 +200,7 @@ data TokenType = TSemicolon
            | TAfterHandler
            | TDefaultFilterSort
            | TId
+           | TNot
            | TIf
            | TThen
            | TAsterisk

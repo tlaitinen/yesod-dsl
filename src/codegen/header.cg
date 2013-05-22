@@ -11,6 +11,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Handler.~{moduleName m}.Internal where
 import Prelude
 import Database.Esqueleto
@@ -135,8 +136,12 @@ instance PathPiece ZonedTime where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show
 
-                 
-   
+instance PathPiece a => PathPiece [a] where
+    fromPathPiece s = do
+        parts <- safeRead s
+        values <- mapM fromPathPiece parts
+        return values
+
 getDefaultFilter maybeGetParam defaultFilterJson p = do
     f <- maybe maybeGetParam Just getFilter
     fromPathPiece f

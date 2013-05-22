@@ -67,6 +67,7 @@ import System.Exit
     maybe { Tk _ TMaybe }
     get { Tk _ TGet }
     param { Tk _ TParam }
+    not { Tk _ TNot }
     if {  Tk _ TIf }
     then { Tk _ TThen }
     asterisk { Tk _ TAsterisk }
@@ -79,6 +80,7 @@ import System.Exit
     of { Tk _ TOf }
     beforehandler { Tk _ TBeforeHandler }
     afterhandler { Tk _ TAfterHandler }
+    in { Tk _ TIn }
     limit { Tk _ TLimit }
     offset { Tk _ TOffset } 
     select { Tk _ TSelect }
@@ -241,7 +243,11 @@ binop : equals { Eq }
 
 expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
      | lparen expr rparen or lparen expr rparen { OrExpr $2 $6 }
+     | not expr { NotExpr $2 }
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
+     | fieldRef listOp fieldRef { ListOpExpr $1 $2 $3 }
+listOp: in { In }
+      | not in { NotIn }
 
 valexpr : value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }

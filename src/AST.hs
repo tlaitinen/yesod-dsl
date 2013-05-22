@@ -112,8 +112,12 @@ data JoinType = InnerJoin
               deriving (Show, Eq)
 
 data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike deriving (Show,Eq)     
+data ListOp = In | NotIn deriving (Show,Eq)
+
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr
+          | NotExpr Expr
+          | ListOpExpr FieldRef ListOp FieldRef 
           | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 

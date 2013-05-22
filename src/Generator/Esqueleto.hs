@@ -20,6 +20,9 @@ hsBinOp op = case op of
     Like -> "`like`"
     Ilike -> "`ilike`"
 
+hsListOp op = case op of
+    In -> "`in_`"
+    NotIn -> "`notIn`"
 
 type Context = [(EntityName, VariableName)]    
 
@@ -47,6 +50,7 @@ hsFieldRef _ _ FieldRefAuthId = "(val authId)"
 hsFieldRef _ op  (FieldRefPathParam p) = "(val " ++ coerceType op ("p" ++ show p) ++ ")"
 hsFieldRef _ op FieldRefLocalParam = "(val " ++ coerceType op "localParam" ++ ")"
 
+
 hsOrderBy :: Context -> (FieldRef, SortDir) -> String
 hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing f ++ ")"
     where dir SortAsc = "asc "
@@ -59,10 +63,25 @@ hsValExpr ctx op ve =  case ve of
     ConstExpr fv ->  "(val " ++ show fv ++  ")" 
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
 
+hsListFieldRef :: Context -> FieldRef -> String
+hsListFieldRef ctx (FieldRefId vn) = vn ++ " ^. " 
+                 ++  (fromJust $ ctxLookupEntity ctx vn) ++ "Id"
+hsListFieldRef ctx  (FieldRefNormal vn fn) = vn ++ " ^. " 
+                 ++ (fromJust $ ctxLookupEntity ctx vn) 
+                 ++ (upperFirst fn)
+hsListFieldRef _ FieldRefAuthId = "(valList authId"
+hsListFieldRef _  (FieldRefPathParam p) = "(valList p" ++ show p ++ ")"
+hsListFieldRef _ FieldRefLocalParam = "(valList localParam)"
+
+
+
+
 hsExpr :: Context-> Expr -> String
 hsExpr ctx expr = case expr of
     AndExpr e1 e2 -> "(" ++ hsExpr ctx e1 ++ ") &&. (" ++ hsExpr ctx e2 ++ ")"
     OrExpr e1 e2 -> "(" ++ hsExpr ctx e1 ++ ") ||. (" ++ hsExpr ctx e2 ++ ")"
+    NotExpr e -> "not_ (" ++ hsExpr ctx e ++ ")"
     BinOpExpr e1 op e2 -> "(" ++ hsValExpr ctx op e1 ++ ") " ++ hsBinOp op ++ " (" ++ hsValExpr ctx op e2 ++ ")"
+    ListOpExpr fr1 op fr2 -> "(" ++ hsListFieldRef ctx fr1 ++ ") " ++ hsListOp op ++ " (" ++ hsListFieldRef ctx fr2 ++ ")"
 
 
