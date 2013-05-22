@@ -253,7 +253,10 @@ route /pathPiece1/.../pathPieceN {
         [public;]
         select [entityAlias.[fieldName | *] [as outputName]]*
                from EntityName as entityAlias
-               [inner join | cross join | left outer join | right outer join | full outer join EntityName as entityAlias [on entityAlias.field binOp entityAlias.field]]*
+               [[inner join | cross join | left outer join 
+                 | right outer join | full outer join] 
+                 EntityName as entityAlias 
+                 [on entityAlias.field binOp entityAlias.field]]*
                [where expr]i
                [order by [entityAlias.fieldName [asc | desc]]*]
                [limit N [offset M]];
