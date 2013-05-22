@@ -1,5 +1,5 @@
     let baseQuery limitOffsetOrder = from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
-~{concatMap (mapJoinExpr m ctx) (sqJoins sq)}        let ~{selectVar}Id' = ~{selectVar} ^. ~{selectEntity}Id
+~{concatMap (mapJoinExpr m ctx) (reverse (sqJoins sq))}        let ~{selectVar}Id' = ~{selectVar} ^. ~{selectEntity}Id
 ~{maybeWhere}
         _ <- if limitOffsetOrder
             then do 
