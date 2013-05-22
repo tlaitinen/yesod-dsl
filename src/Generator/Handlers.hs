@@ -27,9 +27,9 @@ hsHandlerMethod DeleteHandler = "delete"
 
 handler :: Module -> Route -> Handler -> String
 handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")
-    ++ if Public `elem` ps 
+    ++ (if Public `elem` ps 
             then "" 
-            else (T.unpack $(codegenFile "codegen/handler-requireauth.cg"))
+            else (T.unpack $(codegenFile "codegen/handler-requireauth.cg")))
     ++ (case ht of
             GetHandler -> getHandler m r ps
             PutHandler -> updateHandler m r ps

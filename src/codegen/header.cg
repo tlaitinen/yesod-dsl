@@ -13,6 +13,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Handler.~{moduleName m}.Internal where
+import Handler.~{moduleName m}.Enums
 import Prelude
 import Database.Esqueleto
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)

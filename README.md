@@ -213,10 +213,11 @@ Enumerated values are defined with *enum* keyword, for example:
 enum TrafficLight = Red | Green | Blue;
 ```
 
-The definition above is simply translated to:
+The definition above is translated to:
 ```
 data TrafficLight = Red | Green | Blue deriving (Show, Read, Eq);
 derivePersistField "TrafficLight"
+deriveJSON id ''TrafficLight
 ```
 ## Entity classes
 

@@ -24,9 +24,11 @@ import Generator.Handlers
 generate :: Module -> IO ()
 generate m = do
     createDirectoryIfMissing True (joinPath ["Handler", moduleName m])
+    writeFile (joinPath ["Handler", moduleName m, "Enums.hs"]) $
+        T.unpack $(codegenFile "codegen/enums-header.cg")
+            ++ (concatMap enum $ modEnums m)
     writeFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
         T.unpack $(codegenFile "codegen/header.cg")
-            ++ (concatMap enum $ modEnums m)
             ++ models m
             ++ classes m
             ++ validation m

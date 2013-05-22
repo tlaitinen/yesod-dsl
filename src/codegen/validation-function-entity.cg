@@ -3,4 +3,4 @@
                 P.PersistQuery (b (HandlerT master IO)),
                 P.PersistUnique (b (HandlerT master IO)),
                 YesodPersist master)
-            => Entity ~{entityName e} -> HandlerT master IO Bool
+            => ~{entityName e} -> HandlerT master IO Bool
