@@ -184,7 +184,7 @@ then the prefix must be a valid entity or class name.
 
 A field with an "entity class" type is replaced with a number of fields
 referencing the Id field in each entity implementing the class. For this
-reason, such a field must have Maybe-qualified.
+reason, such a field must have Maybe-qualifier.
  
 The default value is passed to Persistent as such and taken into account in the
 database server. Examples of valid values are: "string", 1.3, and 4.
