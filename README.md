@@ -12,6 +12,7 @@ framework](http://www.yesodweb.com/),
  * supported field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
  * filtering and sorting code compatible with ExtJS grids
  * support code for implementing polymorphic relations and accessing common fields
+
 ## License
  * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
 
