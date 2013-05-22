@@ -258,7 +258,7 @@ route /pathPiece1/.../pathPieceN {
                  | right outer join | full outer join] 
                  EntityName as entityAlias 
                  [on entityAlias.field binOp entityAlias.field]]*
-               [where expr]i
+               [where expr]
                [order by [entityAlias.fieldName [asc | desc]]*]
                [limit N [offset M]];
 
@@ -269,8 +269,8 @@ route /pathPiece1/.../pathPieceN {
     }]
     [put | post | delete {
         [public;]
-        [replace EntityName identified by inputValue [with fieldMapping];]*
-        [insert EntityName [from fieldMapping];]*
+        [replace EntityName identified by inputValue [with { [fieldName : fieldName]* }];]*
+        [insert EntityName  [from { [fieldName : fieldName]* }];]*
         [delete from EntityName as entityAlias [where expr];]*
     }]
 }
@@ -299,6 +299,21 @@ where:
  * *$i* refers to the *i*th parameter in the route path
  * *authId* refers to the return value of requireAuthId
  * *$$* refers to the named parameter in the query string
+
+If *public;* is present, then handler can be accessed without authenticating, 
+otherwise, requireAuthId is used to authenticate requests.
+
+A GET handler must have a select-query and returns a JSON object with two
+attributes *totalCount* and *results*. The attribute *totalCount* has the value
+returned by SELECT COUNT without OFFSET- and LIMIT-parameters. The attribute
+*results* is a JSON array where each element is a JSON object corresponding to
+a row returned by the SELECT query. 
+
+If *default-filter-sort;* is present, then additional ORDER BY, OFFSET, LIMIT,
+and WHERE are added based on query string parameters. 
+
+Additional joins and where expressions can be conditionally added based on the
+query string parameters by using *if param "paramName" = $$ then* statements.
 
 ## Using the generated subsite
 
