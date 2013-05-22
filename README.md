@@ -370,6 +370,18 @@ instance (YesodAuthPersist master,
 and
 
 ```haskell
+{-# LANGUAGE TemplateHaskell #-}
+module Handler.MyModule.Enums where
+import Database.Persist.TH
+import Data.Aeson.TH
+data CommentState = SpamComment | AcceptedComment | PendingComment deriving (Show, Read, Eq)
+derivePersistField "CommentState"
+deriveJSON id ''CommentState
+```
+
+and
+
+```haskell
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -385,6 +397,7 @@ and
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Handler.MyModule.Internal where
+import Handler.MyModule.Enums
 import Prelude
 import Database.Esqueleto
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)
@@ -522,8 +535,6 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
             j <- defaultFilterJson
             v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
             return (filterJsonMsg_value v)
-data CommentState = SpamComment | AcceptedComment | PendingComment deriving (Show, Read, Eq)
-derivePersistField "CommentState"
 share [mkPersist sqlOnlySettings, mkMigrate "migrateMyModule" ] [persistLowerCase|
 Person json
     age Int32  
@@ -567,7 +578,7 @@ class Yesod master => MyModuleValidation master where
                 P.PersistQuery (b (HandlerT master IO)),
                 P.PersistUnique (b (HandlerT master IO)),
                 YesodPersist master)
-            => Entity Comment -> HandlerT master IO Bool
+            => Comment -> HandlerT master IO Bool
 instance Validatable Person where
     validate v = do
         results <- sequence [
@@ -581,7 +592,7 @@ instance Validatable BlogPost where
 instance Validatable Comment where
     validate v = do
         results <- sequence [
-                checkResult "Comment maxFivePendingComments" $ maxFivePendingComments e            ]
+                checkResult "Comment maxFivePendingComments" $ maxFivePendingComments v            ]
         return $ catMaybes results
 instance ToJSON Day where
     toJSON = toJSON . show
@@ -774,6 +785,93 @@ getBlogpostsR :: forall master. (MyModuleValidation master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
 getBlogpostsR  = do
+    authId <- lift $ requireAuthId
+    filterParam_blogPostName <- lookupGetParam "blogPostName"
+    defaultFilterParam <- lookupGetParam "filter"
+    let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
+    defaultSortParam <- lookupGetParam "sort"
+    let defaultSortJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultSortParam) :: Maybe [SortJsonMsg]
+    defaultOffsetParam <- lookupGetParam "start"
+    defaultLimitParam <- lookupGetParam "limit"
+    let defaultOffset = (maybe Nothing fromPathPiece defaultOffsetParam) :: Maybe Int64
+    let defaultLimit = (maybe Nothing fromPathPiece defaultLimitParam) :: Maybe Int64
+    let baseQuery limitOffsetOrder = from $ \(bp  `InnerJoin` p) -> do
+        on (p ^. PersonId ==. bp ^. BlogPostAuthorId)
+        let bpId' = bp ^. BlogPostId
+
+        _ <- if limitOffsetOrder
+            then do 
+                offset 0
+                limit 1000
+                case defaultSortJson of 
+                    Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
+                            "authorId" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp ^. BlogPostAuthorId) ] 
+                                "DESC" -> orderBy [ desc (bp ^. BlogPostAuthorId) ] 
+                                _      -> return ()
+                            "name" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp ^. BlogPostName) ] 
+                                "DESC" -> orderBy [ desc (bp ^. BlogPostName) ] 
+                                _      -> return ()
+                            "authorName" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p ^. PersonName) ] 
+                                "DESC" -> orderBy [ desc (p ^. PersonName) ] 
+                                _      -> return ()
+                
+                            _ -> return ()
+                        ) xs
+                    Nothing -> orderBy [ asc (bp ^. BlogPostName) ]
+
+                case defaultOffset of
+                    Just o -> offset o
+                    Nothing -> return ()
+                case defaultLimit of
+                    Just l -> limit (min 10000 l)
+                    Nothing -> return ()
+                 
+            else return ()
+        case defaultFilterJson of 
+            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
+                "age" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. PersonAge) (val v) 
+                    _        -> return ()
+                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. PersonName) (val v) 
+                    _        -> return ()
+                "authorId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostAuthorId) (val v) 
+                    _        -> return ()
+                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostName) (val v) 
+                    _        -> return ()
+
+                _ -> return ()
+                ) xs
+            Nothing -> return ()  
+        case getDefaultFilter filterParam_blogPostName defaultFilterJson "blogPostName" of
+            Just localParam -> do 
+
+                where_ $ (bp ^. BlogPostName) `like` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))
+            Nothing -> return ()
+        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostName, p ^. PersonName)
+    count <- lift $ runDB $ select $ do
+        baseQuery False
+        let countRows' = countRows
+        orderBy []
+        return $ (countRows' :: SqlExpr (Database.Esqueleto.Value Int))
+    results <- lift $ runDB $ select $ baseQuery True
+    return $ A.object [
+        "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
+        "result" .= (toJSON $ map (\row -> case row of
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
+                    "id" .= toJSON f1,
+                    "authorId" .= toJSON f2,
+                    "name" .= toJSON f3,
+                    "authorName" .= toJSON f4                                    
+                    ]
+                _ -> A.object []
+            ) results)
+       ]
 postBlogpostsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
@@ -804,6 +902,36 @@ getBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT MyModule (HandlerT master IO) A.Value
 getBlogpostsBlogPostIdR p1 = do
+    let baseQuery limitOffsetOrder = from $ \(bp  `InnerJoin` p) -> do
+        on (p ^. PersonId ==. bp ^. BlogPostAuthorId)
+        let bpId' = bp ^. BlogPostId
+        where_ ((bp ^. BlogPostId) ==. ((val p1)))
+
+        _ <- if limitOffsetOrder
+            then do 
+                offset 0
+                limit 10000
+
+                 
+            else return ()
+        return (bp ^. BlogPostAuthorId, bp ^. BlogPostName, p ^. PersonName)
+    count <- lift $ runDB $ select $ do
+        baseQuery False
+        let countRows' = countRows
+        orderBy []
+        return $ (countRows' :: SqlExpr (Database.Esqueleto.Value Int))
+    results <- lift $ runDB $ select $ baseQuery True
+    return $ A.object [
+        "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
+        "result" .= (toJSON $ map (\row -> case row of
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
+                    "authorId" .= toJSON f1,
+                    "name" .= toJSON f2,
+                    "authorName" .= toJSON f3                                    
+                    ]
+                _ -> A.object []
+            ) results)
+       ]
 putBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
@@ -843,6 +971,82 @@ getCommentsR :: forall master. (MyModuleValidation master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
 getCommentsR  = do
+    filterParam_authorId <- lookupGetParam "authorId"
+    defaultFilterParam <- lookupGetParam "filter"
+    let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
+    defaultSortParam <- lookupGetParam "sort"
+    let defaultSortJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultSortParam) :: Maybe [SortJsonMsg]
+    defaultOffsetParam <- lookupGetParam "start"
+    defaultLimitParam <- lookupGetParam "limit"
+    let defaultOffset = (maybe Nothing fromPathPiece defaultOffsetParam) :: Maybe Int64
+    let defaultLimit = (maybe Nothing fromPathPiece defaultLimitParam) :: Maybe Int64
+    let baseQuery limitOffsetOrder = from $ \(bp ) -> do
+        let bpId' = bp ^. BlogPostId
+
+        _ <- if limitOffsetOrder
+            then do 
+                offset 0
+                limit 1000
+                case defaultSortJson of 
+                    Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
+                            "authorId" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp ^. BlogPostAuthorId) ] 
+                                "DESC" -> orderBy [ desc (bp ^. BlogPostAuthorId) ] 
+                                _      -> return ()
+                            "name" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp ^. BlogPostName) ] 
+                                "DESC" -> orderBy [ desc (bp ^. BlogPostName) ] 
+                                _      -> return ()
+                
+                            _ -> return ()
+                        ) xs
+                    Nothing -> orderBy [ asc (bp ^. BlogPostName) ]
+
+                case defaultOffset of
+                    Just o -> offset o
+                    Nothing -> return ()
+                case defaultLimit of
+                    Just l -> limit (min 10000 l)
+                    Nothing -> return ()
+                 
+            else return ()
+        case defaultFilterJson of 
+            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
+                "authorId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostAuthorId) (val v) 
+                    _        -> return ()
+                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostName) (val v) 
+                    _        -> return ()
+
+                _ -> return ()
+                ) xs
+            Nothing -> return ()  
+        case getDefaultFilter filterParam_authorId defaultFilterJson "authorId" of
+            Just localParam -> from $ \(p) -> do
+ 
+                where_ (bp ^. BlogPostAuthorId ==. p ^. PersonId)
+
+                where_ $ (p ^. PersonId) ==. ((val localParam))
+            Nothing -> return ()
+        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostName)
+    count <- lift $ runDB $ select $ do
+        baseQuery False
+        let countRows' = countRows
+        orderBy []
+        return $ (countRows' :: SqlExpr (Database.Esqueleto.Value Int))
+    results <- lift $ runDB $ select $ baseQuery True
+    return $ A.object [
+        "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
+        "result" .= (toJSON $ map (\row -> case row of
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
+                    "id" .= toJSON f1,
+                    "authorId" .= toJSON f2,
+                    "name" .= toJSON f3                                    
+                    ]
+                _ -> A.object []
+            ) results)
+       ]
 postCommentsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
@@ -873,6 +1077,37 @@ getCommentsCommentIdR :: forall master. (MyModuleValidation master,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT MyModule (HandlerT master IO) A.Value
 getCommentsCommentIdR p1 = do
+    let baseQuery limitOffsetOrder = from $ \(c ) -> do
+        let cId' = c ^. CommentId
+        where_ ((c ^. CommentId) ==. ((val p1)))
+
+        _ <- if limitOffsetOrder
+            then do 
+                offset 0
+                limit 10000
+
+                 
+            else return ()
+        return (c ^. CommentBlogPostId, c ^. CommentAuthorId, c ^. CommentComment, c ^. CommentTime, c ^. CommentCommentState)
+    count <- lift $ runDB $ select $ do
+        baseQuery False
+        let countRows' = countRows
+        orderBy []
+        return $ (countRows' :: SqlExpr (Database.Esqueleto.Value Int))
+    results <- lift $ runDB $ select $ baseQuery True
+    return $ A.object [
+        "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
+        "result" .= (toJSON $ map (\row -> case row of
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
+                    "blogPostId" .= toJSON f1,
+                    "authorId" .= toJSON f2,
+                    "comment" .= toJSON f3,
+                    "time" .= toJSON f4,
+                    "commentState" .= toJSON f5                                    
+                    ]
+                _ -> A.object []
+            ) results)
+       ]
 putCommentsCommentIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
@@ -921,5 +1156,4 @@ mkYesodSubData "MyModule" [parseRoutes|
 /comments        CommentsR      GET POST
 /comments/#CommentId        CommentsCommentIdR      GET PUT DELETE
 |]
-
 ```
