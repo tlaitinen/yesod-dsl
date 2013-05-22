@@ -22,7 +22,7 @@ import System.Exit
     pipe       { Tk _ TPipe }
     entity   { Tk _ TEntity }
     class      { Tk _ TClass }
-    resource    { Tk _ TResource }
+    route    { Tk _ TRoute }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerId    { Tk _ (TLowerId $$) }
@@ -117,7 +117,7 @@ dbModule : maybeModuleName
            imports defs { Module $1 (reverse $2) ((reverse . getEntities) $3) 
                                     ((reverse . getClasses) $3)
                                     ((reverse . getEnums) $3)
-                                    ((reverse . getResources) $3)}
+                                    ((reverse . getRoutes) $3)}
 
 
 maybeModuleName : { Nothing }
@@ -128,7 +128,7 @@ imports : { [] }
 importStmt : import stringval semicolon { $2 }
 defs : { [] }
        | defs def  { $2 : $1 }
-def : resourceDef     { ResourceDef $1 }
+def : routeDef     { RouteDef $1 }
       | entityDef      { EntityDef $1 } 
       | classDef      { ClassDef $1 }
       | enumDef       { EnumDef $1 }
@@ -148,7 +148,7 @@ entityDef : entity upperId lbrace
             rbrace { Entity (mkLoc $1) $2 (reverse $4) (reverse $5)
                             (reverse $6) (reverse $7) (reverse $8) }
 
-resourceDef : resource pathPieces lbrace handlers rbrace { Resource (mkLoc $1) (reverse $2) (reverse $4) }
+routeDef : route pathPieces lbrace handlers rbrace { Route (mkLoc $1) (reverse $2) (reverse $4) }
 pathPieces : slash pathPiece { [$2] }
            | pathPieces slash pathPiece { $3 : $1 }
 

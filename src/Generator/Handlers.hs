@@ -25,7 +25,7 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
-handler :: Module -> Resource -> Handler -> String
+handler :: Module -> Route -> Handler -> String
 handler m r (Handler ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")
     ++ if Public `elem` ps 
             then "" 

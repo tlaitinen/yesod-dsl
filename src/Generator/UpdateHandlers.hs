@@ -19,7 +19,7 @@ inputFieldRef _ _ = undefined
 
 
 
-updateHandlerRunDB :: Module -> Resource -> [HandlerParam] -> (Int,HandlerParam) -> String
+updateHandlerRunDB :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerRunDB m r ps (pId,p) = case p of
     (Replace en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
     (Insert en io) -> T.unpack $(codegenFile "codegen/insert.cg")
@@ -37,7 +37,7 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
         matchInputField fn = fromJust $ listToMaybe [ inp | (pn,inp) <- ifields,
                                                       pn == fn ]
 
-updateHandlerDecode :: Module -> Resource -> [HandlerParam] -> (Int,HandlerParam) -> String
+updateHandlerDecode :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerDecode m r ps (pId,p) = case p of
     (Replace en fr io) -> let ctx = [] in readInputObject (fromJust $ lookupEntity m en) io
     (Insert en io) -> let ctx = [] in readInputObject (fromJust $ lookupEntity m en) io
@@ -47,14 +47,14 @@ updateHandlerDecode m r ps (pId,p) = case p of
           mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
                                       [ (e,f) | f <- entityFields e ]
 
-updateHandler :: Module -> Resource -> [HandlerParam] -> String
+updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (concatMap (updateHandlerDecode m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))
 
-deleteHandlerRunDB :: Module -> Resource -> [HandlerParam] -> HandlerParam -> String
+deleteHandlerRunDB :: Module -> Route -> [HandlerParam] -> HandlerParam -> String
 deleteHandlerRunDB m r ps p = T.unpack $ case p of
     DeleteFrom en vn Nothing -> let 
             maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
@@ -66,7 +66,7 @@ deleteHandlerRunDB m r ps p = T.unpack $ case p of
         in $(codegenFile "codegen/delete.cg")
     _ -> ""
 
-deleteHandler :: Module -> Resource -> [HandlerParam] -> String
+deleteHandler :: Module -> Route -> [HandlerParam] -> String
 deleteHandler m r ps = 
             (T.unpack $(codegenFile "codegen/rundb.cg" ))
             ++ (concatMap (deleteHandlerRunDB m r ps) ps)

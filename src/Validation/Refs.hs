@@ -18,7 +18,7 @@ instance HasRefs a => HasRefs [a] where
 instance HasRefs Module where
     getRefs m = getRefs (modEntities m)
               ++ getRefs (modClasses m)
-              ++ getRefs (modResources m)
+              ++ getRefs (modRoutes m)
 
 instance HasRefs Entity where
     getRefs e = getRefs [ (e,f) | f <- entityFields e]
@@ -45,13 +45,13 @@ instance HasRefs (Class, Field) where
  
     getRefs _ = []
 
-instance HasRefs Resource where
+instance HasRefs Route where
     getRefs r = getRefs [ (r,h) | h <- resHandlers r ]
 
-instance HasRefs (Resource, Handler) where
+instance HasRefs (Route, Handler) where
     getRefs (r, (Handler ht ps)) = getRefs [ (r,ht,p) | p <- ps ]
 
-instance HasRefs (Resource, HandlerType, HandlerParam) where
+instance HasRefs (Route, HandlerType, HandlerParam) where
     getRefs (r,ht,(Insert en io)) = 
         [(resLoc r, "insert in " ++ handlerInfo r ht,EntityNS, en)]
         ++ getRefs (r,ht,resLoc r, "insert input expression in " ++ handlerInfo r ht, io) 
@@ -68,7 +68,7 @@ instance HasRefs (Resource, HandlerType, HandlerParam) where
                 _ -> [])
     getRefs _ = []            
 
-instance HasRefs (Resource, HandlerType, SelectQuery) where
+instance HasRefs (Route, HandlerType, SelectQuery) where
     getRefs (r,ht,sq) = let
         l= resLoc r
         i = "select query in " ++ handlerName r ht
@@ -81,7 +81,7 @@ instance HasRefs (Resource, HandlerType, SelectQuery) where
            ++ getRefs [ (r,ht,l,i,j) | j <- sqJoins sq ]
            ++ getRefs [ (r,ht,l,i,fr) | (fr,_) <- sqOrderBy sq ]
            
-instance HasRefs (Resource, HandlerType, Location, Info, Join) where
+instance HasRefs (Route, HandlerType, Location, Info, Join) where
     getRefs (r,ht,l,i,j) = [(l,i,EntityNS, joinEntity j)]
                          ++ [(l,i,GlobalNS, handlerName r ht ++ " " 
                                     ++ joinAlias j)]
@@ -90,7 +90,7 @@ instance HasRefs (Resource, HandlerType, Location, Info, Join) where
                                     getRefs [(r,ht,l,i,fr1), (r,ht,l,i,fr2)]
                                 Nothing -> [])
 
-instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
+instance HasRefs (Route, HandlerType, Location, Info, FieldRef) where
     getRefs (r,ht,l,i,(FieldRefId vn)) = 
         [(l,i,GlobalNS, handlerName r ht ++ " " ++ vn)]
     getRefs (r,ht,l,i,(FieldRefNormal vn fn)) =
@@ -102,18 +102,18 @@ instance HasRefs (Resource, HandlerType, Location, Info, FieldRef) where
         [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]
     getRefs _ = []
 
-instance HasRefs (Resource, HandlerType, Location, Info, Maybe [InputField]) where
+instance HasRefs (Route, HandlerType, Location, Info, Maybe [InputField]) where
     getRefs (r,ht,l,i,Just io) = getRefs [ (r,ht,l,i,f) | (pn,f) <- io ]
     getRefs _ = []
 
     
-instance HasRefs (Resource, HandlerType, Location, Info, InputFieldRef) where
+instance HasRefs (Route, HandlerType, Location, Info, InputFieldRef) where
     getRefs (r,ht,l,i,(InputFieldNormal fn)) = []
     getRefs (r,ht,l,i,(InputFieldPathParam pi)) = 
         [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]    
     getRefs _ = []
 
-lookupEntityByVariable :: Resource -> HandlerType -> VariableName 
+lookupEntityByVariable :: Route -> HandlerType -> VariableName 
                        -> Maybe EntityName
 lookupEntityByVariable r ht vn = 
     case find (\(_, vn') -> vn == vn') aliases of
@@ -126,22 +126,22 @@ lookupEntityByVariable r ht vn =
         getAlias (Select sq) = sqAliases sq
         getAlias _ = []
 
-instance HasRefs (Resource, HandlerType, Location, Info, (Maybe (FieldRef, BinOp, FieldRef))) where
+instance HasRefs (Route, HandlerType, Location, Info, (Maybe (FieldRef, BinOp, FieldRef))) where
     getRefs (r,ht,l, i, (Just (f1, _, f2))) = getRefs (r,ht,l,i,f1) ++ getRefs (r,ht,l,i,f2)
     getRefs _ = []
 
-instance HasRefs (Resource, HandlerType, Location, Info, Expr) where
+instance HasRefs (Route, HandlerType, Location, Info, Expr) where
     getRefs (r,ht,l, i, (AndExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
     getRefs (r,ht,l, i, (OrExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
     getRefs (r,ht,l, i, (BinOpExpr e1 op e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
 
-instance HasRefs (Resource, HandlerType, Location, Info, ValExpr) where
+instance HasRefs (Route, HandlerType, Location, Info, ValExpr) where
     getRefs (r,ht,l, i, (FieldExpr f)) = getRefs (r,ht,l,i,f)
     getRefs (r,ht,l,i, (ConcatExpr f1 f2)) = getRefs [(r,ht,l,i,f1),(r,ht,l,i,f2)]
     getRefs _ = []
 
-handlerInfo :: Resource-> HandlerType -> String
-handlerInfo r ht = show ht ++ " of resource " ++ show (resRoute r)
+handlerInfo :: Route-> HandlerType -> String
+handlerInfo r ht = show ht ++ " of route " ++ show (resRoute r)
 
 refs :: Module -> Refs
 refs = getRefs

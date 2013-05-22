@@ -52,7 +52,7 @@ tokens :-
     "module" { mkT TModule }
     "entity" { mkT TEntity }
     "class" { mkT TClass  }
-    "resource" { mkT TResource }
+    "route" { mkT TRoute }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
     "before-handler" { mkT TBeforeHandler }
@@ -144,7 +144,7 @@ data TokenType = TSemicolon
            | TEntity
            | TUnique
            | TClass
-           | TResource
+           | TRoute
            | THash
            | TIn
            | TLimit 

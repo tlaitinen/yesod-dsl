@@ -62,7 +62,7 @@ entity Comment {
     check maxFivePendingComments;
 }
 
-resource /persons {
+route /persons {
     get {
         select p.id, p.* from Person as p
             order by p.name asc
@@ -74,7 +74,7 @@ resource /persons {
     }
 }
 
-resource /person/#PersonId {
+route /person/#PersonId {
     get {
         select p.* from Person as p where p.id = $1;
     }
@@ -86,7 +86,7 @@ resource /person/#PersonId {
     }
 }
 
-resource /blogposts {
+route /blogposts {
     get {
         public;
         select bp.id, bp.*, p.name as authorName 
@@ -104,7 +104,7 @@ resource /blogposts {
     }
 }
 
-resource /blogposts/#BlogPostId {
+route /blogposts/#BlogPostId {
     get {
         public;
         select bp.*, p.name as authorName from BlogPost as bp 
@@ -119,7 +119,7 @@ resource /blogposts/#BlogPostId {
     }
 }
 
-resource /comments {
+route /comments {
     get {
         public;
         select bp.id, bp.* from BlogPost as bp
@@ -137,7 +137,7 @@ resource /comments {
     }
 }
 
-resource /comments/#CommentId {
+route /comments/#CommentId {
     get {
         public;
         select c.* from Comment as c where c.id = $1;
@@ -154,8 +154,8 @@ resource /comments/#CommentId {
 ## Defining database entities
 
 As shown above, Persistent entities are defined in *entity {}* blocks. The
-entity {}-block has the following structure where brackets denote an optional
-value and "..." mean repeated syntactic element: 
+entity {}-block has the following structure where square brackets []  denote an optional
+value and dots ... mean repeated syntactic element: 
 
 ```
 entity EntityName {
@@ -230,18 +230,14 @@ The first is to factor commonly used fields along with check functions and
 unique definitions into one place, and the second is to help in implementing
 polymorphic relations among entities.
 
-The class {}-block has the following structure where brackets denote an
-optional value and "..." mean repeated syntactic element: 
+The class {}-block has the following structure where square brackets [] denote an
+optional value and []* means that the element can be repeated.
 
 ```
 class ClassName {
-    field1Name [Maybe] Field1Type [default defaultValue] [check functionName];
-    ...
-    fieldNName [Maybe] FieldNType [default defaultValue] [check functionName];
+    [field1Name [Maybe] Field1Type [default defaultValue] [check functionName]*;]*
     
-    unique Unique1Name unique1field1 ... unique1fieldN;
-    ...
-    unique UniqueNName uniqueNfield1 ... uniqueNfieldN;
+    [unique UniqueName fieldName [fieldName]*]*;
 }
 ```
 
@@ -252,6 +248,77 @@ entity name.
 Also, each field whose type is of the form Maybe *ClassName*Id is replaced by a
 number of fields, one for each entity that is an instance of the entity class.
 
+## Routes and handlers
+
+Routes are defined in *route {}* blocks. Only parameters of the form #EntityId
+are supported in route paths. Square brackets [] denote an optional value, []* means a possible repeated element, and | indicates alternatives.
+
+```
+route /pathPiece1/.../pathPieceN {
+    [get {
+        [public;]
+        select [entityAlias.[fieldName | *] [as outputName]]*
+               from EntityName as entityAlias
+               [inner join | cross join | left outer join | right outer join | full outer join EntityName as entityAlias [on entityAlias.field binOp entityAlias.field]]*
+               [where expr]i
+               [order by [entityAlias.fieldName [asc | desc]]*]
+               [limit N [offset M]];
+
+        [default-filter-sort;]
+        [if param "paramName" = $$ then
+            [inner join EntityName as entityAlias on entityAlias.field binOp entityAlias.field]*
+            [where expr];]*
+    }]
+    [put | post | delete {
+        [public;]
+        [replace EntityName identified by inputValue [with fieldMapping];]*
+        [insert EntityName [from fieldMapping];]*
+        [delete from EntityName as entityAlias [where expr];]*
+    }]
+}
+``` 
+where *pathPiece* is either a string constant or an entity key (#EntityId)
+and *expr* allows following SQL expressions (BNF-style grammar):
+```
+expr: (expr) and (expr)
+    | (expr) or (expr)
+    | not (expr)
+    | valExpr (= | <> | < | > | <= | >= | like | ilike) valExpr
+    | entityAlias.field (in | not in) ($i | $$)
+
+valExpr: "string-constant"
+       | int-constant
+       | float-constant
+       | entityAlias.field
+       | valExpr || valExpr
+       | inputValue
+
+inputValue: $i
+          | authId
+          | $$
+```
+where:
+ * *$i* refers to the *i*th parameter in the route path
+ * *authId* refers to the return value of requireAuthId
+ * *$$* refers to the named parameter in the query string
+
+## Using the generated subsite
+
+In order to use the generated subsite in a scaffolded Yesod site, it suffices to do the following steps:
+ * add the generated Haskell modules Handler.MyModule and Handler.MyModule.Internal to the .cabal-file, and
+ * import Handler.MyModule in Application.hs, and
+ * define the instance MyModuleValidation App that implements field and entity check functions, and
+ * add migration code 
+```haskell
+runLoggingT
+        (Database.Persist.runPool dbconf (runMigration migrateMyModule) p)
+        (messageLoggerSource foundation logger)
+```
+ * add route to the subsite to config/routes
+```
+/myModule MyModuleR MyModule getMyModule
+```
+ 
 ## Generated files
 
 The code generator generates two files that constitute a Yesod subsite: Handler/ModuleName.hs and Handler/ModuleName/Internal.hs.

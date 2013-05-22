@@ -28,7 +28,7 @@ instance HasNames Module where
     getNames m = getNames (modEntities m) 
                ++ getNames (modClasses m)
                ++ getNames (modEnums m)
-               ++ getNames (modResources m) 
+               ++ getNames (modRoutes m) 
 
 instance HasNames Entity where
     getNames e = [([GlobalNS, EntityNS, FieldTypeNS], entityName e, entityLoc e)]
@@ -61,16 +61,16 @@ instance HasNames (EnumType, String) where
     getNames (e,v) = [([GlobalNS, EnumNS], enumName e ++ "." ++ v, enumLoc e)]
 
 
-instance HasNames Resource where
+instance HasNames Route where
     getNames r = [([GlobalNS], show $ resRoute r, resLoc r)]
                ++ getNames [ (r, h) | h <- resHandlers r ]
                ++ [([GlobalNS, RouteNS], show (resRoute r) ++ " $" ++ show i,
                     resLoc r) | i <- [1..length (resPathParams r)] ]
                
-instance HasNames (Resource, Handler) where
+instance HasNames (Route, Handler) where
     getNames (r,(Handler ht ps)) = [([GlobalNS], handlerName r ht, resLoc r)]
                                  ++ getNames [ (r,ht,p) | p <- ps ]
-instance HasNames (Resource, HandlerType, HandlerParam) where
+instance HasNames (Route, HandlerType, HandlerParam) where
     getNames (r,ht,p) = [([GlobalNS],
                           handlerName r ht ++ " "++ pn,
                           resLoc r) | pn <- handlerParamName p]

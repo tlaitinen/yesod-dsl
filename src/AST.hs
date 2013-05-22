@@ -11,7 +11,7 @@ data Module = Module {
     modEntities  :: [Entity],
     modClasses :: [Class],
     modEnums :: [EnumType],
-    modResources :: [Resource]
+    modRoutes :: [Route]
 }
     deriving (Show)
 moduleName :: Module -> String
@@ -23,12 +23,12 @@ emptyModule = Module {
     modEntities = [],
     modClasses = [],
     modEnums = [],
-    modResources = []
+    modRoutes = []
 }
 data ModDef = EntityDef Entity
            | ClassDef Class
            | EnumDef EnumType
-           | ResourceDef Resource
+           | RouteDef Route
            deriving (Show)
 
 
@@ -40,8 +40,8 @@ isEntity _ = False
 isEnum (EnumDef _) = True
 isEnum _ = False
 
-isResource (ResourceDef _) = True
-isResource _ = False
+isRoute (RouteDef _) = True
+isRoute _ = False
 
 getEntities :: [ModDef] -> [Entity]
 getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
@@ -51,8 +51,8 @@ getClasses defs = map (\(ClassDef e) -> e) $ filter isClass defs
 getEnums :: [ModDef] -> [EnumType]
 getEnums defs = map (\(EnumDef e) -> e) $ filter isEnum defs
 
-getResources :: [ModDef] -> [Resource]
-getResources defs = map (\(ResourceDef e) -> e) $ filter isResource defs
+getRoutes :: [ModDef] -> [Route]
+getRoutes defs = map (\(RouteDef e) -> e) $ filter isRoute defs
    
 
 
@@ -183,19 +183,19 @@ data Entity = Entity {
 } deriving (Show)
 
 
-data Resource = Resource {
+data Route = Route {
     resLoc :: Location,
     resRoute :: [PathPiece],
     resHandlers :: [Handler]
 } deriving (Show)
-resPathParams :: Resource -> [PathPiece]
+resPathParams :: Route -> [PathPiece]
 resPathParams = (filter isPathParam) . resRoute
     where isPathParam (PathId _) = True
           isPathParam _ = False
 
         
 
-handlerName :: Resource -> HandlerType -> String
+handlerName :: Route -> HandlerType -> String
 handlerName r ht = show (resRoute r) ++ " " ++ show ht
 
 routeName :: [PathPiece] -> String

@@ -14,7 +14,7 @@ merge mod1 mod2 = Module {
         modEntities = modEntities mod1 ++ modEntities mod2,
         modClasses = modClasses mod1 ++ modClasses mod2,
         modEnums = modEnums mod1 ++ modEnums mod2,
-        modResources = modResources mod1 ++ modResources mod2
+        modRoutes = modRoutes mod1 ++ modRoutes mod2
     }
 
 updateLocation :: (FilePath,Module) -> Module

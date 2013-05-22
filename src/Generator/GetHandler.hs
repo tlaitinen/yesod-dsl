@@ -16,7 +16,7 @@ import Data.Char
 import Generator.Common
 import Generator.Esqueleto
 import Generator.Models
-getHandlerParam :: Module -> Resource -> Context -> HandlerParam -> String
+getHandlerParam :: Module -> Route -> Context -> HandlerParam -> String
 getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
 getHandlerParam m r ps (IfFilter (pn,_,_)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
@@ -162,7 +162,7 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
           mappedResultFields = concatMap mapResultField fieldNames
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
             
-getHandler :: Module -> Resource -> [HandlerParam] -> String
+getHandler :: Module -> Route -> [HandlerParam] -> String
 getHandler m r ps = 
     (concatMap (getHandlerParam m r ctx) ps)
     ++ (getHandlerSelect m sq defaultFilterSort ifFilters)
