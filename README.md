@@ -588,7 +588,7 @@ instance FromJSON Day where
             (d, _):_ -> return d
             [] -> mzero 
 
-getPersonsR :: forall master u. (MyModuleValidation master, 
+getPersonsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
@@ -662,7 +662,7 @@ getPersonsR  = do
                 _ -> A.object []
             ) results)
        ]
-postPersonsR :: forall master u. (MyModuleValidation master, 
+postPersonsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
@@ -687,7 +687,7 @@ postPersonsR  = do
                     ])
             _ -> P.insert (e1 :: Person)
     return $ A.Null
-getPersonPersonIdR :: forall master u. (MyModuleValidation master, 
+getPersonPersonIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => PersonId -> HandlerT MyModule (HandlerT master IO) A.Value
@@ -721,7 +721,7 @@ getPersonPersonIdR p1 = do
                 _ -> A.object []
             ) results)
        ]
-putPersonPersonIdR :: forall master u. (MyModuleValidation master, 
+putPersonPersonIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => PersonId -> HandlerT MyModule (HandlerT master IO) A.Value
@@ -740,7 +740,7 @@ putPersonPersonIdR p1 = do
     _ <- lift $ runDB $ do
         P.repsert p1 (e1 :: Person)
     return $ A.Null
-deletePersonPersonIdR :: forall master u. (MyModuleValidation master, 
+deletePersonPersonIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => PersonId -> HandlerT MyModule (HandlerT master IO) A.Value
@@ -749,12 +749,12 @@ deletePersonPersonIdR p1 = do
     _ <- lift $ runDB $ do
         delete $ from $ (\p -> where_ $ (p ^. PersonId) ==. ((val p1)))
     return $ A.Null
-getBlogpostsR :: forall master u. (MyModuleValidation master, 
+getBlogpostsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
 getBlogpostsR  = do
-postBlogpostsR :: forall master u. (MyModuleValidation master, 
+postBlogpostsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
@@ -779,12 +779,12 @@ postBlogpostsR  = do
                     ])
             _ -> P.insert (e1 :: BlogPost)
     return $ A.Null
-getBlogpostsBlogPostIdR :: forall master u. (MyModuleValidation master, 
+getBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT MyModule (HandlerT master IO) A.Value
 getBlogpostsBlogPostIdR p1 = do
-putBlogpostsBlogPostIdR :: forall master u. (MyModuleValidation master, 
+putBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT MyModule (HandlerT master IO) A.Value
@@ -803,7 +803,7 @@ putBlogpostsBlogPostIdR p1 = do
     _ <- lift $ runDB $ do
         P.repsert p1 (e1 :: BlogPost)
     return $ A.Null
-deleteBlogpostsBlogPostIdR :: forall master u. (MyModuleValidation master, 
+deleteBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT MyModule (HandlerT master IO) A.Value
@@ -812,12 +812,12 @@ deleteBlogpostsBlogPostIdR p1 = do
     _ <- lift $ runDB $ do
         delete $ from $ (\bp -> where_ $ (bp ^. BlogPostId) ==. ((val p1)))
     return $ A.Null
-getCommentsR :: forall master u. (MyModuleValidation master, 
+getCommentsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
 getCommentsR  = do
-postCommentsR :: forall master u. (MyModuleValidation master, 
+postCommentsR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
@@ -842,12 +842,12 @@ postCommentsR  = do
                     ])
             _ -> P.insert (e1 :: BlogPost)
     return $ A.Null
-getCommentsCommentIdR :: forall master u. (MyModuleValidation master, 
+getCommentsCommentIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT MyModule (HandlerT master IO) A.Value
 getCommentsCommentIdR p1 = do
-putCommentsCommentIdR :: forall master u. (MyModuleValidation master, 
+putCommentsCommentIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT MyModule (HandlerT master IO) A.Value
@@ -866,7 +866,7 @@ putCommentsCommentIdR p1 = do
     _ <- lift $ runDB $ do
         P.repsert p1 (e1 :: Comment)
     return $ A.Null
-deleteCommentsCommentIdR :: forall master u. (MyModuleValidation master, 
+deleteCommentsCommentIdR :: forall master. (MyModuleValidation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT MyModule (HandlerT master IO) A.Value
