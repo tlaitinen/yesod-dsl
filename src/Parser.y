@@ -60,8 +60,8 @@ import System.Exit
     text { Tk _ TText }
     bool { Tk _ TBool }
     double { Tk _ TDouble }
-    time { Tk _ TTime }
-    date { Tk _ TDay }
+    timeofday { Tk _ TTimeOfDay }
+    day { Tk _ TDay }
     utctime { Tk _ TUTCTime }
     zonedtime { Tk _ TZonedTime }
     maybe { Tk _ TMaybe }
@@ -311,8 +311,8 @@ fieldType : word32 { FTWord32 }
           | text { FTText }
           | bool{ FTBool }
           | double{ FTDouble }
-          | time { FTTime }
-          | date { FTDay }
+          | timeofday { FTTimeOfDay }
+          | day { FTDay }
           | utctime{ FTUTCTime }
           | zonedtime{ FTZonedTime }
 

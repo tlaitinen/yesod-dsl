@@ -80,7 +80,7 @@ tokens :-
     "Double" { mkT TDouble }
     "Maybe" { mkT TMaybe }
     "Day" { mkT TDay }
-    "Time" { mkT TTime }
+    "TimeOfDay" { mkT TTimeOfDay }
     "UTCTime" { mkT TUTCTime }
     "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
@@ -170,7 +170,7 @@ data TokenType = TSemicolon
            | TBool
            | TDouble
            | TMaybe
-           | TTime
+           | TTimeOfDay
            | TDay
            | TUTCTime
            | TZonedTime
