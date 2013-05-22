@@ -161,20 +161,14 @@ value and dots ... mean repeated syntactic element:
 entity EntityName {
     instance of Class1, ..., ClassN;
 
-    field1Name [Maybe] Field1Type [default defaultValue] [check functionName];
-    ...
-    fieldNName [Maybe] FieldNType [default defaultValue] [check functionName];
+    [fieldName [Maybe] FieldType [default defaultValue] [check functionName];]*
     
 
-    unique Unique1Name unique1field1 ... unique1fieldN;
-    ...
-    unique UniqueNName uniqueNfield1 ... uniqueNfieldN;
+    [unique UniqueName [uniquefield]*;]*
 
-    [deriving Class1, ..., ClassN];
+    [deriving [ClassName]*;]
 
-    check entityCheck1FunctionName;
-    ...
-    check entityCheckNFunctionName;
+    [check functionName;]*
 }
 ```
 
