@@ -8,3 +8,12 @@ instance FromJSON Day where
             (d, _):_ -> return d
             [] -> mzero 
 
+instance ToJSON TimeOfDay where
+    toJSON = toJSON . show
+
+instance FromJSON TimeOfDay where
+    parseJSON x = do
+        s <- parseJSON x
+        case reads s of
+            (d, _):_ -> return d
+            [] -> mzero
