@@ -1,8 +1,10 @@
 module AST where
+
 import Lexer
 import Data.Maybe
 import Data.List
 import Data.Char
+
 type ImportPath = FilePath
 
 data Module = Module {
@@ -12,8 +14,7 @@ data Module = Module {
     modClasses :: [Class],
     modEnums :: [EnumType],
     modRoutes :: [Route]
-}
-    deriving (Show)
+} deriving (Show)
 moduleName :: Module -> String
 moduleName = fromJust . modName
 
@@ -33,37 +34,27 @@ data ModDef = EntityDef Entity
 
 
  
-isClass (ClassDef _) = True
-isClass _ = False
-isEntity (EntityDef _) = True
-isEntity _ = False
-isEnum (EnumDef _) = True
-isEnum _ = False
-
-isRoute (RouteDef _) = True
-isRoute _ = False
-
 getEntities :: [ModDef] -> [Entity]
-getEntities defs = map (\(EntityDef e) -> e) $ filter isEntity defs
+getEntities defs = mapMaybe (\d -> case d of (EntityDef e) -> Just e ; _ -> Nothing) defs
+
 getClasses :: [ModDef] -> [Class]
-getClasses defs = map (\(ClassDef e) -> e) $ filter isClass defs
+getClasses defs = mapMaybe (\d -> case d of (ClassDef c) -> Just c; _ -> Nothing) defs
 
 getEnums :: [ModDef] -> [EnumType]
-getEnums defs = map (\(EnumDef e) -> e) $ filter isEnum defs
+getEnums defs = mapMaybe (\d -> case d of (EnumDef e) -> Just e; _ -> Nothing) defs
 
 getRoutes :: [ModDef] -> [Route]
-getRoutes defs = map (\(RouteDef e) -> e) $ filter isRoute defs
+getRoutes defs = mapMaybe (\d -> case d of (RouteDef e) -> Just e; _ -> Nothing) defs
    
 
-
 type ClassName = String
-
-type UniqueFlag = Bool
 type ParamName = String
 type EntityName = String
+
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-                              | FTZonedTime
+               | FTZonedTime
+
 instance Show FieldType where
     show FTWord32 = "Word32"
     show FTWord64 = "Word64"
@@ -79,7 +70,6 @@ instance Show FieldType where
 
 type FieldName = String 
 type PathName = String
-type OptionalFlag = Bool
 type UniqueName = String
 
 data Location = Loc FilePath Int Int 
@@ -236,22 +226,6 @@ data Class = Class {
     classUniques :: [Unique]
 } deriving (Show)
 
-
-
-modLookup :: Module -> String -> ModDef
-modLookup mod name 
-        | isJust entityMatch = EntityDef $ fromJust entityMatch
-        | isJust classMatch  = ClassDef $ fromJust classMatch
-        | otherwise = error $ "modLookup failed : " ++ name
-    where
-        entityMatch = find (\e -> name == entityName e) (modEntities mod)
-        classMatch  = find (\i -> name == className i) (modClasses mod)
-
-moddefFields :: ModDef -> [Field]
-moddefFields moddef = case moddef of
-    (EntityDef entity)     -> entityFields entity
-    (ClassDef classDef) -> classFields classDef
-    
 type DefaultValue = String
 type IsListFlag = Bool
 type EnumName = String
@@ -262,7 +236,7 @@ data FieldContent = NormalField FieldType [FieldOption]
    
 
 data Field = Field {
-    fieldOptional :: OptionalFlag,
+    fieldOptional :: Bool,
     fieldName     :: FieldName,
     fieldContent  :: FieldContent
 } deriving (Show)

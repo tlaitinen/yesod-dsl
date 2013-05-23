@@ -97,24 +97,24 @@ tokens :-
     "desc" { mkT TDesc }
     "in" { mkT TIn }
     "not" { mkT TNot }
-"limit" { mkT TLimit }
-"offset" { mkT TOffset }
-"where" { mkT TWhere }
-"return" { mkT TReturn }
-"default" { mkT TDefault }
-"instance" { mkT TInstance }
-"of" { mkT TOf }
-"deriving" { mkT TDeriving }
-$digit+ 		{ mkTvar (TInt . read) }
-$digit+ "." $digit+ { mkTvar (TFloat . read) }
- "id" { mkT TId }
-$lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
-@entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
-$upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
-@fieldName { mkTvar (TLowerId . stripQuotes) }
-@pathParam { mkTvar (TPathParam . (read . (drop 1))) }
-@authId { mkT TAuthId }
- "$$"  { mkT TLocalParam }
+    "limit" { mkT TLimit }
+    "offset" { mkT TOffset }
+    "where" { mkT TWhere }
+    "return" { mkT TReturn }
+    "default" { mkT TDefault }
+    "instance" { mkT TInstance }
+    "of" { mkT TOf }
+    "deriving" { mkT TDeriving }
+    $digit+ 		{ mkTvar (TInt . read) }
+    $digit+ "." $digit+ { mkTvar (TFloat . read) }
+     "id" { mkT TId }
+    $lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
+    @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
+    $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
+    @fieldName { mkTvar (TLowerId . stripQuotes) }
+    @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
+    @authId { mkT TAuthId }
+     "$$"  { mkT TLocalParam }
 
 {
 
