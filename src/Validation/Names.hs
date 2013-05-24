@@ -68,7 +68,7 @@ instance HasNames Route where
                     resLoc r) | i <- [1..length (resPathParams r)] ]
                
 instance HasNames (Route, Handler) where
-    getNames (r,(Handler ht ps)) = [([GlobalNS], handlerName r ht, resLoc r)]
+    getNames (r,(Handler _ ht ps)) = [([GlobalNS], handlerName r ht, resLoc r)]
                                  ++ getNames [ (r,ht,p) | p <- ps ]
 instance HasNames (Route, HandlerType, HandlerParam) where
     getNames (r,ht,p) = [([GlobalNS],

@@ -5,11 +5,10 @@ import Data.Maybe
 import Data.List
 import Data.Char
 
-type ImportPath = FilePath
 
 data Module = Module {
     modName :: Maybe String,
-    modImports   :: [ImportPath],
+    modImports   :: [FilePath],
     modEntities  :: [Entity],
     modClasses :: [Class],
     modEnums :: [EnumType],
@@ -72,10 +71,11 @@ type FieldName = String
 type PathName = String
 type UniqueName = String
 
-data Location = Loc FilePath Int Int 
+data Location = Loc FilePath Int Int deriving (Eq)
 
 instance Show Location where
     show (Loc path row col) = path ++ " line " ++ show row ++ " col " ++ show col
+
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
 data Unique = Unique {
@@ -88,6 +88,7 @@ data HandlerType = GetHandler
                  | PostHandler 
                  | DeleteHandler 
                  deriving (Eq) 
+
 instance Show HandlerType where
     show GetHandler = "GET"
     show PutHandler = "PUT"
@@ -159,6 +160,7 @@ data InputFieldRef = InputFieldNormal FieldName
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
 
 data Handler = Handler {
+    handlerLoc	  :: Location,
     handlerType   :: HandlerType,
     handlerParams :: [HandlerParam] 
 } deriving (Show, Eq)

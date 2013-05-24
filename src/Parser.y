@@ -152,13 +152,10 @@ pathPiece : lowerId { PathText $1 }
 handlers : handlerdef  { [$1] }
          | handlers handlerdef { $2 : $1 }
 
-handlerdef : get handlerParamsBlock { Handler GetHandler $2 }
-           | put handlerParamsBlock { Handler PutHandler $2 }
-           | post handlerParamsBlock { Handler PostHandler $2 }
-           | delete handlerParamsBlock { Handler DeleteHandler $2 }
-
-fieldRefList : fieldRef { [$1] }
-              | fieldRefList comma fieldRef { $3 : $1 }
+handlerdef : get handlerParamsBlock { Handler (mkLoc $1) GetHandler $2 }
+           | put handlerParamsBlock { Handler (mkLoc $1) PutHandler $2 }
+           | post handlerParamsBlock { Handler (mkLoc $1) PostHandler $2 }
+           | delete handlerParamsBlock { Handler (mkLoc $1) DeleteHandler $2 }
 
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
@@ -327,7 +324,7 @@ parseError :: [Token] -> a
 parseError (t:ts) = throw (ParseError $ "Parse error : unexpected " ++ show (tokenType t) ++ " at line " ++ show (tokenLineNum t) ++ " col " ++ show (tokenColNum t))
 parseError _ = throw (ParseError $ "Parse error : unexpected end of file")
 
-parseModules :: [ImportPath] -> [FilePath] -> IO [(FilePath,Module)]
+parseModules :: [FilePath] -> [FilePath] -> IO [(FilePath,Module)]
 parseModules handled (path:paths)
     | path `elem` handled = return []
     | otherwise = do

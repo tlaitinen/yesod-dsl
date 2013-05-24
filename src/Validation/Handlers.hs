@@ -5,11 +5,11 @@ import Data.Maybe
 handlerErrors :: Module -> String
 handlerErrors m = (concatMap notAllowedError $ 
                     [ (r, ht, resLoc r, p)
-                    | r <- modRoutes m, (Handler ht ps) <- resHandlers r,
+                    | r <- modRoutes m, (Handler l ht ps) <- resHandlers r,
                       p <- ps, not $ allowed ht p ])
                 ++ (concatMap missingError $
                      [ (r, ht, resLoc r, pt)
-                    | r <- modRoutes m, (Handler ht ps) <- resHandlers r,
+                    | r <- modRoutes m, (Handler l ht ps) <- resHandlers r,
                       pt <- missing ht ps ])
                         
     where             

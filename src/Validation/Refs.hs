@@ -49,7 +49,7 @@ instance HasRefs Route where
     getRefs r = getRefs [ (r,h) | h <- resHandlers r ]
 
 instance HasRefs (Route, Handler) where
-    getRefs (r, (Handler ht ps)) = getRefs [ (r,ht,p) | p <- ps ]
+    getRefs (r, (Handler l ht ps)) = getRefs [ (r,ht,p) | p <- ps ]
 
 instance HasRefs (Route, HandlerType, HandlerParam) where
     getRefs (r,ht,(Insert en io)) = 
@@ -121,7 +121,7 @@ lookupEntityByVariable r ht vn =
         Nothing -> Nothing 
     where   
         aliases = concatMap getAlias [ p 
-                                    | (Handler ht' ps) <- resHandlers r,
+                                    | (Handler l ht' ps) <- resHandlers r,
                                     p <- ps, ht == ht' ] 
         getAlias (Select sq) = sqAliases sq
         getAlias _ = []
