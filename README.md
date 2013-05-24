@@ -156,7 +156,7 @@ route /comments/#CommentId {
 
 As shown above, Persistent entities are defined in *entity {}* blocks. The
 entity {}-block has the following structure where square brackets []  denote an optional
-value and dots ... mean repeated syntactic element: 
+value and the asterisk * means that the element can be repeated:
 
 ```
 entity EntityName {
@@ -246,10 +246,10 @@ number of fields, one for each entity that is an instance of the entity class.
 ## Routes and handlers
 
 Routes are defined in *route {}* blocks. Only parameters of the form #EntityId
-are supported in route paths. Square brackets [] denote an optional value, []* means a possible repeated element, and | indicates alternatives.
+are supported in route paths. Square brackets [] denote an optional value, []* means that the element can be repeated, and the pipe character | indicates alternatives.
 
 ```
-route /pathPiece1/.../pathPieceN {
+route /pathPiece[/pathPiece]* {
     [get {
         [public;]
         select [entityAlias.[fieldName | *] [as outputName]]*
