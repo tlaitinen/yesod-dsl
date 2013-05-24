@@ -280,7 +280,7 @@ route /pathPiece[/pathPiece]* {
                [, fieldName = inputRef]* 
            }];]*
         [delete from EntityName as entityAlias [where expr];]*
-    }]
+    }]*
 }
 ``` 
 where *pathPiece* is either a string constant or an entity key (#EntityId),
