@@ -1,5 +1,5 @@
-~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} :: forall master. (~{moduleName m}Validation master, 
+~{hsHandlerMethod ht}~{hsRouteName (routePath r)} :: forall master. (~{moduleName m}Validation master, 
     YesodAuthPersist master,
     YesodPersistBackend master ~ SqlPersistT)
-    => ~{hsRouteType (resRoute r)}HandlerT ~{moduleName m} (HandlerT master IO) A.Value
-~{hsHandlerMethod ht}~{hsRouteName (resRoute r)} ~{hsRouteParams (resRoute r)} = do
+    => ~{hsRouteType (routePath r)}HandlerT ~{moduleName m} (HandlerT master IO) A.Value
+~{hsHandlerMethod ht}~{hsRouteName (routePath r)} ~{hsRouteParams (routePath r)} = do

@@ -46,31 +46,31 @@ instance HasRefs (Class, Field) where
     getRefs _ = []
 
 instance HasRefs Route where
-    getRefs r = getRefs [ (r,h) | h <- resHandlers r ]
+    getRefs r = getRefs [ (r,h) | h <- routeHandlers r ]
 
 instance HasRefs (Route, Handler) where
     getRefs (r, (Handler l ht ps)) = getRefs [ (r,ht,p) | p <- ps ]
 
 instance HasRefs (Route, HandlerType, HandlerParam) where
     getRefs (r,ht,(Insert en io)) = 
-        [(resLoc r, "insert in " ++ handlerInfo r ht,EntityNS, en)]
-        ++ getRefs (r,ht,resLoc r, "insert input expression in " ++ handlerInfo r ht, io) 
+        [(routeLoc r, "insert in " ++ handlerInfo r ht,EntityNS, en)]
+        ++ getRefs (r,ht,routeLoc r, "insert input expression in " ++ handlerInfo r ht, io) 
     getRefs (r,ht,(Replace en fr io)) = 
-        [(resLoc r, "replace in " ++ handlerInfo r ht, EntityNS, en)]
-        ++ getRefs (r, ht, resLoc r, "replace-with in " ++ handlerInfo r ht, fr)
-        ++ getRefs (r, ht, resLoc r, "replace-from in " ++ handlerInfo r ht, io)
+        [(routeLoc r, "replace in " ++ handlerInfo r ht, EntityNS, en)]
+        ++ getRefs (r, ht, routeLoc r, "replace-with in " ++ handlerInfo r ht, fr)
+        ++ getRefs (r, ht, routeLoc r, "replace-from in " ++ handlerInfo r ht, io)
                         
     getRefs (r,ht,(Select sq)) = getRefs (r,ht,sq)
     getRefs (r,ht,(DeleteFrom en vn me)) =
-        [(resLoc r, "delete-from in " ++ handlerInfo r ht, EntityNS, en)]
+        [(routeLoc r, "delete-from in " ++ handlerInfo r ht, EntityNS, en)]
         ++ (case me of 
-                (Just e) -> getRefs (r,ht,resLoc r, "where-expression of delete in " ++ handlerInfo r ht, e)
+                (Just e) -> getRefs (r,ht,routeLoc r, "where-expression of delete in " ++ handlerInfo r ht, e)
                 _ -> [])
     getRefs _ = []            
 
 instance HasRefs (Route, HandlerType, SelectQuery) where
     getRefs (r,ht,sq) = let
-        l= resLoc r
+        l= routeLoc r
         i = "select query in " ++ handlerName r ht
         (en,vn) = sqFrom sq
         in [(l,i,EntityNS,en), 
@@ -99,7 +99,7 @@ instance HasRefs (Route, HandlerType, Location, Info, FieldRef) where
                (Just en) -> [(l,i,FieldNS, en ++ "." ++ fn)]
                Nothing -> []
     getRefs (r,ht,l,i,(FieldRefPathParam pi)) = 
-        [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]
+        [(l,i,RouteNS, show (routePath r) ++ " $" ++ show pi)]
     getRefs _ = []
 
 instance HasRefs (Route, HandlerType, Location, Info, Maybe [InputField]) where
@@ -110,7 +110,7 @@ instance HasRefs (Route, HandlerType, Location, Info, Maybe [InputField]) where
 instance HasRefs (Route, HandlerType, Location, Info, InputFieldRef) where
     getRefs (r,ht,l,i,(InputFieldNormal fn)) = []
     getRefs (r,ht,l,i,(InputFieldPathParam pi)) = 
-        [(l,i,RouteNS, show (resRoute r) ++ " $" ++ show pi)]    
+        [(l,i,RouteNS, show (routePath r) ++ " $" ++ show pi)]    
     getRefs _ = []
 
 lookupEntityByVariable :: Route -> HandlerType -> VariableName 
@@ -121,7 +121,7 @@ lookupEntityByVariable r ht vn =
         Nothing -> Nothing 
     where   
         aliases = concatMap getAlias [ p 
-                                    | (Handler l ht' ps) <- resHandlers r,
+                                    | (Handler l ht' ps) <- routeHandlers r,
                                     p <- ps, ht == ht' ] 
         getAlias (Select sq) = sqAliases sq
         getAlias _ = []
@@ -141,7 +141,7 @@ instance HasRefs (Route, HandlerType, Location, Info, ValExpr) where
     getRefs _ = []
 
 handlerInfo :: Route-> HandlerType -> String
-handlerInfo r ht = show ht ++ " of route " ++ show (resRoute r)
+handlerInfo r ht = show ht ++ " of route " ++ show (routePath r)
 
 refs :: Module -> Refs
 refs = getRefs

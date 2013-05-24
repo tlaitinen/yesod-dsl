@@ -20,13 +20,13 @@ hsRouteType = (intercalate " ") . (mapMaybe toType)
     where toType (PathText _) = Nothing
           toType (PathId en) = Just $ en ++ "Id -> "
 
-routeRoute :: Route -> String
-routeRoute r = T.unpack $(codegenFile "codegen/route.cg")
-    where handlers = intercalate " " (map (show . handlerType) (resHandlers r))
+hsRoutePath :: Route -> String
+hsRoutePath r = T.unpack $(codegenFile "codegen/route.cg")
+    where handlers = intercalate " " (map (show . handlerType) (routeHandlers r))
 
 routes :: Module -> String
 routes m = T.unpack $(codegenFile "codegen/routes-header.cg")
-         ++ (concatMap routeRoute (modRoutes m))
+         ++ (concatMap hsRoutePath (modRoutes m))
          ++ (T.unpack $(codegenFile "codegen/routes-footer.cg"))
 
 

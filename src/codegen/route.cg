@@ -1,1 +1,1 @@
-~{routeName (resRoute r)}        ~{hsRouteName (resRoute r)}      ~{handlers}
+~{routeName (routePath r)}        ~{hsRouteName (routePath r)}      ~{handlers}

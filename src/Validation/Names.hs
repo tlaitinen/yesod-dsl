@@ -62,18 +62,18 @@ instance HasNames (EnumType, String) where
 
 
 instance HasNames Route where
-    getNames r = [([GlobalNS], show $ resRoute r, resLoc r)]
-               ++ getNames [ (r, h) | h <- resHandlers r ]
-               ++ [([GlobalNS, RouteNS], show (resRoute r) ++ " $" ++ show i,
-                    resLoc r) | i <- [1..length (resPathParams r)] ]
+    getNames r = [([GlobalNS], show $ routePath r, routeLoc r)]
+               ++ getNames [ (r, h) | h <- routeHandlers r ]
+               ++ [([GlobalNS, RouteNS], show (routePath r) ++ " $" ++ show i,
+                    routeLoc r) | i <- [1..length (routePathParams r)] ]
                
 instance HasNames (Route, Handler) where
-    getNames (r,(Handler _ ht ps)) = [([GlobalNS], handlerName r ht, resLoc r)]
+    getNames (r,(Handler _ ht ps)) = [([GlobalNS], handlerName r ht, routeLoc r)]
                                  ++ getNames [ (r,ht,p) | p <- ps ]
 instance HasNames (Route, HandlerType, HandlerParam) where
     getNames (r,ht,p) = [([GlobalNS],
                           handlerName r ht ++ " "++ pn,
-                          resLoc r) | pn <- handlerParamName p]
+                          routeLoc r) | pn <- handlerParamName p]
 
      
 
@@ -90,7 +90,7 @@ groupByName ns = nameGroups
     where
         sortedNames = sortBy (\(n1,_) (n2,_) -> compare n1 n2) ns
         groupedNames = groupBy (\(n1,_) (n2,_) -> n1 == n2) sortedNames
-        factorName (all@((name,_):rest)) = (name, [l | (_,l) <- all ])
+        factorName (all@((name,_):routet)) = (name, [l | (_,l) <- all ])
         nameGroups = map factorName groupedNames
 
 

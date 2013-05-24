@@ -4,12 +4,12 @@ import Validation.Names
 import Data.Maybe
 handlerErrors :: Module -> String
 handlerErrors m = (concatMap notAllowedError $ 
-                    [ (r, ht, resLoc r, p)
-                    | r <- modRoutes m, (Handler l ht ps) <- resHandlers r,
+                    [ (r, ht, routeLoc r, p)
+                    | r <- modRoutes m, (Handler l ht ps) <- routeHandlers r,
                       p <- ps, not $ allowed ht p ])
                 ++ (concatMap missingError $
-                     [ (r, ht, resLoc r, pt)
-                    | r <- modRoutes m, (Handler l ht ps) <- resHandlers r,
+                     [ (r, ht, routeLoc r, pt)
+                    | r <- modRoutes m, (Handler l ht ps) <- routeHandlers r,
                       pt <- missing ht ps ])
                         
     where             
@@ -37,9 +37,9 @@ handlerErrors m = (concatMap notAllowedError $
             Just _ -> Nothing
             Nothing -> Just err     
         notAllowedError (r, ht, l, p) = show p ++ " not allowed in " 
-                                   ++ show ht ++ " of " ++ show (resRoute r)
+                                   ++ show ht ++ " of " ++ show (routePath r)
                                    ++ " in " ++ show l ++ "\n"
         missingError (r,ht,l,p) = "Missing " ++ p ++ " in " ++ show ht 
-                                ++ " of " ++ show (resRoute r) ++ " in "
+                                ++ " of " ++ show (routePath r) ++ " in "
                                 ++ show l ++ "\n"
 

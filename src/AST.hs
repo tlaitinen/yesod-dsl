@@ -157,19 +157,19 @@ data Entity = Entity {
 
 
 data Route = Route {
-    resLoc :: Location,
-    resRoute :: [PathPiece],
-    resHandlers :: [Handler]
+    routeLoc :: Location,
+    routePath :: [PathPiece],
+    routeHandlers :: [Handler]
 } deriving (Show)
-resPathParams :: Route -> [PathPiece]
-resPathParams = (filter isPathParam) . resRoute
+routePathParams :: Route -> [PathPiece]
+routePathParams = (filter isPathParam) . routePath
     where isPathParam (PathId _) = True
           isPathParam _ = False
 
         
 
 handlerName :: Route -> HandlerType -> String
-handlerName r ht = show (resRoute r) ++ " " ++ show ht
+handlerName r ht = show (routePath r) ++ " " ++ show ht
 
 routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)

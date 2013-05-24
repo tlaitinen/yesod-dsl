@@ -33,7 +33,7 @@ generate m = do
             ++ classes m
             ++ validation m
             ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))
-            ++ (concat [ handler m r h | r <- modRoutes m, h <- resHandlers r ])
+            ++ (concat [ handler m r h | r <- modRoutes m, h <- routeHandlers r ])
             ++ routes m
     writeFile (joinPath ["Handler", moduleName m ++ ".hs"]) $ 
         T.unpack $(codegenFile "codegen/dispatch.cg")
