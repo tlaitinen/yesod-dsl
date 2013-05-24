@@ -271,24 +271,19 @@ route /pathPiece[/pathPiece]* {
         [public;]
         [update EntityName identified by inputValue 
            [with { 
-               [fieldName = inputRef]
-               [, fieldName = inputRef]*  
+               [fieldName = inputValue]
+               [, fieldName = inputValue]*  
            }];]*
         [insert EntityName  
            [from { 
-               [fieldName = inputRef]
-               [, fieldName = inputRef]* 
+               [fieldName = inputValue]
+               [, fieldName = inputValue]* 
            }];]*
         [delete from EntityName as entityAlias [where expr];]*
     }]*
 }
 ``` 
 where *pathPiece* is either a string constant or an entity key (#EntityId),
-and *inputRef* is one of the following:
- * $*i*, reference to the *i*th parameter in the route path 
- * $authId, reference to the return value of *requireAuthId*
- * *attrName*, reference to the attribute in the JSON object parsed from request body
- * constant value (string, integer, or float),
 and *expr* allows following SQL expressions (BNF-style grammar):
 ```
 expr: (expr) and (expr)
@@ -309,7 +304,7 @@ inputValue: $i
           | $$
 ```
 where:
- * *$i* refers to the *i*th parameter in the route path
+ * $i refers to the *i*th parameter in the route path
  * *authId* refers to the return value of requireAuthId
  * *$$* refers to the named parameter in the query string
 
