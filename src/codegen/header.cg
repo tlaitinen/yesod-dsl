@@ -44,7 +44,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Network.HTTP.Conduit as C
 import qualified Network.Wai as W
 import Data.Conduit.Lazy (lazyConsume)
-import Network.HTTP.Types (status200, status400)
+import Network.HTTP.Types (status200, status400, status404)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
@@ -142,6 +142,12 @@ instance PathPiece a => PathPiece [a] where
         parts <- safeRead s
         values <- mapM fromPathPiece parts
         return values
+    toPathPiece values = T.concat [ 
+            T.pack "[",
+            T.intercalate (T.pack ",") (map toPathPiece values),
+            T.pack "]" 
+        ]
+            
 
 getDefaultFilter maybeGetParam defaultFilterJson p = do
     f <- maybe maybeGetParam Just getFilter

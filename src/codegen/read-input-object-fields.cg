@@ -1,5 +1,6 @@
-    e~{show pId} <- case (A.fromJSON $ A.object [
-~{mapFields e fields}            
-            ]) of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type ~{entityName e} from JSON object in the request body : " ++ err)
+    e~{show pId} <- do
+~{indent 8 $ prepareFields e fields}
+~{maybeSelectExisting e fields fr}
+        return $ ~{entityName e} {
+~{indent 16 $ mapFields e fields} 
+            }

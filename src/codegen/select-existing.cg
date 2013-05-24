@@ -1,0 +1,9 @@
+        es <- lift $ runDB $ select $ from $ \o -> do
+            where_ (o ^. ~{entityName e}Id ==. (val ~{inputFieldRef ctx fr}))
+            limit 1
+            return o
+        e <- case es of
+            [(Entity _ e')] -> return e'    
+            _ -> sendResponseStatus status404 $ A.object [ 
+                    "message" .= ("Could not update a non-existing ~{entityName e}" :: Text)
+                ]

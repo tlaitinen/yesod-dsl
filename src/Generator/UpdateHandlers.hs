@@ -11,6 +11,7 @@ import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
 import Generator.Esqueleto
 import Generator.Common
+import Generator.Models
 inputFieldRef :: Context -> InputFieldRef -> String
 -- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
 inputFieldRef ps InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
@@ -21,7 +22,7 @@ inputFieldRef _ _ = undefined
 
 updateHandlerRunDB :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerRunDB m r ps (pId,p) = case p of
-    (Replace en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
+    (Update en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
     (Insert en io) -> T.unpack $(codegenFile "codegen/insert.cg")
     _ -> ""
     where ctx = []
@@ -29,23 +30,34 @@ updateHandlerRunDB m r ps (pId,p) = case p of
 mapJsonInputField :: [InputField] -> (Entity,Field) -> String
 mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
     where 
-        content = case matchInputField (fieldName f) of
-            InputFieldNormal fn -> T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-            InputFieldAuthId -> "authId"
-            InputFieldPathParam i -> "p" ++ show i
-            InputFieldConst v -> show v
-        matchInputField fn = fromJust $ listToMaybe [ inp | (pn,inp) <- ifields,
-                                                      pn == fn ]
+        content = case matchInputField ifields (fieldName f) of
+            Just (InputFieldNormal fn) -> T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+            Just InputFieldAuthId -> T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+            Just (InputFieldPathParam i) -> T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
+            Just (InputFieldConst v) -> T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+            Nothing -> T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
+matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef
+matchInputField ifields fn =  listToMaybe [ inp | (pn,inp) <- ifields, pn == fn ]
+prepareJsonInputField :: [InputField] -> (Entity,Field) -> String
+prepareJsonInputField ifields (e,f) = case matchInputField ifields (fieldName f) of
+    Just (InputFieldNormal fn) -> T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
+    _ -> ""
 
+ 
 updateHandlerDecode :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerDecode m r ps (pId,p) = case p of
-    (Replace en fr io) -> let ctx = [] in readInputObject (fromJust $ lookupEntity m en) io
-    (Insert en io) -> let ctx = [] in readInputObject (fromJust $ lookupEntity m en) io
-    where readInputObject e (Just fields) = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
+    (Update en fr io) -> readInputObject (fromJust $ lookupEntity m en) io fr
+    where readInputObject e (Just fields) fr = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
 
-          readInputObject e Nothing = T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
+          readInputObject e Nothing _ = T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
+
+          maybeSelectExisting e fields  fr
+              | Nothing `elem` [ matchInputField fields (fieldName f) 
+                                 | f <- entityFields e ] = let ctx = [] in T.unpack $(codegenFile "codegen/select-existing.cg")
+              | otherwise = ""
           mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
                                       [ (e,f) | f <- entityFields e ]
+          prepareFields e fields = concatMap (prepareJsonInputField fields) [ (e,f) | f <- entityFields e ]                    
 
 updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))

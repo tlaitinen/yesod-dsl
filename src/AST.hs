@@ -100,7 +100,7 @@ data HandlerParam = Public
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
                   | DeleteFrom EntityName VariableName (Maybe Expr)
-                  | Replace EntityName InputFieldRef (Maybe [InputField])
+                  | Update EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField])
                   deriving (Show, Eq) 
 type IfFilterParams = (ParamName,[Join],Expr)

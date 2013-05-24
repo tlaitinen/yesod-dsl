@@ -77,8 +77,6 @@ implicitJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "code
 implicitJoinExpr m _ _ = ""
 
 
-indent :: Int -> String -> String
-indent x = unlines . (map ((replicate x ' ')++)) . lines
 
 
 

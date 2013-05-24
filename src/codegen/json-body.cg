@@ -2,6 +2,8 @@
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]

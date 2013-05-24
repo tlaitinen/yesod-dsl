@@ -90,7 +90,7 @@ import System.Exit
     on { Tk _ TOn }
     as { Tk _ TAs }
     insert { Tk _ TInsert }
-    replace { Tk _ TReplace }
+    update { Tk _ TUpdate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     identified { Tk _ TIdentified }
     with { Tk _ TWith }
@@ -172,10 +172,10 @@ handlerParam : public { Public }
              | select selectFields from upperId as lowerId 
                joins maybeWhere maybeOrder maybeLimitOffset 
               { Select (SelectQuery $2 ($4,$6) (reverse $7) $8 $9 $10) }
-             | replace upperId identified by inputRef with inputJson { Replace $2 $5 (Just $7) } 
+             | update upperId identified by inputRef with inputJson { Update $2 $5 (Just $7) } 
              | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
              | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
-             | replace upperId identified by inputRef { Replace $2 $5 Nothing }
+             | update upperId identified by inputRef { Update $2 $5 Nothing }
              | insert upperId from inputJson { Insert $2 (Just $4) }
              | insert upperId { Insert $2 Nothing }
              | defaultfiltersort { DefaultFilterSort }

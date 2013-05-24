@@ -63,7 +63,7 @@ tokens :-
     "as" { mkT TAs }
     "public" { mkT TPublic }
     "select" { mkT TSelect }
-    "replace" { mkT TReplace }
+    "update" { mkT TUpdate }
     "insert" { mkT TInsert }
     "from" { mkT TFrom }
     "Word32" { mkT TWord32 }
@@ -149,7 +149,7 @@ data TokenType = TSemicolon
            | TSlash
            | TOrder
            | TIdentified 
-           | TReplace
+           | TUpdate
            | TInsert
            | TWith 
            | TBy

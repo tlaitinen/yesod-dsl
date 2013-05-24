@@ -55,10 +55,10 @@ instance HasRefs (Route, Handler, HandlerParam) where
     getRefs (r,h,(Insert en io)) = 
         [(routeLoc r, "insert in " ++ handlerInfo r h,EntityNS, en)]
         ++ getRefs (r,h, handlerLoc h, "insert input expression in " ++ handlerInfo r h, io) 
-    getRefs (r,h,(Replace en fr io)) = 
-        [(routeLoc r, "replace in " ++ handlerInfo r h, EntityNS, en)]
-        ++ getRefs (r,h, handlerLoc h, "replace-with in " ++ handlerInfo r h, fr)
-        ++ getRefs (r,h, handlerLoc h, "replace-from in " ++ handlerInfo r h, io)
+    getRefs (r,h,(Update en fr io)) = 
+        [(routeLoc r, "update in " ++ handlerInfo r h, EntityNS, en)]
+        ++ getRefs (r,h, handlerLoc h, "update-with in " ++ handlerInfo r h, fr)
+        ++ getRefs (r,h, handlerLoc h, "update in " ++ handlerInfo r h, io)
                         
     getRefs (r,h,(Select sq)) = getRefs (r,h,sq)
     getRefs (r,h,(DeleteFrom en vn me)) =
