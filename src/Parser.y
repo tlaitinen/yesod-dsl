@@ -9,6 +9,7 @@ import Data.Typeable
 import Prelude hiding (catch) 
 import Control.Exception hiding (Handler)
 import System.Exit
+
 }
 
 %name moduleDefs
@@ -317,6 +318,26 @@ maybeMaybe : { False }
               | maybe { True }
 
 {
+data ModDef = EntityDef Entity
+           | ClassDef Class
+           | EnumDef EnumType
+           | RouteDef Route
+           deriving (Show)
+
+getEntities :: [ModDef] -> [Entity]
+getEntities defs = mapMaybe (\d -> case d of (EntityDef e) -> Just e ; _ -> Nothing) defs
+
+getClasses :: [ModDef] -> [Class]
+getClasses defs = mapMaybe (\d -> case d of (ClassDef c) -> Just c; _ -> Nothing) defs
+
+getEnums :: [ModDef] -> [EnumType]
+getEnums defs = mapMaybe (\d -> case d of (EnumDef e) -> Just e; _ -> Nothing) defs
+
+getRoutes :: [ModDef] -> [Route]
+getRoutes defs = mapMaybe (\d -> case d of (RouteDef e) -> Just e; _ -> Nothing) defs
+
+
+
 data ParseError = ParseError String deriving (Show, Typeable)
 instance Exception ParseError
 

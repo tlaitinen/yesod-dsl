@@ -14,6 +14,7 @@ data Module = Module {
     modEnums :: [EnumType],
     modRoutes :: [Route]
 } deriving (Show)
+
 moduleName :: Module -> String
 moduleName = fromJust . modName
 
@@ -25,26 +26,6 @@ emptyModule = Module {
     modEnums = [],
     modRoutes = []
 }
-data ModDef = EntityDef Entity
-           | ClassDef Class
-           | EnumDef EnumType
-           | RouteDef Route
-           deriving (Show)
-
-
- 
-getEntities :: [ModDef] -> [Entity]
-getEntities defs = mapMaybe (\d -> case d of (EntityDef e) -> Just e ; _ -> Nothing) defs
-
-getClasses :: [ModDef] -> [Class]
-getClasses defs = mapMaybe (\d -> case d of (ClassDef c) -> Just c; _ -> Nothing) defs
-
-getEnums :: [ModDef] -> [EnumType]
-getEnums defs = mapMaybe (\d -> case d of (EnumDef e) -> Just e; _ -> Nothing) defs
-
-getRoutes :: [ModDef] -> [Route]
-getRoutes defs = mapMaybe (\d -> case d of (RouteDef e) -> Just e; _ -> Nothing) defs
-   
 
 type ClassName = String
 type ParamName = String
