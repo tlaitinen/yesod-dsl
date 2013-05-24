@@ -1,0 +1,22 @@
+class Versioned {
+    version Maybe VersionId;
+}
+
+
+entity Version {
+    time UTCTime;
+    userId UserId;
+}
+entity ChangeRecord {
+    field    Text;
+    oldValue Text;
+    newValue Text;
+    versionId  VersionId;
+
+    -- a polymorphic relation which will be expanded to a number of fields
+    -- pointing a each possible entity that is an instance of Versioned
+    'entityId' Maybe VersionedId;
+
+}
+
+
