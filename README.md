@@ -342,7 +342,7 @@ runLoggingT
  
 ## Generated files
 
-Due to the GHC stage restriction considering template Haskell, 
+Due to the GHC stage restriction, 
 the code generator generates three files that constitute a Yesod subsite: Handler/ModuleName.hs, Handler/ModuleName/Enums.hs, and Handler/ModuleName/Internal.hs.
 For the example above, the result is following:
 
