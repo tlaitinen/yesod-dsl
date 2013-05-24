@@ -81,6 +81,8 @@ instance HasNames (Route, Handler, HandlerParam) where
             Select sq -> [([NestedNS lvl],
                           handlerName r h ++ " " ++ vn,
                           routeLoc r) | (vn,lvl) <- sqScopedAliases sq]
+            DeleteFrom en vn _ -> [([NestedNS 0], handlerName r h ++ " " ++ vn,
+                               routeLoc r)]
             _         -> []
                         
 
