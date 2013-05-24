@@ -10,7 +10,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Handler.~{moduleName m} 
-    ( module Handler.~{moduleName m}.Internal ) where
+    ( module Handler.~{moduleName m}.Enums, module Handler.~{moduleName m}.Internal ) where
 import Handler.~{moduleName m}.Internal
 import Yesod.Core
 import Yesod.Auth
