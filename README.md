@@ -359,7 +359,7 @@ For the example above, the result is following:
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Handler.MyModule 
-    ( module Handler.MyModule.Internal ) where
+    ( module Handler.MyModule.Enums, module Handler.MyModule.Internal ) where
 import Handler.MyModule.Internal
 import Yesod.Core
 import Yesod.Auth
