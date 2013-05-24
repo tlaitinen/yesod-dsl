@@ -169,7 +169,7 @@ routePathParams = (filter isPathParam) . routePath
         
 
 handlerName :: Route -> Handler -> String
-handlerName r h = show (routePath r) ++ " " ++ show (handlerType h)
+handlerName r h = routeName (routePath r) ++ " " ++ show (handlerType h)
 
 routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)
