@@ -137,16 +137,12 @@ instance PathPiece ZonedTime where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show
 
-instance PathPiece a => PathPiece [a] where
+instance (PathPiece a, Show a) => PathPiece [a] where
     fromPathPiece s = do
         parts <- safeRead s
         values <- mapM fromPathPiece parts
         return values
-    toPathPiece values = T.concat [ 
-            T.pack "[",
-            T.intercalate (T.pack ",") (map toPathPiece values),
-            T.pack "]" 
-        ]
+    toPathPiece = T.pack . show
             
 
 getDefaultFilter maybeGetParam defaultFilterJson p = do
