@@ -97,7 +97,7 @@ route /blogposts {
             limit 1000;
 
         if param "blogPostName" = $$ then
-            where bp.name like "%" || $$ || "%";
+            where bp.name like "%" || $$ || "%";
         default-filter-sort;
     }
     post {
@@ -127,7 +127,7 @@ route /comments {
             order by bp.name asc
             limit 1000;
 
-        if param "authorId" = $$ then
+        if param "authorId" = $$ then
             inner join Person as p on bp.authorId = p.id
             where p.id = $$;
 
@@ -440,7 +440,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Network.HTTP.Conduit as C
 import qualified Network.Wai as W
 import Data.Conduit.Lazy (lazyConsume)
-import Network.HTTP.Types (status200, status400)
+import Network.HTTP.Types (status200, status400, status404)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
@@ -538,6 +538,12 @@ instance PathPiece a => PathPiece [a] where
         parts <- safeRead s
         values <- mapM fromPathPiece parts
         return values
+    toPathPiece values = T.concat [ 
+            T.pack "[",
+            T.intercalate (T.pack ",") (map toPathPiece values),
+            T.pack "]" 
+        ]
+            
 
 getDefaultFilter maybeGetParam defaultFilterJson p = do
     f <- maybe maybeGetParam Just getFilter
@@ -709,9 +715,11 @@ postPersonsR  = do
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
     e1 <- case A.fromJSON jsonBody of
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Person from JSON object in the request body : " ++ err )
@@ -768,9 +776,11 @@ putPersonPersonIdR p1 = do
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
     e1 <- case A.fromJSON jsonBody of
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Person from JSON object in the request body : " ++ err )
@@ -797,7 +807,6 @@ getBlogpostsR :: forall master. (MyModuleValidation master,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT MyModule (HandlerT master IO) A.Value
 getBlogpostsR  = do
-    authId <- lift $ requireAuthId
     filterParam_blogPostName <- lookupGetParam "blogPostName"
     defaultFilterParam <- lookupGetParam "filter"
     let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
@@ -808,7 +817,7 @@ getBlogpostsR  = do
     let defaultOffset = (maybe Nothing fromPathPiece defaultOffsetParam) :: Maybe Int64
     let defaultLimit = (maybe Nothing fromPathPiece defaultLimitParam) :: Maybe Int64
     let baseQuery limitOffsetOrder = from $ \(bp  `InnerJoin` p) -> do
-        on (p ^. PersonId ==. bp ^. BlogPostAuthorId)
+        on ((p ^. PersonId) ==. (bp ^. BlogPostAuthorId))
         let bpId' = bp ^. BlogPostId
 
         _ <- if limitOffsetOrder
@@ -894,9 +903,11 @@ postBlogpostsR  = do
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
     e1 <- case A.fromJSON jsonBody of
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
@@ -915,7 +926,7 @@ getBlogpostsBlogPostIdR :: forall master. (MyModuleValidation master,
     => BlogPostId -> HandlerT MyModule (HandlerT master IO) A.Value
 getBlogpostsBlogPostIdR p1 = do
     let baseQuery limitOffsetOrder = from $ \(bp  `InnerJoin` p) -> do
-        on (p ^. PersonId ==. bp ^. BlogPostAuthorId)
+        on ((p ^. PersonId) ==. (bp ^. BlogPostAuthorId))
         let bpId' = bp ^. BlogPostId
         where_ ((bp ^. BlogPostId) ==. ((val p1)))
 
@@ -954,9 +965,11 @@ putBlogpostsBlogPostIdR p1 = do
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
     e1 <- case A.fromJSON jsonBody of
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
@@ -1037,7 +1050,7 @@ getCommentsR  = do
         case getDefaultFilter filterParam_authorId defaultFilterJson "authorId" of
             Just localParam -> from $ \(p) -> do
  
-                where_ (bp ^. BlogPostAuthorId ==. p ^. PersonId)
+                where_ ((bp ^. BlogPostAuthorId) ==. (p ^. PersonId))
 
                 where_ $ (p ^. PersonId) ==. ((val localParam))
             Nothing -> return ()
@@ -1069,9 +1082,11 @@ postCommentsR  = do
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
     e1 <- case A.fromJSON jsonBody of
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
@@ -1130,9 +1145,11 @@ putCommentsCommentIdR p1 = do
     let wReq = reqWaiRequest yReq
     bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
     jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 ("Could not decode JSON object from request body : " ++ err)
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
          Right o -> return o
-
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
     e1 <- case A.fromJSON jsonBody of
         A.Success e -> return e
         A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Comment from JSON object in the request body : " ++ err )

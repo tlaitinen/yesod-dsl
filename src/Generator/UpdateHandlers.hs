@@ -46,7 +46,9 @@ prepareJsonInputField ifields (e,f) = case matchInputField ifields (fieldName f)
  
 updateHandlerDecode :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerDecode m r ps (pId,p) = case p of
-    (Update en fr io) -> readInputObject (fromJust $ lookupEntity m en) io fr
+    Update en fr io -> readInputObject (fromJust $ lookupEntity m en) io fr
+    Insert en io -> let e = (fromJust $ lookupEntity m en) in 
+        T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
     _ -> ""
     where readInputObject e (Just fields) fr = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
 
