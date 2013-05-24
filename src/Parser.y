@@ -296,9 +296,7 @@ derives : upperId { [$1] }
         | derives comma upperId { $3 : $1 }
 
 checks : { [] }
-        | checks checkDef semicolon { $2 : $1 }
-checkDef :  check lowerId { $2  }
-
+        | check fieldIdList semicolon { reverse $2 }
 
 fieldIdList : lowerId { [$1] }
             | fieldIdList comma lowerId { $3 : $1 }

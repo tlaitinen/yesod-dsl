@@ -14,7 +14,7 @@ framework](http://www.yesodweb.com/),
  * support code for implementing polymorphic relations and accessing common fields
 
 ## License
- * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
+ * The code generator is distributed under the terms of [Simplified BSD license](src/LICENSE)
 
 ## Why not using Yesod, Persistent and Esqueleto directly?
 
@@ -80,7 +80,7 @@ route /person/#PersonId {
         select p.* from Person as p where p.id = $1;
     }
     put {
-        replace Person identified by $1;
+        update Person identified by $1;
     }
     delete {
         delete from Person as p where p.id = $1;
@@ -113,7 +113,7 @@ route /blogposts/#BlogPostId {
             where bp.id = $1;
     }
     put {
-        replace BlogPost identified by $1;
+        update BlogPost identified by $1;
     }
     delete {
         delete from BlogPost as bp where bp.id = $1;
@@ -144,7 +144,7 @@ route /comments/#CommentId {
         select c.* from Comment as c where c.id = $1;
     }
     put {
-        replace Comment identified by $1;
+        update Comment identified by $1;
     }
     delete {
         delete from Comment as c where c.id = $1;
@@ -160,16 +160,15 @@ value and dots ... mean repeated syntactic element:
 
 ```
 entity EntityName {
-    instance of Class1, ..., ClassN;
+    [instance of ClassName [, ClassName]*;]
 
-    [fieldName [Maybe] FieldType [default defaultValue] [check functionName];]*
+    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]*;]*
     
+    [unique UniqueName fieldName [, fieldName]*;]*
 
-    [unique UniqueName [uniquefield]*;]*
+    [deriving ClassName [, ClassName]*;]
 
-    [deriving [ClassName]*;]
-
-    [check functionName;]*
+    [check functionName [, functionName]*;]
 }
 ```
 
@@ -231,9 +230,9 @@ optional value and []* means that the element can be repeated.
 
 ```
 class ClassName {
-    [field1Name [Maybe] Field1Type [default defaultValue] [check functionName]*;]*
+    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]*;]*
     
-    [unique UniqueName fieldName [fieldName]*]*;
+    [unique UniqueName fieldName [, fieldName]*]*;
 }
 ```
 
@@ -270,13 +269,26 @@ route /pathPiece1/.../pathPieceN {
     }]
     [put | post | delete {
         [public;]
-        [replace EntityName identified by inputValue [with { [fieldName : fieldName]* }];]*
-        [insert EntityName  [from { [fieldName : fieldName]* }];]*
+        [update EntityName identified by inputValue 
+           [with { 
+               [fieldName = inputRef]
+               [, fieldName = inputRef]*  
+           }];]*
+        [insert EntityName  
+           [from { 
+               [fieldName = inputRef]
+               [, fieldName = inputRef]* 
+           }];]*
         [delete from EntityName as entityAlias [where expr];]*
     }]
 }
 ``` 
-where *pathPiece* is either a string constant or an entity key (#EntityId)
+where *pathPiece* is either a string constant or an entity key (#EntityId),
+and *inputRef* is one of the following:
+ * $*i*, reference to the *i*th parameter in the route path 
+ * $authId, reference to the return value of *requireAuthId*
+ * *attrName*, reference to the attribute in the JSON object parsed from request body
+ * constant value (string, integer, or float),
 and *expr* allows following SQL expressions (BNF-style grammar):
 ```
 expr: (expr) and (expr)
@@ -335,8 +347,8 @@ runLoggingT
  
 ## Generated files
 
-The code generator generates two files that constitute a Yesod subsite: Handler/ModuleName.hs and Handler/ModuleName/Internal.hs.
-
+Due to the GHC stage restriction considering template Haskell, 
+the code generator generates three files that constitute a Yesod subsite: Handler/ModuleName.hs, Handler/ModuleName/Enums.hs, and Handler/ModuleName/Internal.hs.
 For the example above, the result is following:
 
 ```haskell
