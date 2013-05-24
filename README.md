@@ -28,6 +28,15 @@ and especially if you are using
 Javascript library for rendering HTML in the browser, then a part of the web
 service may well be expressed succinctly using **yesod-dsl**.
 
+## How to get yesod-dsl?
+
+```
+cabal install yesod-dsl
+```
+
+Note that the current version is experimental and all of the DSL syntax is
+probably not handled correctly.
+
 ## DSL syntax
 
 The syntax for the input of yesod-dsl is illustrated by the following complete
