@@ -6,7 +6,7 @@ module Validation.Names (names,
 import AST
 import Data.List
 
-data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS | InputNS | RouteNS deriving (Eq, Ord)
+data NameSpace = GlobalNS | ClassNS | EntityNS | EnumNS | FieldNS | FieldTypeNS | InputNS | RouteNS | NestedNS Int deriving (Eq, Ord, Show)
 type Name = String
 type NameList = [(NameSpace, [(Name, [Location])])]
 
@@ -15,8 +15,11 @@ findName nl ns' n' = case matching of
     ((_,_,l):_)  -> Just (head l)
     _ -> Nothing
     where matching = [ (ns, n, l) | (ns, names) <- nl, (n, l) <- names,
-                      ns == ns', n == n' ]
-
+                      ns `subNameSpaceOf` ns', n == n' ]
+subNameSpaceOf :: NameSpace -> NameSpace -> Bool             
+subNameSpaceOf ns1 ns2 = case (ns1,ns2) of
+    (NestedNS l1, NestedNS l2) -> l1 <= l2
+    (ns1', ns2') -> ns1' == ns2'
              
 class HasNames a where 
     getNames :: a -> [([NameSpace], Name, Location)]
@@ -68,14 +71,24 @@ instance HasNames Route where
                     routeLoc r) | i <- [1..length (routePathParams r)] ]
                
 instance HasNames (Route, Handler) where
-    getNames (r,(Handler _ ht ps)) = [([GlobalNS], handlerName r ht, routeLoc r)]
-                                 ++ getNames [ (r,ht,p) | p <- ps ]
-instance HasNames (Route, HandlerType, HandlerParam) where
-    getNames (r,ht,p) = [([GlobalNS],
-                          handlerName r ht ++ " "++ pn,
+    getNames (r,h) = [([GlobalNS], handlerName r h, routeLoc r)]
+                                 ++ getNames [ (r,h,p) | p <- handlerParams h ]
+instance HasNames (Route, Handler, HandlerParam) where
+    getNames (r,h,p) = [([GlobalNS],
+                          handlerName r h ++ " "++ pn,
                           routeLoc r) | pn <- handlerParamName p]
+        ++ case p of
+            Select sq -> [([NestedNS lvl],
+                          handlerName r h ++ " " ++ vn,
+                          routeLoc r) | (vn,lvl) <- sqScopedAliases sq]
+            _         -> []
+                        
 
-     
+sqScopedAliases :: SelectQuery -> [(VariableName, Int)]
+sqScopedAliases sq = [(vn,0)] 
+    ++ [ (joinAlias j,lvl) | (j,lvl) <- zip (sqJoins sq) [1..] ]
+    where (_,vn) = sqFrom sq
+          
 
 handlerParamName :: HandlerParam -> [String]
 handlerParamName Public = ["public"]
@@ -90,7 +103,7 @@ groupByName ns = nameGroups
     where
         sortedNames = sortBy (\(n1,_) (n2,_) -> compare n1 n2) ns
         groupedNames = groupBy (\(n1,_) (n2,_) -> n1 == n2) sortedNames
-        factorName (all@((name,_):routet)) = (name, [l | (_,l) <- all ])
+        factorName (all@((name,_):_)) = (name, [l | (_,l) <- all ])
         nameGroups = map factorName groupedNames
 
 

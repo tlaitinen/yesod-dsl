@@ -55,7 +55,7 @@ type UniqueName = String
 data Location = Loc FilePath Int Int deriving (Eq)
 
 instance Show Location where
-    show (Loc path row col) = path ++ " line " ++ show row ++ " col " ++ show col
+    show (Loc path row col) = path ++ ":" ++ show row ++ ":" ++ show col
 
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
@@ -127,7 +127,7 @@ data Join = Join {
     joinType   :: JoinType,
     joinEntity :: EntityName,
     joinAlias  :: VariableName,
-    joinExpr   :: Maybe (FieldRef, BinOp, FieldRef)
+    joinExpr   :: Maybe Expr
 } deriving (Show, Eq)
 
 type InputField = (ParamName, InputFieldRef)
@@ -168,8 +168,8 @@ routePathParams = (filter isPathParam) . routePath
 
         
 
-handlerName :: Route -> HandlerType -> String
-handlerName r ht = show (routePath r) ++ " " ++ show ht
+handlerName :: Route -> Handler -> String
+handlerName r h = show (routePath r) ++ " " ++ show (handlerType h)
 
 routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)

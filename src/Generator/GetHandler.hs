@@ -69,19 +69,11 @@ makeJustField True f = "(just " ++ f ++ ")"
 makeJustField False f = f
 
 mapJoinExpr :: Module -> Context -> Join -> String
-mapJoinExpr m ctx (Join _ en vn (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/join-expr.cg")
-    where f1just = f1maybe == False && f2maybe == True
-          f2just = f2maybe == False && f1maybe == True
-          f1maybe = isMaybeFieldRef m ctx f1
-          f2maybe = isMaybeFieldRef m ctx f2
+mapJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/join-expr.cg")
 mapJoinExpr m _ _ = ""
 
 implicitJoinExpr :: Module -> Context -> Join -> String
-implicitJoinExpr m ctx (Join _ en vn (Just (f1, op, f2))) = T.unpack $(codegenFile "codegen/implicit-join-expr.cg")
-    where f1just = f1maybe == False && f2maybe == True
-          f2just = f2maybe == False && f1maybe == True
-          f1maybe = isMaybeFieldRef m ctx f1
-          f2maybe = isMaybeFieldRef m ctx f2
+implicitJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/where-expr.cg")
 implicitJoinExpr m _ _ = ""
 
 

@@ -236,6 +236,7 @@ binop : equals { Eq }
 expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
      | lparen expr rparen or lparen expr rparen { OrExpr $2 $6 }
      | not expr { NotExpr $2 }
+     | lparen expr rparen { $2 } 
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
      | fieldRef listOp fieldRef { ListOpExpr $1 $2 $3 }
 listOp: in { In }
@@ -246,7 +247,7 @@ valexpr : value { ConstExpr $1 }
         | valexpr concat valexpr { ConcatExpr $1 $3 }
 
 maybeJoinOn : { Nothing }
-            | on fieldRef binop fieldRef { Just ($2,$3,$4) }
+            | on expr { Just $2 }
             
 jointype : inner join { InnerJoin }
          | cross join { CrossJoin } 

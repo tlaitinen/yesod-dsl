@@ -49,106 +49,107 @@ instance HasRefs Route where
     getRefs r = getRefs [ (r,h) | h <- routeHandlers r ]
 
 instance HasRefs (Route, Handler) where
-    getRefs (r, (Handler l ht ps)) = getRefs [ (r,ht,p) | p <- ps ]
+    getRefs (r, h) = getRefs [ (r,h,p) | p <- handlerParams h ]
 
-instance HasRefs (Route, HandlerType, HandlerParam) where
-    getRefs (r,ht,(Insert en io)) = 
-        [(routeLoc r, "insert in " ++ handlerInfo r ht,EntityNS, en)]
-        ++ getRefs (r,ht,routeLoc r, "insert input expression in " ++ handlerInfo r ht, io) 
-    getRefs (r,ht,(Replace en fr io)) = 
-        [(routeLoc r, "replace in " ++ handlerInfo r ht, EntityNS, en)]
-        ++ getRefs (r, ht, routeLoc r, "replace-with in " ++ handlerInfo r ht, fr)
-        ++ getRefs (r, ht, routeLoc r, "replace-from in " ++ handlerInfo r ht, io)
+instance HasRefs (Route, Handler, HandlerParam) where
+    getRefs (r,h,(Insert en io)) = 
+        [(routeLoc r, "insert in " ++ handlerInfo r h,EntityNS, en)]
+        ++ getRefs (r,h, handlerLoc h, "insert input expression in " ++ handlerInfo r h, io) 
+    getRefs (r,h,(Replace en fr io)) = 
+        [(routeLoc r, "replace in " ++ handlerInfo r h, EntityNS, en)]
+        ++ getRefs (r,h, handlerLoc h, "replace-with in " ++ handlerInfo r h, fr)
+        ++ getRefs (r,h, handlerLoc h, "replace-from in " ++ handlerInfo r h, io)
                         
-    getRefs (r,ht,(Select sq)) = getRefs (r,ht,sq)
-    getRefs (r,ht,(DeleteFrom en vn me)) =
-        [(routeLoc r, "delete-from in " ++ handlerInfo r ht, EntityNS, en)]
+    getRefs (r,h,(Select sq)) = getRefs (r,h,sq)
+    getRefs (r,h,(DeleteFrom en vn me)) =
+        [(routeLoc r, "delete-from in " ++ handlerInfo r h, EntityNS, en)]
         ++ (case me of 
-                (Just e) -> getRefs (r,ht,routeLoc r, "where-expression of delete in " ++ handlerInfo r ht, e)
+                (Just e) -> getRefs (r,h, handlerLoc h, "where-expression of delete in " ++ handlerInfo r h, e,1000::Int)
                 _ -> [])
     getRefs _ = []            
 
-instance HasRefs (Route, HandlerType, SelectQuery) where
-    getRefs (r,ht,sq) = let
+instance HasRefs (Route, Handler, SelectQuery) where
+    getRefs (r,h,sq) = let
         l= routeLoc r
-        i = "select query in " ++ handlerName r ht
+        i = "select query in " ++ handlerName r h
         (en,vn) = sqFrom sq
         in [(l,i,EntityNS,en), 
-            (l,i,GlobalNS, handlerName r ht ++ " " ++ vn)]
+            (l,i,GlobalNS, handlerName r h ++ " " ++ vn)]
            ++ (case sqWhere sq of
-                  Just e -> getRefs (r,ht,l,i,e)
+                  Just e -> getRefs (r,h,l,i,e,1000::Int)
                   Nothing -> [])
-           ++ getRefs [ (r,ht,l,i,j) | j <- sqJoins sq ]
-           ++ getRefs [ (r,ht,l,i,fr) | (fr,_) <- sqOrderBy sq ]
+           ++ getRefs [ (r,h,l,i,j,lvl) | (j,lvl) <- zip (sqJoins sq) ([1..] :: [Int])]
+           ++ getRefs [ (r,h,l,i,fr, 1000::Int) | (fr,_) <- sqOrderBy sq ]
            
-instance HasRefs (Route, HandlerType, Location, Info, Join) where
-    getRefs (r,ht,l,i,j) = [(l,i,EntityNS, joinEntity j)]
-                         ++ [(l,i,GlobalNS, handlerName r ht ++ " " 
+instance HasRefs (Route, Handler, Location, Info, Join,Int) where
+    getRefs (r,h,l,i,j,lvl) = [(l,i,EntityNS, joinEntity j)]
+                         ++ [(l,i,GlobalNS, handlerName r h ++ " " 
                                     ++ joinAlias j)]
                          ++ (case joinExpr j of
-                                Just (fr1, _, fr2) ->
-                                    getRefs [(r,ht,l,i,fr1), (r,ht,l,i,fr2)]
+                                Just e ->
+                                    getRefs (r,h,l,i,e,lvl)
                                 Nothing -> [])
 
-instance HasRefs (Route, HandlerType, Location, Info, FieldRef) where
-    getRefs (r,ht,l,i,(FieldRefId vn)) = 
-        [(l,i,GlobalNS, handlerName r ht ++ " " ++ vn)]
-    getRefs (r,ht,l,i,(FieldRefNormal vn fn)) =
-        [(l,i,GlobalNS, handlerName r ht ++ " " ++ vn)]
-        ++ case lookupEntityByVariable r ht vn of
+instance HasRefs (Route, Handler, Location, Info, FieldRef, Int) where
+    getRefs (r,h,l,i,(FieldRefId vn), lvl) = 
+        [(l,i,NestedNS lvl, handlerName r h ++ " " ++ vn)]
+    getRefs (r,h,l,i,(FieldRefNormal vn fn), lvl) =
+        [(l,i,NestedNS lvl, handlerName r h ++ " " ++ vn)]
+        ++ case lookupEntityByVariable r h vn of
                (Just en) -> [(l,i,FieldNS, en ++ "." ++ fn)]
                Nothing -> []
-    getRefs (r,ht,l,i,(FieldRefPathParam pi)) = 
+    getRefs (r,h,l,i,(FieldRefPathParam pi), lvl) = 
         [(l,i,RouteNS, show (routePath r) ++ " $" ++ show pi)]
     getRefs _ = []
 
-instance HasRefs (Route, HandlerType, Location, Info, Maybe [InputField]) where
-    getRefs (r,ht,l,i,Just io) = getRefs [ (r,ht,l,i,f) | (pn,f) <- io ]
+instance HasRefs (Route, Handler, Location, Info, Maybe [InputField]) where
+    getRefs (r,h,l,i,Just io) = getRefs [ (r,h,l,i,f) | (pn,f) <- io ]
     getRefs _ = []
 
     
-instance HasRefs (Route, HandlerType, Location, Info, InputFieldRef) where
-    getRefs (r,ht,l,i,(InputFieldNormal fn)) = []
-    getRefs (r,ht,l,i,(InputFieldPathParam pi)) = 
+instance HasRefs (Route, Handler, Location, Info, InputFieldRef) where
+    getRefs (r,h,l,i,(InputFieldNormal fn)) = []
+    getRefs (r,h,l,i,(InputFieldPathParam pi)) = 
         [(l,i,RouteNS, show (routePath r) ++ " $" ++ show pi)]    
     getRefs _ = []
 
-lookupEntityByVariable :: Route -> HandlerType -> VariableName 
+lookupEntityByVariable :: Route -> Handler -> VariableName 
                        -> Maybe EntityName
-lookupEntityByVariable r ht vn = 
+lookupEntityByVariable r h vn = 
     case find (\(_, vn') -> vn == vn') aliases of
         (Just (en,_)) -> Just en
         Nothing -> Nothing 
     where   
         aliases = concatMap getAlias [ p 
-                                    | (Handler l ht' ps) <- routeHandlers r,
-                                    p <- ps, ht == ht' ] 
+                                    | (Handler l ht ps) <- routeHandlers r,
+                                    p <- ps, ht == handlerType h ] 
         getAlias (Select sq) = sqAliases sq
         getAlias _ = []
 
-instance HasRefs (Route, HandlerType, Location, Info, (Maybe (FieldRef, BinOp, FieldRef))) where
-    getRefs (r,ht,l, i, (Just (f1, _, f2))) = getRefs (r,ht,l,i,f1) ++ getRefs (r,ht,l,i,f2)
+instance HasRefs (Route, Handler, Location, Info, (Maybe (FieldRef, BinOp, FieldRef)), Int) where
+    getRefs (r,h,l, i, (Just (f1, _, f2)), lvl) = getRefs (r,h,l,i,f1, lvl) ++ getRefs (r,h,l,i,f2, lvl)
     getRefs _ = []
 
-instance HasRefs (Route, HandlerType, Location, Info, Expr) where
-    getRefs (r,ht,l, i, (AndExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
-    getRefs (r,ht,l, i, (OrExpr e1 e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
-    getRefs (r,ht,l, i, (BinOpExpr e1 op e2)) = getRefs (r,ht,l,i,e1) ++ getRefs (r,ht,l,i,e2)
+instance HasRefs (Route, Handler, Location, Info, Expr,Int) where
+    getRefs (r,h,l, i, (AndExpr e1 e2),lvl) = getRefs (r,h,l,i,e1,lvl) ++ getRefs (r,h,l,i,e2,lvl)
+    getRefs (r,h,l, i, (OrExpr e1 e2),lvl) = getRefs (r,h,l,i,e1,lvl) ++ getRefs (r,h,l,i,e2,lvl)
+    getRefs (r,h,l, i, (BinOpExpr e1 op e2),lvl) = getRefs (r,h,l,i,e1,lvl) ++ getRefs (r,h,l,i,e2,lvl)
+    getRefs (r,h,l,i, (ListOpExpr fr1 op fr2),lvl) = getRefs (r,h,l,i,fr1,lvl) ++ getRefs (r,h,l,i,fr2,lvl)
 
-instance HasRefs (Route, HandlerType, Location, Info, ValExpr) where
-    getRefs (r,ht,l, i, (FieldExpr f)) = getRefs (r,ht,l,i,f)
-    getRefs (r,ht,l,i, (ConcatExpr f1 f2)) = getRefs [(r,ht,l,i,f1),(r,ht,l,i,f2)]
+instance HasRefs (Route, Handler, Location, Info, ValExpr,Int) where
+    getRefs (r,h,l, i,(FieldExpr f),lvl) = getRefs (r,h,l,i,f,lvl)
+    getRefs (r,h,l,i, (ConcatExpr f1 f2),lvl) = getRefs [(r,h,l,i,f1,lvl),(r,h,l,i,f2,lvl)]
     getRefs _ = []
 
-handlerInfo :: Route-> HandlerType -> String
-handlerInfo r ht = show ht ++ " of route " ++ show (routePath r)
+handlerInfo :: Route-> Handler -> String
+handlerInfo r h = show (handlerType h) ++ " of route " ++ show (routePath r)
 
 refs :: Module -> Refs
 refs = getRefs
 
 refErrors :: NameList -> Refs -> String
 refErrors nl refs = 
-    concatMap refError $ filter (not . (hasRef  nl)) refs
+    (concatMap refError $ filter (not . (hasRef  nl)) refs)
         where
             refError (l,i,ns,n) = "Reference to an undefined name '" ++ n 
                                 ++ "' in " ++ i ++ " in " ++ show l ++ "\n"
