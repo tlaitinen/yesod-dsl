@@ -1,7 +1,7 @@
 # yesod-dsl
 
 A domain specific language and a code generator to create RESTful
-JSON-only web services for managing an SQL database with [Yesod web
+JSON-only web services for managing an RDBMS with [Yesod web
 framework](http://www.yesodweb.com/),
 [Persistent](http://www.yesodweb.com/book/persistent), and
 [Esqueleto](http://hackage.haskell.org/package/esqueleto-1.2).
@@ -331,7 +331,7 @@ query string parameters by using *if param "paramName" = $$ then* statements.
 ## Using the generated subsite
 
 In order to use the generated subsite in a scaffolded Yesod site, it suffices to do the following steps:
- * add the generated Haskell modules Handler.MyModule and Handler.MyModule.Internal to the .cabal-file, and
+ * add the generated Haskell modules Handler.MyModule, Handler.MyModule.Enums, and Handler.MyModule.Internal to the .cabal-file, and
  * import Handler.MyModule in Application.hs, and
  * define the instance MyModuleValidation App that implements field and entity check functions, and
  * add migration code 
