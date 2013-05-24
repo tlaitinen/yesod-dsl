@@ -3,16 +3,13 @@ import Data.List
 import AST
 import Data.Maybe
 
-entityPath :: Entity -> String
-entityPath e = entityName e ++ " in " ++ show (entityLoc e)
-
 implementClasses :: Module -> Module
-implementClasses mod = 
+implementClasses m = 
     let
-        classes = modClasses mod
+        classes = modClasses m
     in 
-        mod {
-            modEntities  = [ implInEntity mod classes e | e <- (modEntities mod) ]
+        m {
+            modEntities  = [ implInEntity m classes e | e <- (modEntities m) ]
         }
 
 classLookup :: [Class] -> ClassName -> Maybe Class
@@ -20,31 +17,32 @@ classLookup classes name =  find (\i -> name == className i) classes
 
 
 expandClassField :: Module -> Entity ->  Field -> [Field]
-expandClassField mod e f@(Field _ _ (EntityField iName)) 
+expandClassField m e f@(Field _ _ (EntityField iName)) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to class not allowed"
-    | otherwise = [ Field {
-                        fieldOptional = True,
-                        fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
-                        fieldContent = EntityField (entityName re)
-
-                    } | re <- modEntities mod, iName `elem` (entityInstances re) ]
+    | otherwise = [ mkField re | re <- modEntities m,  
+                                 iName `elem` (entityInstances re) ]
+    where mkField re = Field {
+            fieldOptional = True,
+            fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
+            fieldContent = EntityField (entityName re)
+        } 
 
 
 expandClassRefFields :: Module -> Entity -> Field -> [Field]
-expandClassRefFields mod e f = expand (fieldContent f)
+expandClassRefFields m e f = expand (fieldContent f)
     where       
-        expand (EntityField name) = if isJust (classLookup (modClasses mod) name) 
-                                        then expandClassField mod e f 
-                                        else [f]
+        expand (EntityField name) = case classLookup (modClasses m) name of
+            Just _ -> expandClassField m e f
+            Nothing -> [f]
         expand _ = [f]                           
             
-
 entityError :: Entity -> String -> a
-entityError e msg = error $ msg ++ " (" ++ entityPath e++ ")"
+entityError e msg = error $ msg ++ " (" ++ entityName e ++ " in " ++ (show $ entityLoc e) ++ ")"
+
 implInEntity :: Module -> [Class] -> Entity -> Entity
-implInEntity mod classes e 
+implInEntity m classes e 
     | null invalidClassNames = e {
-        entityFields  = concatMap (expandClassRefFields mod e) $ entityFields e ++ extraFields,
+        entityFields  = concatMap (expandClassRefFields m e) $ entityFields e ++ extraFields,
         entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses),
         entityChecks = entityChecks e 
     }
