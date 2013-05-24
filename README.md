@@ -336,6 +336,18 @@ query string parameters by using *if param "paramName" = $$ then* statements.
 
 In order to use the generated subsite in a scaffolded Yesod site, it suffices to do the following steps:
  * add the generated Haskell modules Handler.MyModule, Handler.MyModule.Enums, and Handler.MyModule.Internal to the .cabal-file, and
+ * add the following packages to build-depends: 
+    ```
+    esqueleto 
+    , yesod-persistent              
+    , unordered-containers 
+    , blaze-builder
+    , http-types   
+    , wai
+    , resourcet
+    , attoparsec
+    , time
+    ```
  * import Handler.MyModule in Application.hs, and
  * define the instance MyModuleValidation App that implements field and entity check functions, and
  * add migration code 
