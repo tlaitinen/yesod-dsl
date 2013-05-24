@@ -1,5 +1,5 @@
 name:           yesod-dsl
-version:        0.1
+version:        0.1.1
 license:        BSD3
 license-file:   LICENSE
 author:         Tero Laitinen 
@@ -25,5 +25,19 @@ executable  yesod-dsl
                  , MissingH >= 1.2.0.0
                  , filepath >= 1.3.0.0
     Build-tools:         alex, happy
-    other-modules: Lexer Parser 
+    other-modules: Lexer Parser AST Generator ClassImplementer ModuleMerger Validation 
+                   Generator.Classes
+                   Generator.Common
+                   Generator.Esqueleto
+                   Generator.GetHandler
+                   Generator.Handlers
+                   Generator.Models
+                   Generator.Routes
+                   Generator.UpdateHandlers
+                   Generator.Validation
+                   Validation.Fields
+                   Validation.Names
+                   Validation.Refs
+                   Validation.Handlers
+
     ghc-options: -Wall
