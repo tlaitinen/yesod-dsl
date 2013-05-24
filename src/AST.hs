@@ -174,12 +174,6 @@ handlerName r h = routeName (routePath r) ++ " " ++ show (handlerType h)
 routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)
 
-handlerSelectFrom :: [HandlerParam] -> Maybe SelectQuery
-handlerSelectFrom ps = case find isSelect ps of
-    Just (Select sq) -> Just sq
-    Nothing -> Nothing
-    where isSelect (Select _) = True
-          isSelect _ = False
 data PathPiece = PathText String
                | PathId EntityName
 instance Show PathPiece where
@@ -262,7 +256,7 @@ fieldOptions f = fieldContentOptions (fieldContent f)
 fieldDefault :: Field -> Maybe FieldValue
 fieldDefault f = case find isDefault (fieldOptions f) of
     Just (FieldDefault fv) -> Just fv
-    Nothing -> Nothing
+    _ -> Nothing
     where isDefault (FieldDefault _) = True
           isDefault _  = False
 
