@@ -21,11 +21,8 @@ tokens :-
     \n ;
     @string { mkTvar (TString . stripQuotes) }
     \; { mkT TSemicolon } 
-    \: { mkT TColon }
     \{ { mkT TLBrace }
     \} { mkT TRBrace }
-    \[ { mkT TLBrack }
-    \] { mkT TRBrack }
     \( { mkT TLParen }
     \) { mkT TRParen }
     \, { mkT TComma }
@@ -55,8 +52,6 @@ tokens :-
     "route" { mkT TRoute }
     "unique" { mkT TUnique }
     "check" { mkT TCheck }
-    "before-handler" { mkT TBeforeHandler }
-    "after-handler" { mkT TAfterHandler }
     "inner" { mkT TInner }
     "outer" { mkT TOuter }
     "left" { mkT TLeft }
@@ -100,7 +95,6 @@ tokens :-
     "limit" { mkT TLimit }
     "offset" { mkT TOffset }
     "where" { mkT TWhere }
-    "return" { mkT TReturn }
     "default" { mkT TDefault }
     "instance" { mkT TInstance }
     "of" { mkT TOf }
@@ -120,13 +114,10 @@ tokens :-
 
 data Token = Tk AlexPosn TokenType deriving (Show)
 data TokenType = TSemicolon
-           | TColon
            | TLBrace
            | TRBrace
            | TLParen
            | TRParen
-           | TLBrack
-           | TRBrack
            | TEquals
            | TNe 
            | TLt
@@ -207,7 +198,6 @@ data TokenType = TSemicolon
            | TParam
            | TWhere
            | TAs
-           | TReturn
            | TDeriving
            | TDefault
            | TPathParam Int

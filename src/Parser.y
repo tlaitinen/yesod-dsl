@@ -46,10 +46,7 @@ import System.Exit
     rbrace { Tk _ TRBrace }
     lparen { Tk _ TLParen }
     rparen { Tk _ TRParen }
-    lbrack { Tk _ TLBrack }
-    rbrack { Tk _ TRBrack }
     comma  { Tk _ TComma }
-    colon { Tk _ TColon }
     dot  { Tk _ TDot }
     slash { Tk _ TSlash }
     stringval     { Tk _ (TString $$) }
@@ -75,11 +72,8 @@ import System.Exit
     post { Tk _ TPost }
     delete { Tk _ TDelete }
     public { Tk _ TPublic }
-    return { Tk _ TReturn }
     instance { Tk _ TInstance }
     of { Tk _ TOf }
-    beforehandler { Tk _ TBeforeHandler }
-    afterhandler { Tk _ TAfterHandler }
     in { Tk _ TIn }
     limit { Tk _ TLimit }
     offset { Tk _ TOffset } 
