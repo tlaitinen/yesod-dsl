@@ -29,6 +29,9 @@
     },
     "{controllerFileName}.js.tpl.merge": {
       "b092f4aad11d2f7eaab5ce3e2dcc2fc3134f3188": "eJxzrSjRS0lNy8xL1VCvTs7PKynKz8lJLfJLzE0tLkhMTq3VQxOtVddRqOZSAILUipLUvBQrBXVXoBmJBQV6znCF6ly1mtZcACwSIF0\u003d"
+    },
+    "{modelFileName}.js.tpl.merge": {
+      "31d5356142a167c72422f7902f19df3c583f3249": "eJxlUcFugzAMvfMVVqUq0CLorlC6w7TrfgBxSMG00dKAktAxRfn3GWg7rfMhdvKeX16c99EmDbZCYcjcpWtQfvALmp7X6BOnqPYsBhcABY4WVZMBc0du8E1yYwicoXlpBcrGZFC69byf4srlgCZZICggbAdVW9Epquaz6CZ+j7bTEF65Bo2W+GUVQ8+1nXqXhsT0UtiQxSyKQdDxLqe0X1iJRHWy5xy2W/GsvNjR0FLPTC5FdRfLWJT/I5ODpB/MOXQwDSKDttyRHfvdz/VLBf6pywfBk8Cg1ZTyX8BH4Z+h3CTWfm97OT2/WC3A6vDouRtgjx9ZTDA3Zc/AuxLCUagGRygKGOtuUDaCV2AMiBYzqPw+pQsOgVtDuoGj5OoTJP072I4cNkONcEF9Qqg71UpR08i/0sGgBmwEbTYpeZwdVcH07h/XJaFF"
     }
   },
   "targets": {
@@ -276,6 +279,42 @@
         "name": "example",
         "controllerNamespace": "example.controller",
         "library": "all"
+      }
+    },
+    "app/model/User.js": {
+      "source": "{modelFileName}.js.tpl.merge",
+      "version": "31d5356142a167c72422f7902f19df3c583f3249",
+      "parameters": {
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "baseClass": "Ext.data.Model",
+        "modelFileName": "User",
+        "name": "User",
+        "fields": "id:int:null,name:auto:null,version:auto:null"
+      }
+    },
+    "app/model/BlogPost.js": {
+      "source": "{modelFileName}.js.tpl.merge",
+      "version": "31d5356142a167c72422f7902f19df3c583f3249",
+      "parameters": {
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "baseClass": "Ext.data.Model",
+        "modelFileName": "BlogPost",
+        "name": "BlogPost",
+        "fields": "id:int:null,authorId:int:null,name:auto:null"
+      }
+    },
+    "app/model/Comment.js": {
+      "source": "{modelFileName}.js.tpl.merge",
+      "version": "31d5356142a167c72422f7902f19df3c583f3249",
+      "parameters": {
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "baseClass": "Ext.data.Model",
+        "modelFileName": "Comment",
+        "name": "Comment",
+        "fields": "id:int:null,blogPostId:int:null,authorId:int:null,comment:auto:null,time:auto:null,commentState:auto:null"
       }
     }
   }
