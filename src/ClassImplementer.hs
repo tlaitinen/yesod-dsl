@@ -26,7 +26,7 @@ expandClassField m e f@(Field _ _ (EntityField iName))
             fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
             fieldContent = EntityField (entityName re)
         } 
-
+expandClassField _ _ _ = []
 
 expandClassRefFields :: Module -> Entity -> Field -> [Field]
 expandClassRefFields m e f = expand (fieldContent f)
@@ -40,7 +40,7 @@ entityError :: Entity -> String -> a
 entityError e msg = error $ msg ++ " (" ++ entityName e ++ " in " ++ (show $ entityLoc e) ++ ")"
 
 implInEntity :: Module -> [Class] -> Entity -> Entity
-implInEntity m classes e 
+implInEntity m classes' e 
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields m e) $ entityFields e ++ extraFields,
         entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses),
@@ -49,6 +49,12 @@ implInEntity m classes e
     | otherwise        = entityError e $ "Invalid classes " 
                                         ++ show invalidClassNames
     where
+        classes = sortBy (\c1 c2 -> maybeCompare (elemIndex (className c1) instances) 
+                                                 (elemIndex (className c2) instances))
+                         classes'
+        maybeCompare (Just a1) (Just a2) = compare a1 a2
+        maybeCompare (Just _) Nothing = LT
+        maybeCompare Nothing (Just _) = GT
         instances = entityInstances e
         invalidClassNames = [ name | name <- instances, 
                                  isNothing $ classLookup classes name ]

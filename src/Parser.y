@@ -140,8 +140,8 @@ entityDef : entity upperId lbrace
             uniques
             maybeDeriving
             checks
-            rbrace { Entity (mkLoc $1) $2 (reverse $4) (reverse $5)
-                            (reverse $6) (reverse $7) (reverse $8) }
+            rbrace { Entity (mkLoc $1) $2 $4 (reverse $5)
+                            (reverse $6) $7 (reverse $8) }
 
 routeDef : route pathPieces lbrace handlers rbrace { Route (mkLoc $1) (reverse $2) (reverse $4) }
 pathPieces : slash pathPiece { [$2] }

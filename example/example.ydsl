@@ -9,10 +9,7 @@ class Named {
 
 entity User {
     instance of Named, Versioned;
-    password Text;
-    salt Text;
 
-    unique User name;
     deriving Typeable;
 }
 
@@ -28,7 +25,7 @@ entity Comment {
     comment Text;
     time ZonedTime;
     commentState CommentState;
-    check maxFivePendingComments;
+    check maxTwoPendingComments;
 }
 
 route /users {

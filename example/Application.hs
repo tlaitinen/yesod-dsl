@@ -18,10 +18,19 @@ import Network.HTTP.Conduit (newManager, def)
 import Control.Monad.Logger (runLoggingT)
 import System.IO (stdout)
 import System.Log.FastLogger (mkLogger)
+import Handler.Example
+
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
+
+instance ExampleValidation App where
+    nonEmpty "" = return False
+    nonEmpty _ = return True
+
+    maxTwoPendingComments _ = return True
+
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -66,7 +75,9 @@ makeFoundation conf = do
     runLoggingT
         (Database.Persist.runPool dbconf (runMigration migrateAll) p)
         (messageLoggerSource foundation logger)
-
+    runLoggingT
+        (Database.Persist.runPool dbconf (runMigration migrateExample) p)
+        (messageLoggerSource foundation logger)
     return foundation
 
 -- for yesod devel

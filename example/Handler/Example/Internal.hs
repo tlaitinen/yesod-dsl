@@ -155,11 +155,8 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
             return (filterJsonMsg_value v)
 share [mkPersist sqlOnlySettings, mkMigrate "migrateExample" ] [persistLowerCase|
 User json
-    password Text  
-    salt Text  
-    version VersionId Maybe  
     name Text  
-    UniqueUser name !force
+    version VersionId Maybe  
     UniqueUserName name !force
     deriving Typeable
 BlogPost json
@@ -208,7 +205,7 @@ class Validatable a where
 
 class Yesod master => ExampleValidation master where
     nonEmpty :: (YesodPersist master) => Text -> HandlerT master IO Bool
-    maxFivePendingComments :: (P.PersistMonadBackend (b (HandlerT master IO)) ~ P.PersistEntityBackend Comment, 
+    maxTwoPendingComments :: (P.PersistMonadBackend (b (HandlerT master IO)) ~ P.PersistEntityBackend Comment, 
                 b ~ YesodPersistBackend master,
                 P.PersistQuery (b (HandlerT master IO)),
                 P.PersistUnique (b (HandlerT master IO)),
@@ -227,7 +224,7 @@ instance Validatable BlogPost where
 instance Validatable Comment where
     validate v = do
         results <- sequence [
-                checkResult "Comment maxFivePendingComments" $ maxFivePendingComments v            ]
+                checkResult "Comment maxTwoPendingComments" $ maxTwoPendingComments v            ]
         return $ catMaybes results
 instance Validatable Version where
     validate v = do
@@ -281,21 +278,13 @@ getUsersR  = do
                 limit 1000
                 case defaultSortJson of 
                     Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
-                            "password" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p ^. UserPassword) ] 
-                                "DESC" -> orderBy [ desc (p ^. UserPassword) ] 
-                                _      -> return ()
-                            "salt" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p ^. UserSalt) ] 
-                                "DESC" -> orderBy [ desc (p ^. UserSalt) ] 
+                            "name" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p ^. UserName) ] 
+                                "DESC" -> orderBy [ desc (p ^. UserName) ] 
                                 _      -> return ()
                             "version" -> case (sortJsonMsg_direction sjm) of 
                                 "ASC"  -> orderBy [ asc (p ^. UserVersion) ] 
                                 "DESC" -> orderBy [ desc (p ^. UserVersion) ] 
-                                _      -> return ()
-                            "name" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p ^. UserName) ] 
-                                "DESC" -> orderBy [ desc (p ^. UserName) ] 
                                 _      -> return ()
                 
                             _ -> return ()
@@ -312,23 +301,17 @@ getUsersR  = do
             else return ()
         case defaultFilterJson of 
             Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
-                "password" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserPassword) (val v) 
-                    _        -> return ()
-                "salt" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserSalt) (val v) 
+                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserName) (val v) 
                     _        -> return ()
                 "version" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserVersion) (val (Just v)) 
-                    _        -> return ()
-                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserName) (val v) 
                     _        -> return ()
 
                 _ -> return ()
                 ) xs
             Nothing -> return ()  
-        return (p ^. UserId, p ^. UserPassword, p ^. UserSalt, p ^. UserVersion, p ^. UserName)
+        return (p ^. UserId, p ^. UserName, p ^. UserVersion)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -338,12 +321,10 @@ getUsersR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
                     "id" .= toJSON f1,
-                    "password" .= toJSON f2,
-                    "salt" .= toJSON f3,
-                    "version" .= toJSON f4,
-                    "name" .= toJSON f5                                    
+                    "name" .= toJSON f2,
+                    "version" .= toJSON f3                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -392,7 +373,7 @@ getUserUserIdR p1 = do
 
                  
             else return ()
-        return (p ^. UserPassword, p ^. UserSalt, p ^. UserVersion, p ^. UserName)
+        return (p ^. UserName, p ^. UserVersion)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -402,11 +383,9 @@ getUserUserIdR p1 = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
-                    "password" .= toJSON f1,
-                    "salt" .= toJSON f2,
-                    "version" .= toJSON f3,
-                    "name" .= toJSON f4                                    
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2)) -> A.object [
+                    "name" .= toJSON f1,
+                    "version" .= toJSON f2                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -498,17 +477,11 @@ getBlogpostsR  = do
             else return ()
         case defaultFilterJson of 
             Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
-                "password" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserPassword) (val v) 
-                    _        -> return ()
-                "salt" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserSalt) (val v) 
+                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserName) (val v) 
                     _        -> return ()
                 "version" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserVersion) (val (Just v)) 
-                    _        -> return ()
-                "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserName) (val v) 
                     _        -> return ()
                 "authorId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostAuthorId) (val v) 
