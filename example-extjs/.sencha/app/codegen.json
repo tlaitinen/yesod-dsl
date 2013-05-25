@@ -1,0 +1,282 @@
+{
+  "sources": {
+    "theme.html.tpl.merge": {
+      "79e5bc8b4cebd921ec602e9a67c0493c70d2d5ce": "eJydVFFv0zAQfs+vuPkJEE66wQPqkr6UIUBITLQ88Ogm18arEwffNW017b/PTsLWjSKmWlGi+LvvvvPns9Ozj9+n81/XV1ByZSZReiZlBABT2+ydXpUMr/LXcDE6v5D+9S6GGdZ5qeBLnceRlJ4w8EpUxSQwIWXNBidXO4avM5iXWCF8Vq5GojTpsT6uQlZelhuJvze6zcTU1ow1y/m+QQF5/5cJxh0nQeYSvLQj5Ozn/JP8ICZRn2ioGb5ZVYAyBlxI6LAAo+s1gaoLoNzphqmLC3V3xAD7YJMJ4r1BKhFZAHv5QTUnElA6XGYCd6pqDMbdVDIk6LMeMm5Uq/pZAeTyTMRx4p/bpVMVbq1bXysu7xIfKgts4xsSkzTpCS/PubCWiZ1qnvGP2MElwszoHJ031OFxH14g6bAu0P1fL9hfqVovkXhwvrSO880JmoN1jcrXaoX0A82jeRz6Si4UYUKKKBm2J/mjfaKzp0g+LPBEzXxDbKuj1nZt2WcKI97qYoUsw9FQuvZ7evuAhVEpt9L1GM5Hze7yCeKJXI7h/egvpLGkWVvP8gdBsW7xKW5bdEtjt2NoNemFOYDvosfKdpK6LpPsa0B++08E3jwr2nqzNe991YeZu+Unw/rT5OB6Wdhi743qPgHp7p972o53iQ\u003d\u003d"
+    },
+    "config.rb.tpl.merge": {
+      "33f446bd02c3fd24eb27891582eff6a2e789796b": "eJxLLi2KT8ksUrBVcMvMSdUDMvMSc1M14uPdPH1c4+M1ufJLSwpKS+KLSypzUoGqrPJSi0tSU7gALskTcA\u003d\u003d"
+    },
+    "build.properties.merge": {
+      "b6a5e3f50ec88c1caa722762ed2f46298fd600f6": "eJytVjuT0zAQ7v0rdu4oYObsUEBBkYJhKK6AY+AaStlWbOVkyaPH5Q7G/51dyw/ZSZgJXIok0n777Wpf0jVsX/KTXMN9LSzshORQ8p1Q3EJrdMuNE/jXW15C/gy5F7JMRdPK7KmRN3CoRVEDKrqaQ6ENB71DLlqxtpWiYE5oZYMeERbc2gx+ag8FU1B463QjfnHUGK07jUTKGS2JBskemRHaW9Bt4Op9Eao30vNmyTXCbr98u/t+//HrPaTwg6uiZvCpKeEgpISGm4rDs/YGcF9VeKKDcOi4Q9qDgtIboSrwbWVYyW1G4dDAHrVAp7Xjygk2sqBzOzwYagZ5wx5IVzIU3oA9cN7SerTjdB+P4XTE/LKJu4wwCufewgYP07TololyfSFhgnnOcq2ddYa1WWHt9tVv2iuF6TYLQQ813GIasAwIEEMnAVKaymZcPQqjVYPB36J3pS8o/UkyU+bM8qxlrh5o+BPDwuQ9XQQbt/f2BC7ycI+WQz3Nnk3rboMbK7e6ZCh17V3rHUWUcjyQFJJZi8dUrOFbJmU6bqCdJYKU0N7C1jHH2lrLsBgje7Q+SUXn6IUDSxCu8xCpRJkY3GCt8wZjraolEt1peBqJVwp7q9XfNEg+Ghnae4IP66zkua+6y+vccskLp7HjtVcOI4fHqjVOIRwwOEJwdHEFhMMx5Ry1LAOLPziCsFbDLBIKwY2XTmC9IHYUWHh9+3m2IEUjHBy0eWAGjZVvLnR2CBpOxpEy6ym3795+eP/vHW6xeKjHrf3P9saK65ttaIq+jlIs6YUwJGqAjJvdTGDDaDgqzaV+1+MmJePz56USjV9RZSafmSlwrcFL62l7knIB7Ntxhs26XRYbpn3D5Xbqhc1SJ/RStHPuaAPR0gkau8iMF9mZzlvFJviWkBqjKqGvddtO0uKEMOrpCRYCOUyMOOARVbgept5MU5yUBYc0zXV/Y6bpTiNryEU0V+PBTt5uBtkCd1RSp0DnEhGTzKmLtE4lZEXaLXTOFejSkl2b6idaVrtGnrpeZin18d3whMGpQvGlX5roVza8V3bYs/i04Fd0LzdM4csmeNPvTllI/gBegmcy"
+    },
+    "index.html.tpl.merge": {
+      "f036c68a34ae0bc941832df08c406a00545dd9f6": "eJx9kT0PwiAQhnd/BbIjqwPt4kccNHaogyPSM1SpNHDRGuN/F4tRa1SWC/fe8x53iP54OcrX2YTM8sU87QmNlbkHkEXaI+GIClASpaXzgAld5VM2pA8JSzSQXg6ygqvg8RaVPmNENEzZqi5DkjAWhXdxYy16dLLuym2JKQ974sAk1OPZgNcASIl2sE3okxso7+kH6JUrayTeqYReti687GTdPpOorxwaZAUcB7tACR4r/+CvPt+BOAf/OUjHTNbfbJ4WnUUJHtcvNrY4B6IN92z7NzfHY30y"
+    },
+    "production.properties.merge": {
+      "49017799fb51c75106d8141adf37ad1112a24cee": "eJytkztv20AMx3d9CgJeY7VdA2goOnVoUzReAng531ESm9PxcA8ryqcPT4/Wgxej5iBIJPjj668dNPe0ageHniK0ZBEMtuQwgg/sMSSS1xzRwGmCUyZr9jR4W78N9gHGnnQPkph6BM0BgVthlS/lvSWtErGLS14BaoyxhhfOoJUDnWPigd5RMrbqiQXkUmBbMAI7q0CcI7BfWHMv5OYiQjRZF/9Soq52kvH9x6+n34evPw+wh2d0ulfwbTAwkrUwYOgQJs4BxO86GW6kJDMkqTA6MDmQ6yD7LiiDsS6bYVBnJumfE7pEaqNIn63MKJlLfFCvJdcqCT5AHBF9+d7qJJ5Xsw5ayPe94W3Ai83+ifBJhhm8tBUuzn4jsFpOUEBBzixHqadMzZcrfm055oDN5yux3FlqJwmtsfXutcFT7pr5+dgqG7HaVLt2PM2aOiEMbKglUYloKWWHs1QKRqQ2C3JT4kWFosLmWMFqm+vo4J+z2H75O/YBx0BJ4n/HFmHLDCu5SSEj/K9dRXMoDcfmIritb65afQC6/Eab"
+    },
+    "app.js.tpl.merge": {
+      "0527481c42ccda7c984479c716a1cacb25a3ee69": "eJxNUD1vwjAQ3f0r3kaLaLLThQqyVTA0qtTxiI/EItjpxU5AiP9eY1DBg332+7pzPlWIq2xMj51pGfGs2bKQZw2yGqHTqd6e8MW2agjLg87w4wIqsmBtPPy/nPrkZ5l11Oyc4OSCgLquNRV54+wM23BVcM9J3GM0bYuGBoZ32DIOLHUKTFaPUIwN29hPLaSNrTM1zZXKc6w2WG9KrIrPoizwdutGG+HKmyFNJPwb4v3W0JNhR9Weau6vwaOTfRbtFncyFnd0M7CI0dwrVRx99jTKy/k2LB14jsk5IutYXiYzld756NnqZyT7eIgj60pKGwXvlsLxn78Nj50TP4eXwOry+q7+AE84iWk\u003d"
+    },
+    "testing.properties.merge": {
+      "95956627725004f69ba2a1cf60e7f8aed632d6bc": "eJytkrtuwzAMRfd8BYGsidsf8FB06tAH2iwdZZu22UqioEdc9+tL+YF6yBIgnixd8ehSvHsob/nt9nDqKUBLGqHBliwGcJ4d+kjymwI2UI1QJdLNkYzTxY/RBxh6qnuQwtgj1OwRuBVWXinnNNUqEtsw12VgjSEU8MkJamWhTiGyoV+UivX2yAKy0bPOGIGdlSdOAdjNrMkL2emSiCGS7WZ+sdvL8afnt9f308PLCY7wgbbuFTyaBgbSGgz6DmHk5EH2bSedDRSlgSj4wUKTfKYl13nVYCjyszCoM5OY54g2klopYrKVBqVy1o36zrVaiXiAMCC6vF7viTy9y9JlJt92gNcBN8/6FeBOmjFObPnNzK8E7uYRZJCXGcukijFReX9hv9YckseLWuo0taNIi7YMvWiwSt3U5ZTTxeY4pahCMNxQS5ILSU9MFqdw5FoJ1xTBNXsbbM7dv2+JpZhYTpXRJ7yosM+1odyIq/2yVTrg7g+F2yr4"
+    },
+    "app.json.tpl.merge": {
+      "5c35fa135e5c429faf9348c096b567a3079ad83b": "eJyr5lIAAqW8xNxUJSsFpWoQo1ZJhwsiXJRaWJpZlFoMlIoGi8TCZDJTwMpL8zILS1M9U2qVuGoByK4TZA\u003d\u003d"
+    },
+    "sencha.cfg.tpl.merge": {
+      "bd59d434e1ff717f60656cbe168b9596d0776fc6": "eJytVE1vEzEQvedXjFQOrdRsekNChAPcOEAlOHJxvLMbp17bsr1JStX/zhs72aSkcIFISWyP/d6bzyv6vmZyamDyHWWsVQjWaJWNdzOsG7Etn+T3eTa7urjeRWx2Pj7QmLil1ePvIHTN+0wLyn7U65sCOb1ZPk3LL+cEQeX1dbrBmxdIG7VVSUcTMiU/Rs2JrrUfBkWJg4oqc1sJtFUpCcjyzY/x7u7tRzlsTXxeYHH7ylmzScL9dcxhzGT9gbDz8YWA1WhsSypm0ymdU+EqZwJ05BJvQK75ZHpenHG+CGX0Ppd4lhfiMMJIuzU7GnDZuJ6STokiHz3GlU2i4iEnoBhXIp6wX6SoSbm2brYqErhZZx8NV7FiaCa6s7TeI1gCLRcojpap5c44U8NgLIi1j1ARvGtFFe5+Rjq+1XQc5DQnEkh5NQFHnRekkGvU6t+JgfNnYhgviLvR6cImkRvM3hx4zzA5/8UZGBfK2kbydA6Oso8KsURLVD9wZpy2Y8v4x0bS1rPjUrhVi/auM30TV7cAeg8eqY8PlWey0c5YSys+oqEix+wHlKiGjkcyHQUEjF0uLrW+1ImTQmNcBjPepsDadIbbBrbJUVFbPH2t1VEyD6pnEZkVUiTJwDG+uFOqVPrl0P4leMW0RCDmZTUv2TK6gpsEmT5wzI+klRNRg2+LJtGo18r1BR1+SleKL742aBAZElQCUpk7hy7ANAhyXKaCaxsMn/4djC3vG5XC/vaw3qRATdNQHRcCV+dcta7zYEXjiXsiPN2X3UVBnO0nUOmv5X/9QNqnMSHldF8DiPamOd1bGSG6WMzPMrESomr9Dp4g2ta4MmHU1htUOseegSRlhQGXE8oKhet4x5G2HJM8n/0CFBkfGw\u003d\u003d"
+    },
+    "{controllerFileName}.js.tpl.merge": {
+      "b092f4aad11d2f7eaab5ce3e2dcc2fc3134f3188": "eJxzrSjRS0lNy8xL1VCvTs7PKynKz8lJLfJLzE0tLkhMTq3VQxOtVddRqOZSAILUipLUvBQrBXVXoBmJBQV6znCF6ly1mtZcACwSIF0\u003d"
+    }
+  },
+  "targets": {
+    "index.html": {
+      "source": "index.html.tpl.merge",
+      "version": "f036c68a34ae0bc941832df08c406a00545dd9f6",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    ".sencha/app/production.properties": {
+      "source": "production.properties.merge",
+      "version": "49017799fb51c75106d8141adf37ad1112a24cee",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    "sass/example/theme.html": {
+      "source": "theme.html.tpl.merge",
+      "version": "79e5bc8b4cebd921ec602e9a67c0493c70d2d5ce",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    "sass/config.rb": {
+      "source": "config.rb.tpl.merge",
+      "version": "33f446bd02c3fd24eb27891582eff6a2e789796b",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    ".sencha/app/build.properties": {
+      "source": "build.properties.merge",
+      "version": "b6a5e3f50ec88c1caa722762ed2f46298fd600f6",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    "app.json": {
+      "source": "app.json.tpl.merge",
+      "version": "5c35fa135e5c429faf9348c096b567a3079ad83b",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    "app.js": {
+      "source": "app.js.tpl.merge",
+      "version": "0527481c42ccda7c984479c716a1cacb25a3ee69",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    ".sencha/app/testing.properties": {
+      "source": "testing.properties.merge",
+      "version": "95956627725004f69ba2a1cf60e7f8aed632d6bc",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    ".sencha/app/sencha.cfg": {
+      "source": "sencha.cfg.tpl.merge",
+      "version": "bd59d434e1ff717f60656cbe168b9596d0776fc6",
+      "parameters": {
+        "viewNamespace": "example.view",
+        "frameworkName": "ext",
+        "frameworkPath": "ext",
+        "senchadir": ".sencha",
+        "controllerFileName": "Main",
+        "appModels": "",
+        "viewFileName": "Main",
+        "appControllers": "",
+        "appViews": "",
+        "uniqueId": "3bf767b4-f78b-4217-b57b-6294ba05d1f3",
+        "appName": "example",
+        "modelNamespace": "example.model",
+        "controllerName": "Main",
+        "viewName": "Main",
+        "themeName": "default",
+        "packagesRelPath": "ext/packages",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all",
+        "appStores": ""
+      }
+    },
+    "app/controller/Main.js": {
+      "source": "{controllerFileName}.js.tpl.merge",
+      "version": "b092f4aad11d2f7eaab5ce3e2dcc2fc3134f3188",
+      "parameters": {
+        "appName": "example",
+        "controllerName": "Main",
+        "controllerFileName": "Main",
+        "name": "example",
+        "controllerNamespace": "example.controller",
+        "library": "all"
+      }
+    }
+  }
+}
