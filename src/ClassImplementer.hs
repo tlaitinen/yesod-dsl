@@ -55,6 +55,7 @@ implInEntity m classes' e
         maybeCompare (Just a1) (Just a2) = compare a1 a2
         maybeCompare (Just _) Nothing = LT
         maybeCompare Nothing (Just _) = GT
+        maybeCompare Nothing Nothing = EQ
         instances = entityInstances e
         invalidClassNames = [ name | name <- instances, 
                                  isNothing $ classLookup classes name ]
