@@ -61,12 +61,21 @@ instance HasRefs (Route, Handler, HandlerParam) where
         ++ getRefs (r,h, handlerLoc h, "update in " ++ handlerInfo r h, io)
                         
     getRefs (r,h,(Select sq)) = getRefs (r,h,sq)
+    getRefs (r,h,(IfFilter ps)) = getRefs (r,h,ps)
     getRefs (r,h,(DeleteFrom en vn me)) =
         [(routeLoc r, "delete-from in " ++ handlerInfo r h, EntityNS, en)]
         ++ (case me of 
                 (Just e) -> getRefs (r,h, handlerLoc h, "where-expression of delete in " ++ handlerInfo r h, e,1000::Int)
                 _ -> [])
     getRefs _ = []            
+
+instance HasRefs (Route, Handler, IfFilterParams) where
+    getRefs (r,h,(pn,joins,e)) = let
+        l = routeLoc r
+        i = "if param \"" ++ pn ++ "\" = $$ then" 
+        in getRefs (r,h,l,i,e,1000::Int) 
+           ++ getRefs [ (r,h,l,i,j,lvl) 
+                         | (j,lvl) <- zip joins ([1..] :: [Int]) ]
 
 instance HasRefs (Route, Handler, SelectQuery) where
     getRefs (r,h,sq) = let
@@ -83,7 +92,7 @@ instance HasRefs (Route, Handler, SelectQuery) where
            
 instance HasRefs (Route, Handler, Location, Info, Join,Int) where
     getRefs (r,h,l,i,j,lvl) = [(l,i,EntityNS, joinEntity j)]
-                         ++ [(l,i,GlobalNS, handlerName r h ++ " " 
+                         ++ [(l,i,NestedNS lvl, handlerName r h ++ " " 
                                     ++ joinAlias j)]
                          ++ (case joinExpr j of
                                 Just e ->

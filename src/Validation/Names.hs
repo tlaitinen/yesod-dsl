@@ -83,6 +83,10 @@ instance HasNames (Route, Handler, HandlerParam) where
                           routeLoc r) | (vn,lvl) <- sqScopedAliases sq]
             DeleteFrom en vn _ -> [([NestedNS 0], handlerName r h ++ " " ++ vn,
                                routeLoc r)]
+            IfFilter (_,joins,_) -> [([NestedNS lvl],
+                             handlerName r h ++ " " ++ joinAlias j,
+                             routeLoc r) | (j,lvl) <- zip joins ([1..] :: [Int])]
+
             _         -> []
                         
 
