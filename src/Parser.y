@@ -344,17 +344,23 @@ parseError :: [Token] -> a
 parseError (t:ts) = throw (ParseError $ "Parse error : unexpected " ++ show (tokenType t) ++ " at line " ++ show (tokenLineNum t) ++ " col " ++ show (tokenColNum t))
 parseError _ = throw (ParseError $ "Parse error : unexpected end of file")
 
+parseModule :: FilePath -> IO Module
+parseModule path = catch 
+        (do
+            s <- readFile path
+            return $! moduleDefs $! lexer s)
+        (\(ParseError msg) -> do 
+            hPutStrLn stderr $ path ++ ": " ++ msg
+            exitWith (ExitFailure 1))
+       
+
 parseModules :: [FilePath] -> [FilePath] -> IO [(FilePath,Module)]
 parseModules handled (path:paths)
     | path `elem` handled = return []
     | otherwise = do
-        s <- readFile path
-        let mod = (moduleDefs . lexer) s
-        catch (do rest <- parseModules (path:handled) (paths ++ modImports mod)
-                  return ((path,mod):rest))
-              (\(ParseError msg) -> do 
-                    hPutStrLn stderr $ path ++ ": " ++ msg
-                    exitWith (ExitFailure 1))
+        mod <- parseModule path
+        rest <- parseModules (path:handled) (paths ++ modImports mod)
+        return ((path,mod):rest)
 parseModules _ [] = return []
 
 parse path = parseModules [] [path]
