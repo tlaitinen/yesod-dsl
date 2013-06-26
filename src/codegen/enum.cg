@@ -3,4 +3,6 @@ derivePersistField "~{enumName e}"
 deriveJSON id ''~{enumName e}
 
 instance PathPiece ~{enumName e} where
-~{pathPieces}
+~{fromPathPieces}
+    fromPathPiece _ = Nothing
+~{toPathPieces}

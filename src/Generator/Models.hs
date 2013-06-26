@@ -27,8 +27,8 @@ entityFieldTypeName :: Entity -> Field -> String
 entityFieldTypeName e f = upperFirst $ entityFieldName e f
 enum :: EnumType -> String
 enum e = T.unpack $(codegenFile "codegen/enum.cg")
-    where pathPieces = concatMap fromPathPiece (enumValues e) 
-                     ++ concatMap toPathPiece (enumValues e)
+    where fromPathPieces = concatMap fromPathPiece (enumValues e) 
+          toPathPieces = concatMap toPathPiece (enumValues e)
           fromPathPiece v = T.unpack $(codegenFile "codegen/enum-frompathpiece.cg")
           toPathPiece v = T.unpack $(codegenFile "codegen/enum-topathpiece.cg")
 modelField :: Field -> String
