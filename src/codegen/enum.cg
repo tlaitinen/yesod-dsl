@@ -1,3 +1,6 @@
 data ~{enumName e} = ~{intercalate " | " (enumValues e)} deriving (Show, Read, Eq)
 derivePersistField "~{enumName e}"
 deriveJSON id ''~{enumName e}
+
+instance PathPiece ~{enumName e} where
+~{pathPieces}

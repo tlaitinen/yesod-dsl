@@ -3,3 +3,4 @@ module Handler.~{moduleName m}.Enums where
 import Database.Persist.TH
 import Data.Aeson.TH
 import Prelude
+import Web.PathPieces

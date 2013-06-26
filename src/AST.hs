@@ -117,9 +117,9 @@ data SelectQuery = SelectQuery {
 sqAliases :: SelectQuery -> [(EntityName, VariableName)]
 sqAliases sq = sqFrom sq : [ (joinEntity j, joinAlias j) | j <- sqJoins sq]
 
-data SelectField = SelectAllFields EntityName
-                 | SelectField EntityName FieldName (Maybe VariableName)
-                 | SelectIdField EntityName (Maybe VariableName)
+data SelectField = SelectAllFields VariableName
+                 | SelectField VariableName FieldName (Maybe VariableName)
+                 | SelectIdField VariableName (Maybe VariableName)
                  deriving (Show, Eq)
 
     

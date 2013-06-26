@@ -347,6 +347,7 @@ In order to use the generated subsite in a scaffolded Yesod site, it suffices to
     , resourcet
     , attoparsec
     , time
+    , path-pieces
     ```
  * import Handler.MyModule in Application.hs, and
  * define the instance MyModuleValidation App that implements field and entity check functions, and
