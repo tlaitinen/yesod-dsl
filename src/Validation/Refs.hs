@@ -84,12 +84,24 @@ instance HasRefs (Route, Handler, SelectQuery) where
         (en,vn) = sqFrom sq
         in [(l,i,EntityNS,en), 
             (l,i,GlobalNS, handlerName r h ++ " " ++ vn)]
+           ++ getRefs [ (r,h,l,i,sf) | sf <- sqFields sq]
            ++ (case sqWhere sq of
                   Just e -> getRefs (r,h,l,i,e,1000::Int)
                   Nothing -> [])
            ++ getRefs [ (r,h,l,i,j,lvl) | (j,lvl) <- zip (sqJoins sq) ([1..] :: [Int])]
            ++ getRefs [ (r,h,l,i,fr, 1000::Int) | (fr,_) <- sqOrderBy sq ]
            
+instance HasRefs (Route, Handler, Location, Info, SelectField) where
+    getRefs (r,h,l,i,SelectAllFields vn) = 
+        [(l,i,NestedNS 1000, handlerName r h ++ " " ++ vn)]
+    getRefs (r,h,l,i,SelectField vn fn _) = 
+        [(l,i,NestedNS 1000, handlerName r h ++ " " ++ vn)]
+        ++ case lookupEntityByVariable r h vn of
+               (Just en) -> [(l,i,FieldNS, en ++ "." ++ fn)]
+               Nothing -> []
+    getRefs (r,h,l,i,SelectIdField vn _) = 
+        [(l,i,NestedNS 1000, handlerName r h ++ " " ++ vn)]
+ 
 instance HasRefs (Route, Handler, Location, Info, Join,Int) where
     getRefs (r,h,l,i,j,lvl) = [(l,i,EntityNS, joinEntity j)]
                          ++ [(l,i,NestedNS lvl, handlerName r h ++ " " 
@@ -144,6 +156,7 @@ instance HasRefs (Route, Handler, Location, Info, Expr,Int) where
     getRefs (r,h,l, i, (OrExpr e1 e2),lvl) = getRefs (r,h,l,i,e1,lvl) ++ getRefs (r,h,l,i,e2,lvl)
     getRefs (r,h,l, i, (BinOpExpr e1 op e2),lvl) = getRefs (r,h,l,i,e1,lvl) ++ getRefs (r,h,l,i,e2,lvl)
     getRefs (r,h,l,i, (ListOpExpr fr1 op fr2),lvl) = getRefs (r,h,l,i,fr1,lvl) ++ getRefs (r,h,l,i,fr2,lvl)
+    getRefs _ = []
 
 instance HasRefs (Route, Handler, Location, Info, ValExpr,Int) where
     getRefs (r,h,l, i,(FieldExpr f),lvl) = getRefs (r,h,l,i,f,lvl)
