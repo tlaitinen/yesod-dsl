@@ -29,8 +29,13 @@ enum :: EnumType -> String
 enum e = T.unpack $(codegenFile "codegen/enum.cg")
     where fromPathPieces = concatMap fromPathPiece (enumValues e) 
           toPathPieces = concatMap toPathPiece (enumValues e)
+          parseJSONs = concatMap parseJSON (enumValues e)
+          toJSONs = concatMap toJSON (enumValues e)
           fromPathPiece v = T.unpack $(codegenFile "codegen/enum-frompathpiece.cg")
           toPathPiece v = T.unpack $(codegenFile "codegen/enum-topathpiece.cg")
+          parseJSON v = T.unpack $(codegenFile "codegen/enum-parsejson.cg")
+          toJSON v = T.unpack $(codegenFile "codegen/enum-tojson.cg")
+
 modelField :: Field -> String
 modelField f = T.unpack $(codegenFile "codegen/model-field.cg")
 

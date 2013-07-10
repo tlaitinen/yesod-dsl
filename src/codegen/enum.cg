@@ -1,8 +1,16 @@
 data ~{enumName e} = ~{intercalate " | " (enumValues e)} deriving (Show, Read, Eq)
 derivePersistField "~{enumName e}"
-deriveJSON id ''~{enumName e}
+
+instance A.FromJSON ~{enumName e} where
+    parseJSON = A.withText "~{enumName e}" (\v -> case v of
+~{parseJSONs}        _ -> mzero)
+
+instance A.ToJSON ~{enumName e} where
+~{toJSONs}
 
 instance PathPiece ~{enumName e} where
 ~{fromPathPieces}
     fromPathPiece _ = Nothing
 ~{toPathPieces}
+
+
