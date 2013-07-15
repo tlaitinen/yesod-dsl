@@ -35,6 +35,11 @@ ctxLookupEntity ctx vn = maybe Nothing (\(en,_,_) -> Just en) $ find (\(_,vn',_)
 ctxLookupVariable :: Context -> EntityName -> Maybe VariableName
 ctxLookupVariable ctx en = maybe Nothing (\(_,vn,_) -> Just vn) $ find (\(en',_,_) -> en == en') (ctxNames ctx) 
 
+ctxLookupField :: Context -> VariableName -> FieldName -> Maybe Field
+ctxLookupField ctx vn fn = do
+    en <- ctxLookupEntity ctx vn
+    lookupField (ctxModule m) en fn
+
 ctxIsMaybe :: Context -> VariableName -> Bool
 ctxIsMaybe ctx vn = maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') (ctxNames ctx)
 
@@ -71,16 +76,19 @@ hsValExpr ctx op ve =  case ve of
     ConstExpr fv ->  "(val " ++ show fv ++  ")" 
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
 
-isMaybeFieldRef :: Context -> FieldRef -> Bool
-isMaybeFieldRef ctx (FieldRefId vn) = ctxIsMaybe ctx vn
-isMaybeFieldRef ctx (FieldRefNormal vn fn) = ctxIsMaybe ctx vn
-isMaybeFieldRef ctx _ = False
+boolToInt :: Bool -> Int
+boolToInt True = 1
+boolToInt False = 0
+fieldRefMaybeLevel :: Context -> FieldRef -> Int
+fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
+fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn)
+fieldRefMaybeLevel ctx _ = False
 
-isMaybeExpr :: Context -> ValExpr -> Bool
-isMaybeExpr ctx ve = case ve of
-    FieldExpr fr -> isMaybeFieldRef ctx fr
-    ConstExpr _ -> False
-    ConcatExpr e1 e2 -> isMaybeExpr ctx e1 || isMaybeExpr ctx e2
+exprMaybeLevel :: Context -> ValExpr -> Int
+exprMaybeLevel ctx ve = case ve of
+    FieldExpr fr -> fieldRefMaybeLevel ctx fr
+    ConstExpr _ -> 0
+    ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLexel ctx e2)
 
 hsListFieldRef :: Context -> FieldRef -> String
 hsListFieldRef ctx (FieldRefId vn) = vn ++ " ^. " 
