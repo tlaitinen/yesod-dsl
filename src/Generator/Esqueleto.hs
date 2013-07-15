@@ -38,7 +38,7 @@ ctxLookupVariable ctx en = maybe Nothing (\(_,vn,_) -> Just vn) $ find (\(en',_,
 ctxLookupField :: Context -> VariableName -> FieldName -> Maybe Field
 ctxLookupField ctx vn fn = do
     en <- ctxLookupEntity ctx vn
-    lookupField (ctxModule m) en fn
+    lookupField (ctxModule ctx) en fn
 
 ctxIsMaybe :: Context -> VariableName -> Bool
 ctxIsMaybe ctx vn = maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') (ctxNames ctx)
@@ -79,16 +79,18 @@ hsValExpr ctx op ve =  case ve of
 boolToInt :: Bool -> Int
 boolToInt True = 1
 boolToInt False = 0
+
 fieldRefMaybeLevel :: Context -> FieldRef -> Int
 fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
-fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn)
-fieldRefMaybeLevel ctx _ = False
+fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn) + boolToInt (fromMaybe False optional)
+    where optional = ctxLookupField ctx vn fn >>= Just . fieldOptional
+fieldRefMaybeLevel ctx _ = 0
 
 exprMaybeLevel :: Context -> ValExpr -> Int
 exprMaybeLevel ctx ve = case ve of
     FieldExpr fr -> fieldRefMaybeLevel ctx fr
     ConstExpr _ -> 0
-    ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLexel ctx e2)
+    ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLevel ctx e2)
 
 hsListFieldRef :: Context -> FieldRef -> String
 hsListFieldRef ctx (FieldRefId vn) = vn ++ " ^. " 
@@ -111,13 +113,15 @@ hsExpr ctx expr = case expr of
     BinOpExpr e1 op e2 -> binOpExpr e1 op e2 
     ListOpExpr fr1 op fr2 -> "(" ++ hsListFieldRef ctx fr1 ++ ") " ++ hsListOp op ++ " (" ++ hsListFieldRef ctx fr2 ++ ")"
     where
-        
-        binOpExpr e1 op e2 = promoteJust 0 e1 e2 ("(" ++ (hsValExpr ctx op e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust  1 e1 e2 ("(" ++ (hsValExpr ctx op e2) ++ ")"))
-        promoteJust :: Int -> ValExpr -> ValExpr -> String -> String
-        promoteJust pos e1 e2 content = if (isMaybeExpr ctx e1 == False && isMaybeExpr ctx e2 == True && pos == 0) || 
-                (isMaybeExpr ctx e1 == True && isMaybeExpr ctx e2 == False && pos == 1)
-            then "(just " ++ content ++ ")"
-            else content
-
+        binOpExpr e1 op e2 = promoteJust e1 e2 ("(" ++ (hsValExpr ctx op e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust e2 e1 ("(" ++ (hsValExpr ctx op e2) ++ ")"))
+        promoteJust :: ValExpr -> ValExpr -> String -> String
+        promoteJust e1 e2 content = let
+            lvl1 = exprMaybeLevel ctx e1
+            lvl2 = exprMaybeLevel ctx e2
+            count = abs (lvl2 - lvl1)
+            in justify count content
+        justify n t 
+            | n > 0 = "(just " ++ justify (n - 1) t ++ ")"
+            | otherwise = t
 
 
