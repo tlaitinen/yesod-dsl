@@ -1,7 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Handler.~{moduleName m}.Enums where
 import Database.Persist.TH
-import Data.Aeson.TH
 import qualified Data.Aeson as A
 import Prelude
 import Web.PathPieces
