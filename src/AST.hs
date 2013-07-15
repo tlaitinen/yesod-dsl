@@ -82,6 +82,11 @@ data JoinType = InnerJoin
               | RightOuterJoin
               | FullOuterJoin
               deriving (Show, Eq)
+isOuterJoin :: JoinType -> Bool
+isOuterJoin LeftOuterJoin = True
+isOuterJoin RightOuterJoin = True
+isOuterJoin FullOuterJoin = True
+isOuterJoin _ = False
 
 data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike deriving (Show,Eq)     
 data ListOp = In | NotIn deriving (Show,Eq)
@@ -114,8 +119,12 @@ data SelectQuery = SelectQuery {
     sqLimitOffset  :: (Int, Int)
 } deriving (Show, Eq)    
 
-sqAliases :: SelectQuery -> [(EntityName, VariableName)]
-sqAliases sq = sqFrom sq : [ (joinEntity j, joinAlias j) | j <- sqJoins sq]
+type MaybeFlag = Bool
+sqAliases :: SelectQuery -> [(EntityName, VariableName, MaybeFlag)]
+sqAliases sq = (en,vn,False) : [ (joinEntity j, joinAlias j, 
+                                  isOuterJoin (joinType j)) 
+                             | j <- sqJoins sq]
+    where (en,vn) = sqFrom sq                             
 
 data SelectField = SelectAllFields VariableName
                  | SelectField VariableName FieldName (Maybe VariableName)

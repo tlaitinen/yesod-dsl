@@ -25,7 +25,7 @@ getHandlerParam _ _ _ _ = ""
 
 ctxFields :: Module -> Context -> [(Entity, VariableName, Field)]
 ctxFields m ctx = [ (e,vn,f) | e <- modEntities m,
-                                  (en,vn) <- ctx,
+                                  (en,vn,_) <- ctx,
                                   entityName e == en,
                                   f <- entityFields e ]
 
@@ -87,7 +87,7 @@ baseDefaultFilterSort = defaultFilterFields
 baseIfFilter :: Module -> Context -> VariableName -> IfFilterParams -> String
 baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
     where ctx = ctx' 
-              ++ [(joinEntity j, joinAlias j) | j <- joins]
+              ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins]
           maybeFrom = if null joins 
                         then "do"
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    

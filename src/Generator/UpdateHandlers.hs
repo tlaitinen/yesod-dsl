@@ -73,11 +73,11 @@ deleteHandlerRunDB :: Module -> Route -> [HandlerParam] -> HandlerParam -> Strin
 deleteHandlerRunDB m r ps p = T.unpack $ case p of
     DeleteFrom en vn Nothing -> let 
             maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
-            ctx = [(en,vn)]
+            ctx = [(en,vn, False)]
         in $(codegenFile "codegen/delete.cg")
     DeleteFrom en vn (Just e) -> 
         let maybeExpr = hsExpr ctx e 
-            ctx = [(en,vn)]
+            ctx = [(en,vn, False)]
         in $(codegenFile "codegen/delete.cg")
     _ -> ""
 

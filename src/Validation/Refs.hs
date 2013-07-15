@@ -137,8 +137,8 @@ instance HasRefs (Route, Handler, Location, Info, InputFieldRef) where
 lookupEntityByVariable :: Route -> Handler -> VariableName 
                        -> Maybe EntityName
 lookupEntityByVariable r h vn = 
-    case find (\(_, vn') -> vn == vn') aliases of
-        (Just (en,_)) -> Just en
+    case find (\(_, vn',_) -> vn == vn') aliases of
+        (Just (en,_,_)) -> Just en
         Nothing -> Nothing 
     where   
         aliases = concatMap getAlias [ p 
