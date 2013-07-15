@@ -25,7 +25,7 @@ updateHandlerRunDB m r ps (pId,p) = case p of
     (Update en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
     (Insert en io) -> T.unpack $(codegenFile "codegen/insert.cg")
     _ -> ""
-    where ctx = []
+    where ctx = Context { ctxNames = [], ctxModule = m }
 
 mapJsonInputField :: [InputField] -> (Entity,Field) -> String
 mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
@@ -56,7 +56,7 @@ updateHandlerDecode m r ps (pId,p) = case p of
 
           maybeSelectExisting e fields  fr
               | Nothing `elem` [ matchInputField fields (fieldName f) 
-                                 | f <- entityFields e ] = let ctx = [] in T.unpack $(codegenFile "codegen/select-existing.cg")
+                                 | f <- entityFields e ] = let ctx = Context { ctxNames = [], ctxModule = m }  in T.unpack $(codegenFile "codegen/select-existing.cg")
               | otherwise = ""
           mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
                                       [ (e,f) | f <- entityFields e ]
@@ -73,11 +73,11 @@ deleteHandlerRunDB :: Module -> Route -> [HandlerParam] -> HandlerParam -> Strin
 deleteHandlerRunDB m r ps p = T.unpack $ case p of
     DeleteFrom en vn Nothing -> let 
             maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
-            ctx = [(en,vn, False)]
+            ctx = Context { ctxNames = [(en,vn, False)], ctxModule = m }
         in $(codegenFile "codegen/delete.cg")
     DeleteFrom en vn (Just e) -> 
         let maybeExpr = hsExpr ctx e 
-            ctx = [(en,vn, False)]
+            ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m }
         in $(codegenFile "codegen/delete.cg")
     _ -> ""
 

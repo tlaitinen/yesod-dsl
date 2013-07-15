@@ -23,16 +23,20 @@ hsBinOp op = case op of
 hsListOp op = case op of
     In -> "`in_`"
     NotIn -> "`notIn`"
-type Context = [(EntityName, VariableName, MaybeFlag)]    
+
+data Context = Context {
+    ctxNames :: [(EntityName, VariableName, MaybeFlag)],
+    ctxModule :: Module
+}
 
 ctxLookupEntity :: Context -> VariableName -> Maybe EntityName
-ctxLookupEntity ctx vn = maybe Nothing (\(en,_,_) -> Just en) $ find (\(_,vn',_) -> vn == vn') ctx 
+ctxLookupEntity ctx vn = maybe Nothing (\(en,_,_) -> Just en) $ find (\(_,vn',_) -> vn == vn') (ctxNames ctx) 
 
 ctxLookupVariable :: Context -> EntityName -> Maybe VariableName
-ctxLookupVariable ctx en = maybe Nothing (\(_,vn,_) -> Just vn) $ find (\(en',_,_) -> en == en') ctx 
+ctxLookupVariable ctx en = maybe Nothing (\(_,vn,_) -> Just vn) $ find (\(en',_,_) -> en == en') (ctxNames ctx) 
 
 ctxIsMaybe :: Context -> VariableName -> Bool
-ctxIsMaybe ctx vn = maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') ctx
+ctxIsMaybe ctx vn = maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') (ctxNames ctx)
 
 
 coerceType :: Maybe BinOp -> String -> String

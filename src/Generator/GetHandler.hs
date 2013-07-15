@@ -25,7 +25,7 @@ getHandlerParam _ _ _ _ = ""
 
 ctxFields :: Module -> Context -> [(Entity, VariableName, Field)]
 ctxFields m ctx = [ (e,vn,f) | e <- modEntities m,
-                                  (en,vn,_) <- ctx,
+                                  (en,vn,_) <- ctxNames ctx,
                                   entityName e == en,
                                   f <- entityFields e ]
 
@@ -86,8 +86,8 @@ baseDefaultFilterSort = defaultFilterFields
 
 baseIfFilter :: Module -> Context -> VariableName -> IfFilterParams -> String
 baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
-    where ctx = ctx' 
-              ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins]
+    where ctx = ctx' { ctxNames = ctxNames ctx' 
+              ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins] }
           maybeFrom = if null joins 
                         then "do"
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
@@ -122,7 +122,10 @@ getHandlerSelect m sq defaultFilterSort ifFilters =
     where 
           orderByFields = sq
           (limit, offset) = sqLimitOffset sq
-          ctx = sqAliases sq
+          ctx = Context {
+              ctxNames = sqAliases sq,
+              ctxModule = m
+          }
           (selectEntity, selectVar) = sqFrom sq 
           maybeWhere = case sqWhere sq of
              Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
@@ -141,7 +144,7 @@ getHandlerSelect m sq defaultFilterSort ifFilters =
 getHandlerReturn :: Module -> SelectQuery -> String
 getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
     where 
-          ctx = sqAliases sq
+          ctx = Context { ctxNames = sqAliases sq, ctxModule = m }
           fieldNames = zip (concatMap expand (sqFields sq)) ([1..]:: [Int])
           expand (SelectAllFields vn) = map fieldName $ entityFields e
                 where en = fromJust $ ctxLookupEntity ctx vn
@@ -159,7 +162,7 @@ getHandler m r ps =
     ++ (getHandlerReturn m sq)
     where 
         (Select sq) = (fromJust . listToMaybe . (filter isSelect)) ps
-        ctx = sqAliases sq
+        ctx = Context { ctxNames = sqAliases sq, ctxModule = m }
         isSelect (Select _) = True
         isSelect _ = False
     
