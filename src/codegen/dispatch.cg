@@ -22,5 +22,6 @@ type ~{moduleName m}Route = Route ~{moduleName m}
  
 instance (YesodAuthPersist master,
           ~{moduleName m}Validation master,
+          KeyEntity (AuthId master) ~ User,
           YesodPersistBackend master ~ SqlPersistT) => YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
     yesodSubDispatch = $(mkYesodSubDispatch resources~{moduleName m})

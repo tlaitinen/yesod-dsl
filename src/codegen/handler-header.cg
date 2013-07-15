@@ -1,5 +1,6 @@
 ~{hsHandlerMethod ht}~{hsRouteName (routePath r)} :: forall master. (~{moduleName m}Validation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => ~{hsRouteType (routePath r)}HandlerT ~{moduleName m} (HandlerT master IO) A.Value
 ~{hsHandlerMethod ht}~{hsRouteName (routePath r)} ~{hsRouteParams (routePath r)} = do
