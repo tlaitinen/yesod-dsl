@@ -193,7 +193,8 @@ data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
               | FieldRefAuthId
               | FieldRefLocalParam
-              | FieldRefPathParam Int deriving (Show, Eq) 
+              | FieldRefPathParam Int 
+              | FieldRefSubQuery SelectQuery deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id

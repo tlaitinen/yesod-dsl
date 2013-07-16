@@ -163,6 +163,11 @@ fieldRef : lowerId dot idField { FieldRefId $1 }
           | pathParam { FieldRefPathParam $1 }
           | authId { FieldRefAuthId }
           | localParam { FieldRefLocalParam }
+          | lparen select selectField from upperId as lowerId 
+               joins maybeWhere rparen  
+                   { FieldRefSubQuery (SelectQuery [$3] ($5,$7) (reverse $8) $9 
+                                      [] (0,0)) }
+ 
     
 handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 

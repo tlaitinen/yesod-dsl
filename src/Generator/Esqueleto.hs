@@ -9,7 +9,7 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Generator.Common
-
+import Data.String.Utils (lstrip, rstrip)
 hsBinOp :: BinOp -> String
 hsBinOp op = case op of
     Eq -> "==."
@@ -102,8 +102,46 @@ hsListFieldRef ctx  (FieldRefNormal vn fn) = vn ++ " ^. "
 hsListFieldRef _ FieldRefAuthId = "(valList authId"
 hsListFieldRef _  (FieldRefPathParam p) = "(valList p" ++ show p ++ ")"
 hsListFieldRef _ FieldRefLocalParam = "(valList localParam)"
+hsListFieldRef ctx (FieldRefSubQuery sq) = "(" ++ subQuery ctx sq ++ ")"
+
+mapJoinExpr :: Module -> Context -> Join -> String
+mapJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/join-expr.cg")
+mapJoinExpr m _ _ = ""
+
+selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
+selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
+                                                f <- entityFields e ]
+    where  
+           en = fromJust $ ctxLookupEntity ctx vn
+           e = fromJust $ lookupEntity m en    
+selectFieldRefs m ctx (SelectField vn fn _) = [FieldRefNormal vn fn]
+selectFieldRefs m ctx (SelectIdField vn _) = [FieldRefId vn ]
 
 
+
+selectReturnFields :: Module -> Context -> SelectQuery -> String
+selectReturnFields m ctx sq = T.unpack $(codegenFile "codegen/select-return-fields.cg")
+    where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
+        
+joinDef :: Join-> String
+joinDef (Join jt _ vn _) = rstrip $ T.unpack $(codegenFile "codegen/join-def.cg")
+
+
+
+subQuery :: Context -> SelectQuery -> String
+subQuery ctx' sq = "subList_select $ from $ \\(" ++ vn ++ 
+    (concatMap joinDef (sqJoins sq)) ++ ") -> do { " ++
+    (concatMap (makeInline . (mapJoinExpr m ctx)) (reverse (sqJoins sq)))
+    ++ " ; " ++ (makeInline $ selectReturnFields m ctx sq)
+    ++ " }"
+
+    where
+        makeInline = (++" ;") . lstrip . rstrip
+        m = ctxModule ctx
+        (en, vn) = sqFrom sq
+        ctx = ctx' {
+                ctxNames = sqAliases sq
+            } 
 
 
 hsExpr :: Context-> Expr -> String

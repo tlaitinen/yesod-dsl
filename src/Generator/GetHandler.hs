@@ -56,9 +56,6 @@ defaultSortFields m ctx sq  = T.unpack $(codegenFile "codegen/default-sort-field
           fromSelectField (SelectIdField en an) = [] -- TODO
 
 
-joinDef :: Join-> String
-joinDef (Join jt _ vn _) = rstrip $ T.unpack $(codegenFile "codegen/join-def.cg")
-
 
 isMaybeFieldRef :: Module -> Context -> FieldRef -> Bool
 isMaybeFieldRef m ctx (FieldRefNormal vn fn) = fieldOptional $ fromJust $ lookupField m (fromJust $ ctxLookupEntity ctx vn) fn
@@ -67,10 +64,6 @@ isMaybeFieldRef _ _  _ = False
 makeJustField :: Bool -> String -> String    
 makeJustField True f = "(just " ++ f ++ ")"
 makeJustField False f = f
-
-mapJoinExpr :: Module -> Context -> Join -> String
-mapJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/join-expr.cg")
-mapJoinExpr m _ _ = ""
 
 implicitJoinExpr :: Module -> Context -> Join -> String
 implicitJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/where-expr.cg")
@@ -93,21 +86,6 @@ baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
 
    
-selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
-selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
-                                                f <- entityFields e ]
-    where  
-           en = fromJust $ ctxLookupEntity ctx vn
-           e = fromJust $ lookupEntity m en    
-selectFieldRefs m ctx (SelectField vn fn _) = [FieldRefNormal vn fn]
-selectFieldRefs m ctx (SelectIdField vn _) = [FieldRefId vn ]
-
-
-selectReturnFields :: Module -> Context -> SelectQuery -> String
-selectReturnFields m ctx sq = T.unpack $(codegenFile "codegen/select-return-fields.cg")
-    where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
-        
-
     
 getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> String
 getHandlerSelect m sq defaultFilterSort ifFilters = 
