@@ -1,4 +1,11 @@
-data ~{enumName e} = ~{intercalate " | " (enumValues e)} deriving (Show, Read, Eq)
+data ~{enumName e} = ~{prefixedValues e} deriving (Eq)
+
+instance Read ~{enumName e} where
+~{readsPrecs}    readsPrec _ _ = [ ]
+
+instance Show ~{enumName e} where
+~{showsPrecs}
+    
 derivePersistField "~{enumName e}"
 
 instance A.FromJSON ~{enumName e} where

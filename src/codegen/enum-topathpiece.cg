@@ -1,1 +1,1 @@
-    toPathPiece ~{v} = "~{v}"
+    toPathPiece ~{enumName e}~{v} = "~{v}"

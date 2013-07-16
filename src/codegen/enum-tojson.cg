@@ -1,1 +1,1 @@
-    toJSON ~{v} = A.String "~{v}"
+    toJSON ~{enumName e}~{v} = A.String "~{v}"

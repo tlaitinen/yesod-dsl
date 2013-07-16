@@ -1,1 +1,1 @@
-        "~{v}" -> return ~{v}
+        "~{v}" -> return ~{enumName e}~{v}

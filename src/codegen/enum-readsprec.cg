@@ -1,0 +1,1 @@
+    readsPrec _ (~{toCharList v}:xs) = [ (~{enumName e}~{v}, xs) ]

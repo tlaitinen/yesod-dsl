@@ -1,1 +1,1 @@
-    fromPathPiece "~{v}" = Just ~{v}
+    fromPathPiece "~{v}" = Just ~{enumName e}~{v}
