@@ -8,6 +8,7 @@ import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
+import Generator.Common
 
 hsBinOp :: BinOp -> String
 hsBinOp op = case op of
@@ -119,9 +120,5 @@ hsExpr ctx expr = case expr of
             lvl1 = exprMaybeLevel ctx e1
             lvl2 = exprMaybeLevel ctx e2
             count = abs (lvl2 - lvl1)
-            in justify count content
-        justify n t 
-            | n > 0 = "(just " ++ justify (n - 1) t ++ ")"
-            | otherwise = t
-
+            in makeJust count content
 

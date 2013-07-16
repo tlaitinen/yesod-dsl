@@ -29,18 +29,18 @@ ctxFields m ctx = [ (e,vn,f) | e <- modEntities m,
                                   entityName e == en,
                                   f <- entityFields e ]
 
-defaultFilterField :: (Entity, VariableName, Field) -> String
-defaultFilterField (e,vn,f) = T.unpack $(codegenFile "codegen/default-filter-field.cg")
+defaultFilterField :: Context -> (Entity, VariableName, Field) -> String
+defaultFilterField ctx (e,vn,f) = T.unpack $(codegenFile "codegen/default-filter-field.cg")
 
 defaultFilterFields :: Module -> Context -> String
 defaultFilterFields m ctx = T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
-    where fields = concatMap defaultFilterField (ctxFields m ctx)
+    where fields = concatMap (defaultFilterField ctx) (ctxFields m ctx)
 
-defaultSortField :: (Entity, VariableName, Field, ParamName) -> String    
-defaultSortField (e,vn,f,pn) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
+defaultSortField :: Context -> (Entity, VariableName, Field, ParamName) -> String    
+defaultSortField ctx (e,vn,f,pn) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
 defaultSortFields :: Module -> Context -> SelectQuery -> String
 defaultSortFields m ctx sq  = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
-    where fields = concatMap defaultSortField sortFields
+    where fields = concatMap (defaultSortField ctx) sortFields
           sortFields = concatMap fromSelectField (sqFields sq)
           fromSelectField (SelectAllFields vn) = 
                 [ (e,vn, f, fieldName f)
