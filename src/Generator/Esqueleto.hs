@@ -119,6 +119,6 @@ hsExpr ctx expr = case expr of
         promoteJust e1 e2 content = let
             lvl1 = exprMaybeLevel ctx e1
             lvl2 = exprMaybeLevel ctx e2
-            count = abs (lvl2 - lvl1)
+            count = max (lvl2 - lvl1) 0
             in makeJust count content
 
