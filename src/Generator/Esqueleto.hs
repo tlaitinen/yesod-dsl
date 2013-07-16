@@ -85,6 +85,10 @@ fieldRefMaybeLevel :: Context -> FieldRef -> Int
 fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
 fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn) + boolToInt (fromMaybe False optional)
     where optional = ctxLookupField ctx vn fn >>= Just . fieldOptional
+fieldRefMaybeLevel ctx (FieldRefSubQuery sq) = fromMaybe 0 $ listToMaybe $ map (fieldRefMaybeLevel ctx) fields
+    where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
+          m = ctxModule ctx
+ 
 fieldRefMaybeLevel ctx _ = 0
 
 exprMaybeLevel :: Context -> ValExpr -> Int
@@ -150,8 +154,16 @@ hsExpr ctx expr = case expr of
     OrExpr e1 e2 ->"(" ++ hsExpr ctx e1 ++ ") ||. (" ++ hsExpr ctx e2 ++ ")"
     NotExpr e -> "not_ (" ++ hsExpr ctx e ++ ")"
     BinOpExpr e1 op e2 -> binOpExpr e1 op e2 
-    ListOpExpr fr1 op fr2 -> "(" ++ hsListFieldRef ctx fr1 ++ ") " ++ hsListOp op ++ " (" ++ hsListFieldRef ctx fr2 ++ ")"
+    ListOpExpr fr1 op fr2 -> listOpExpr fr1 op fr2 
     where
+        listOpExpr fr1 op fr2 = promoteJust2 fr1 fr2 ("(" ++ hsListFieldRef ctx fr1 ++ ")") ++ " " ++ hsListOp op ++ " " ++ promoteJust2 fr2 fr1 ("(" ++ hsListFieldRef ctx fr2 ++ ")")
+        promoteJust2 :: FieldRef -> FieldRef -> String -> String
+        promoteJust2 fr1 fr2 content = let
+            lvl1 = fieldRefMaybeLevel ctx fr1
+            lvl2 = fieldRefMaybeLevel ctx fr2
+            count = max (lvl2 - lvl1) 0
+            in makeJust count content
+    
         binOpExpr e1 op e2 = promoteJust e1 e2 ("(" ++ (hsValExpr ctx op e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust e2 e1 ("(" ++ (hsValExpr ctx op e2) ++ ")"))
         promoteJust :: ValExpr -> ValExpr -> String -> String
         promoteJust e1 e2 content = let
