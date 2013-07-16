@@ -19,7 +19,7 @@ persistFieldType f = baseFieldType f
           maybeDefault _ = " "
           stripQuotes ('"':xs)  = take ((length xs) -1) xs
           stripQuotes xs = xs
-          maybeDefaultNull (Field True _ (EntityField _)) = " default='NULL'"
+          maybeDefaultNull (Field True _ (EntityField _)) = " default=NULL"
           maybeDefaultNull _ = ""
 
 
