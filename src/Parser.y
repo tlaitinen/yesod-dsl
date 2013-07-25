@@ -106,6 +106,8 @@ import System.Exit
     idField { Tk _ TId }
     entityId { Tk _ (TEntityId $$) }
     localParam { Tk _ TLocalParam }
+    true { Tk _ TTrue }
+    false { Tk _ TFalse }
 %%
 
 dbModule : maybeModuleName 
@@ -289,6 +291,8 @@ fieldOption : check lowerId { FieldCheck $2 }
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }
       | floatval { FloatValue $1 }
+      | true { BoolValue True }
+      | false { BoolValue False }
 
       
 uniques : { [] }

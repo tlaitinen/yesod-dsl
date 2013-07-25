@@ -252,11 +252,13 @@ data FieldOption = FieldCheck FunctionName
 data FieldValue = StringValue String
                 | IntValue Int
                 | FloatValue Double
+                | BoolValue Bool
                 deriving (Eq)
 instance Show FieldValue where
     show (StringValue s) = "\"" ++ s ++ "\""
     show (IntValue i) = show i
     show (FloatValue d) = show d
+    show (BoolValue b) = show b
 
 fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)

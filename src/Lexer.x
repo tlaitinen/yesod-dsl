@@ -75,6 +75,8 @@ tokens :-
     "Double" { mkT TDouble }
     "Maybe" { mkT TMaybe }
     "Day" { mkT TDay }
+    "True" { mkT TTrue }
+    "False" { mkT TFalse }
     "TimeOfDay" { mkT TTimeOfDay }
     "UTCTime" { mkT TUTCTime }
     "ZonedTime" { mkT TZonedTime }
@@ -204,6 +206,8 @@ data TokenType = TSemicolon
            | TAuthId 
            | TEntityId String
            | TLocalParam
+           | TTrue
+           | TFalse
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)
