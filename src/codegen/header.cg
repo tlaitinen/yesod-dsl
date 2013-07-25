@@ -82,6 +82,7 @@ defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
 
 ilike = unsafeSqlBinOp " ILIKE "
+is = unsafeSqlBinOp " IS "
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v

@@ -88,7 +88,7 @@ isOuterJoin RightOuterJoin = True
 isOuterJoin FullOuterJoin = True
 isOuterJoin _ = False
 
-data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike deriving (Show,Eq)     
+data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is deriving (Show,Eq)     
 data ListOp = In | NotIn deriving (Show,Eq)
 
 data Expr = AndExpr Expr Expr
@@ -253,12 +253,14 @@ data FieldValue = StringValue String
                 | IntValue Int
                 | FloatValue Double
                 | BoolValue Bool
+                | NothingValue
                 deriving (Eq)
 instance Show FieldValue where
     show (StringValue s) = "\"" ++ s ++ "\""
     show (IntValue i) = show i
     show (FloatValue d) = show d
     show (BoolValue b) = show b
+    show NothingValue = "nothing"
 
 fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)

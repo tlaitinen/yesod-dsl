@@ -61,6 +61,7 @@ tokens :-
     "cross" { mkT TCross }
     "on" { mkT TOn }
     "as" { mkT TAs }
+    "is" { mkT TIs }
     "public" { mkT TPublic }
     "select" { mkT TSelect }
     "update" { mkT TUpdate }
@@ -77,6 +78,7 @@ tokens :-
     "Day" { mkT TDay }
     "True" { mkT TTrue }
     "False" { mkT TFalse }
+    "Nothing" { mkT TNothing }
     "TimeOfDay" { mkT TTimeOfDay }
     "UTCTime" { mkT TUTCTime }
     "ZonedTime" { mkT TZonedTime }
@@ -200,6 +202,7 @@ data TokenType = TSemicolon
            | TParam
            | TWhere
            | TAs
+           | TIs
            | TDeriving
            | TDefault
            | TPathParam Int
@@ -208,6 +211,7 @@ data TokenType = TSemicolon
            | TLocalParam
            | TTrue
            | TFalse
+           | TNothing
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

@@ -89,6 +89,7 @@ import System.Exit
     cross { Tk _ TCross }
     on { Tk _ TOn }
     as { Tk _ TAs }
+    is { Tk _ TIs }
     insert { Tk _ TInsert }
     update { Tk _ TUpdate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
@@ -108,6 +109,7 @@ import System.Exit
     localParam { Tk _ TLocalParam }
     true { Tk _ TTrue }
     false { Tk _ TFalse }
+    nothing { Tk _ TNothing }
 %%
 
 dbModule : maybeModuleName 
@@ -238,6 +240,7 @@ binop : equals { Eq }
       | ge { Ge }
       | like { Like }
       | ilike { Ilike }
+      | is { Is }
       
 
 expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
@@ -293,6 +296,7 @@ value : stringval { StringValue $1 }
       | floatval { FloatValue $1 }
       | true { BoolValue True }
       | false { BoolValue False }
+      | nothing { NothingValue }
 
       
 uniques : { [] }

@@ -20,6 +20,7 @@ hsBinOp op = case op of
     Ge -> ">=."
     Like -> "`like`"
     Ilike -> "`ilike`"
+    Is -> "`is`"
 
 hsListOp op = case op of
     In -> "`in_`"
@@ -74,6 +75,7 @@ hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing f ++ ")"
 hsValExpr :: Context -> BinOp -> ValExpr -> String
 hsValExpr ctx op ve =  case ve of
     FieldExpr fr -> hsFieldRef ctx (Just op) fr
+    ConstExpr (fv@(NothingValue)) -> show fv
     ConstExpr fv ->  "(val " ++ show fv ++  ")" 
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
 
@@ -94,6 +96,7 @@ fieldRefMaybeLevel ctx _ = 0
 exprMaybeLevel :: Context -> ValExpr -> Int
 exprMaybeLevel ctx ve = case ve of
     FieldExpr fr -> fieldRefMaybeLevel ctx fr
+    ConstExpr NothingValue -> 1
     ConstExpr _ -> 0
     ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLevel ctx e2)
 
