@@ -139,6 +139,7 @@ subQuery :: Context -> SelectQuery -> String
 subQuery ctx' sq = "subList_select $ from $ \\(" ++ vn ++ 
     (concatMap joinDef (sqJoins sq)) ++ ") -> do { " ++
     (concatMap (makeInline . (mapJoinExpr m ctx)) (reverse (sqJoins sq)))
+    ++ " ; " ++ maybeWhere 
     ++ " ; " ++ (makeInline $ selectReturnFields m ctx sq)
     ++ " }"
 
@@ -149,6 +150,9 @@ subQuery ctx' sq = "subList_select $ from $ \\(" ++ vn ++
         ctx = ctx' {
                 ctxNames = sqAliases sq
             } 
+        maybeWhere = case sqWhere sq of
+            Just expr -> (makeInline $ T.unpack $(codegenFile "codegen/where-expr.cg"))
+            Nothing -> ""
 
 
 hsExpr :: Context-> Expr -> String
