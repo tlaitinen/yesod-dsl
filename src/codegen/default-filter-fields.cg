@@ -1,5 +1,5 @@
         case defaultFilterJson of 
-            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
+            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
 ~{fields}
                 _ -> return ()
                 ) xs

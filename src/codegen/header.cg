@@ -56,6 +56,11 @@ data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_property :: Text,
     filterJsonMsg_comparison :: Text
 } 
+filterJsonMsg_field_or_property :: FilterJsonMsg -> Text
+filterJsonMsg_field_or_property fjm
+    | not $ T.null $ filterJsonMsg_field fjm = filterJsonMsg_field fjm
+    | otherwise = filterJsonMsg_property fjm
+
 instance FromJSON FilterJsonMsg where
     parseJSON (A.Object v) = FilterJsonMsg <$>
         v .:? "type" .!= "string" <*> 
