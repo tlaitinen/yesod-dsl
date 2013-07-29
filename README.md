@@ -263,8 +263,7 @@ route /pathPiece[/pathPiece]* {
         [public;]
         select [entityAlias.[fieldName | *] [as outputName]]*
                from EntityName as entityAlias
-               [[inner join | cross join | left outer join 
-                 | right outer join | full outer join] 
+               [[inner join | left outer join] 
                  EntityName as entityAlias 
                  [on entityAlias.field binOp entityAlias.field]]*
                [where expr]
@@ -299,7 +298,7 @@ expr: (expr) and (expr)
     | (expr) or (expr)
     | not (expr)
     | valExpr (= | <> | < | > | <= | >= | like | ilike) valExpr
-    | entityAlias.field (in | not in) ($i | $$)
+    | entityAlias.field (in | not in) ($i | $$ | sub_select)
 
 valExpr: "string-constant"
        | int-constant
@@ -311,6 +310,13 @@ valExpr: "string-constant"
 inputValue: $i
           | authId
           | $$
+
+sub_select: (select entityAlias.fieldName 
+             from EntityName as entityAlias
+             [[inner join | left outer join] 
+               EntityName as entityAlias 
+               [on entityAlias.field binOp entityAlias.field]]*
+             [where expr])
 ```
 where:
  * $i refers to the *i*th parameter in the route path
