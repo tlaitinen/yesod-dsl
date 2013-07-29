@@ -303,6 +303,8 @@ expr: (expr) and (expr)
 valExpr: "string-constant"
        | int-constant
        | float-constant
+       | (True | False)
+       | Nothing
        | entityAlias.field
        | valExpr || valExpr
        | inputValue
