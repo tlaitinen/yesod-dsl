@@ -33,7 +33,7 @@ type EntityName = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-               | FTZonedTime
+               | FTZonedTime deriving (Eq)
 
 instance Show FieldType where
     show FTWord32 = "Word32"
@@ -162,7 +162,7 @@ data Entity = Entity {
     entityUniques    :: [Unique],
     entityDeriving   :: [ClassName],
     entityChecks     :: [FunctionName]
-} deriving (Show)
+} deriving (Show, Eq)
 
 
 data Route = Route {
@@ -204,14 +204,14 @@ data EnumType = EnumType {
     enumLoc :: Location,
     enumName :: String,
     enumValues :: [String]
-} deriving (Show)
+} deriving (Show, Eq)
 
 data Class = Class {
     classLoc     :: Location,
     className    :: String,
     classFields  :: [Field],
     classUniques :: [Unique]
-} deriving (Show)
+} deriving (Show, Eq)
 
 type DefaultValue = String
 type IsListFlag = Bool
@@ -219,14 +219,14 @@ type EnumName = String
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
                     | EnumField EnumName
-                deriving (Show)
+                deriving (Show,Eq)
    
 
 data Field = Field {
     fieldOptional :: Bool,
     fieldName     :: FieldName,
     fieldContent  :: FieldContent
-} deriving (Show)
+} deriving (Show,Eq)
 
 baseFieldType :: Field -> String
 baseFieldType f = case fieldContent f of
