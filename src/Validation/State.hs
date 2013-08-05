@@ -207,8 +207,18 @@ vHandlerParam (Update en ifr mifs) = do
                                        ++ " in " ++ (show path)
             Nothing -> return ()
     popScope
-vHandlerParam (Insert en fs) = do
+vHandlerParam (Insert en mfs) = do
     pushScope "insert"
+    path <- gets stScopePath
+    withLookupEntity en $ \e -> do
+        case mfs of
+            Just ifs -> forM_ ifs $ \(fn,_) -> 
+                case L.find (\f -> fieldName f == fn) (entityFields e) of
+                    Just f' -> return ()
+                    Nothing -> vError $ "Reference to undeclared field '"
+                                       ++ fn ++ "' in entity " ++ en
+                                       ++ " in " ++ (show path)
+            Nothing -> return ()
     popScope
 
 vJoin :: Join -> Validation
