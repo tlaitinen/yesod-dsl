@@ -60,8 +60,9 @@ entity Person {
 entity BlogPost {
     instance of Named;
     authorId PersonId;
+    content Text;
 }
-enum CommentState = PendingComment | AcceptedComment | SpamComment;
+enum CommentState = Pending | Accepted | Spam;
 
 entity Comment {
     blogPostId BlogPostId;
@@ -105,8 +106,10 @@ route /blogposts {
             order by bp.name asc
             limit 1000;
 
-        if param "blogPostName" = $$ then
-            where bp.name like "%" || $$ || "%";
+        if param "query" = $$ then
+            where (bp.name ilike "%" || $$ || "%")
+                  (bg.content ilike "%" || $$ || "%");
+
         default-filter-sort;
     }
     post {

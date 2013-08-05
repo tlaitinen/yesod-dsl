@@ -56,6 +56,11 @@ data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_property :: Text,
     filterJsonMsg_comparison :: Text
 } 
+filterJsonMsg_field_or_property :: FilterJsonMsg -> Text
+filterJsonMsg_field_or_property fjm
+    | not $ T.null $ filterJsonMsg_field fjm = filterJsonMsg_field fjm
+    | otherwise = filterJsonMsg_property fjm
+
 instance FromJSON FilterJsonMsg where
     parseJSON (A.Object v) = FilterJsonMsg <$>
         v .:? "type" .!= "string" <*> 
@@ -82,6 +87,7 @@ defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
 
 ilike = unsafeSqlBinOp " ILIKE "
+is = unsafeSqlBinOp " IS "
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v
@@ -156,11 +162,12 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
 share [mkPersist sqlOnlySettings, mkMigrate "migrateExample" ] [persistLowerCase|
 User json
     name Text  
-    version VersionId Maybe  
+    version VersionId Maybe   default=NULL
     UniqueUserName name !force
     deriving Typeable
 BlogPost json
     authorId UserId  
+    content Text  
     name Text  
     UniqueBlogPostName name !force
 Comment json
@@ -177,7 +184,7 @@ ChangeRecord json
     oldValue Text  
     newValue Text  
     versionId VersionId  
-    userEntityId UserId Maybe  
+    userEntityId UserId Maybe   default=NULL
 |]
 class Named a where
     namedName :: a -> Text
@@ -257,6 +264,7 @@ instance FromJSON TimeOfDay where
             [] -> mzero
 getUsersR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT Example (HandlerT master IO) A.Value
 getUsersR  = do
@@ -279,12 +287,12 @@ getUsersR  = do
                 case defaultSortJson of 
                     Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
                             "name" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p ^. UserName) ] 
-                                "DESC" -> orderBy [ desc (p ^. UserName) ] 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserName) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserName) ] 
                                 _      -> return ()
                             "version" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p ^. UserVersion) ] 
-                                "DESC" -> orderBy [ desc (p ^. UserVersion) ] 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserVersion) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserVersion) ] 
                                 _      -> return ()
                 
                             _ -> return ()
@@ -300,12 +308,12 @@ getUsersR  = do
                  
             else return ()
         case defaultFilterJson of 
-            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
+            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserName) (val v) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
                 "version" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserVersion) (val (Just v)) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserVersion) (just (val v)) 
                     _        -> return ()
 
                 _ -> return ()
@@ -331,6 +339,7 @@ getUsersR  = do
        ]
 postUsersR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT Example (HandlerT master IO) A.Value
 postUsersR  = do
@@ -358,6 +367,7 @@ postUsersR  = do
     return $ A.Null
 getUserUserIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => UserId -> HandlerT Example (HandlerT master IO) A.Value
 getUserUserIdR p1 = do
@@ -392,6 +402,7 @@ getUserUserIdR p1 = do
        ]
 putUserUserIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => UserId -> HandlerT Example (HandlerT master IO) A.Value
 putUserUserIdR p1 = do
@@ -419,6 +430,7 @@ putUserUserIdR p1 = do
     return $ A.Null
 deleteUserUserIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => UserId -> HandlerT Example (HandlerT master IO) A.Value
 deleteUserUserIdR p1 = do
@@ -428,6 +440,7 @@ deleteUserUserIdR p1 = do
     return $ A.Null
 getBlogpostsR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT Example (HandlerT master IO) A.Value
 getBlogpostsR  = do
@@ -451,16 +464,20 @@ getBlogpostsR  = do
                 case defaultSortJson of 
                     Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
                             "authorId" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (bp ^. BlogPostAuthorId) ] 
-                                "DESC" -> orderBy [ desc (bp ^. BlogPostAuthorId) ] 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostAuthorId) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostAuthorId) ] 
+                                _      -> return ()
+                            "content" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostContent) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostContent) ] 
                                 _      -> return ()
                             "name" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (bp ^. BlogPostName) ] 
-                                "DESC" -> orderBy [ desc (bp ^. BlogPostName) ] 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostName) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostName) ] 
                                 _      -> return ()
                             "authorName" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p ^. UserName) ] 
-                                "DESC" -> orderBy [ desc (p ^. UserName) ] 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserName) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserName) ] 
                                 _      -> return ()
                 
                             _ -> return ()
@@ -476,18 +493,21 @@ getBlogpostsR  = do
                  
             else return ()
         case defaultFilterJson of 
-            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
+            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserName) (val v) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
                 "version" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p ^. UserVersion) (val (Just v)) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserVersion) (just (val v)) 
                     _        -> return ()
                 "authorId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostAuthorId) (val v) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostAuthorId) (val v) 
+                    _        -> return ()
+                "content" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostContent) (val v) 
                     _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostName) (val v) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostName) (val v) 
                     _        -> return ()
 
                 _ -> return ()
@@ -498,7 +518,7 @@ getBlogpostsR  = do
 
                 where_ $ (bp ^. BlogPostName) `like` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))
             Nothing -> return ()
-        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostName, p ^. UserName)
+        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostName, p ^. UserName)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -508,17 +528,19 @@ getBlogpostsR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
                     "id" .= toJSON f1,
                     "authorId" .= toJSON f2,
-                    "name" .= toJSON f3,
-                    "authorName" .= toJSON f4                                    
+                    "content" .= toJSON f3,
+                    "name" .= toJSON f4,
+                    "authorName" .= toJSON f5                                    
                     ]
                 _ -> A.object []
             ) results)
        ]
 postBlogpostsR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT Example (HandlerT master IO) A.Value
 postBlogpostsR  = do
@@ -546,6 +568,7 @@ postBlogpostsR  = do
     return $ A.Null
 getBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT Example (HandlerT master IO) A.Value
 getBlogpostsBlogPostIdR p1 = do
@@ -561,7 +584,7 @@ getBlogpostsBlogPostIdR p1 = do
 
                  
             else return ()
-        return (bp ^. BlogPostAuthorId, bp ^. BlogPostName, p ^. UserName)
+        return (bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostName, p ^. UserName)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -571,16 +594,18 @@ getBlogpostsBlogPostIdR p1 = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
                     "authorId" .= toJSON f1,
-                    "name" .= toJSON f2,
-                    "authorName" .= toJSON f3                                    
+                    "content" .= toJSON f2,
+                    "name" .= toJSON f3,
+                    "authorName" .= toJSON f4                                    
                     ]
                 _ -> A.object []
             ) results)
        ]
 putBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT Example (HandlerT master IO) A.Value
 putBlogpostsBlogPostIdR p1 = do
@@ -608,6 +633,7 @@ putBlogpostsBlogPostIdR p1 = do
     return $ A.Null
 deleteBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => BlogPostId -> HandlerT Example (HandlerT master IO) A.Value
 deleteBlogpostsBlogPostIdR p1 = do
@@ -617,10 +643,12 @@ deleteBlogpostsBlogPostIdR p1 = do
     return $ A.Null
 getCommentsR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT Example (HandlerT master IO) A.Value
 getCommentsR  = do
     filterParam_authorId <- lookupGetParam "authorId"
+    filterParam_query <- lookupGetParam "query"
     defaultFilterParam <- lookupGetParam "filter"
     let defaultFilterJson = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) defaultFilterParam) :: Maybe [FilterJsonMsg]
     defaultSortParam <- lookupGetParam "sort"
@@ -639,12 +667,16 @@ getCommentsR  = do
                 case defaultSortJson of 
                     Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
                             "authorId" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (bp ^. BlogPostAuthorId) ] 
-                                "DESC" -> orderBy [ desc (bp ^. BlogPostAuthorId) ] 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostAuthorId) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostAuthorId) ] 
+                                _      -> return ()
+                            "content" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostContent) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostContent) ] 
                                 _      -> return ()
                             "name" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (bp ^. BlogPostName) ] 
-                                "DESC" -> orderBy [ desc (bp ^. BlogPostName) ] 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostName) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostName) ] 
                                 _      -> return ()
                 
                             _ -> return ()
@@ -660,12 +692,15 @@ getCommentsR  = do
                  
             else return ()
         case defaultFilterJson of 
-            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field fjm of
+            Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
                 "authorId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostAuthorId) (val v) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostAuthorId) (val v) 
+                    _        -> return ()
+                "content" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostContent) (val v) 
                     _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp ^. BlogPostName) (val v) 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostName) (val v) 
                     _        -> return ()
 
                 _ -> return ()
@@ -678,7 +713,12 @@ getCommentsR  = do
 
                 where_ $ (p ^. UserId) ==. ((val localParam))
             Nothing -> return ()
-        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostName)
+        case getDefaultFilter filterParam_query defaultFilterJson "query" of
+            Just localParam -> do 
+
+                where_ $ (bp ^. BlogPostContent) `ilike` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))
+            Nothing -> return ()
+        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostName)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -688,16 +728,18 @@ getCommentsR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
                     "id" .= toJSON f1,
                     "authorId" .= toJSON f2,
-                    "name" .= toJSON f3                                    
+                    "content" .= toJSON f3,
+                    "name" .= toJSON f4                                    
                     ]
                 _ -> A.object []
             ) results)
        ]
 postCommentsR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => HandlerT Example (HandlerT master IO) A.Value
 postCommentsR  = do
@@ -725,6 +767,7 @@ postCommentsR  = do
     return $ A.Null
 getCommentsCommentIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT Example (HandlerT master IO) A.Value
 getCommentsCommentIdR p1 = do
@@ -761,6 +804,7 @@ getCommentsCommentIdR p1 = do
        ]
 putCommentsCommentIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT Example (HandlerT master IO) A.Value
 putCommentsCommentIdR p1 = do
@@ -788,6 +832,7 @@ putCommentsCommentIdR p1 = do
     return $ A.Null
 deleteCommentsCommentIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
+    KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
     => CommentId -> HandlerT Example (HandlerT master IO) A.Value
 deleteCommentsCommentIdR p1 = do

@@ -16,8 +16,9 @@ entity User {
 entity BlogPost {
     instance of Named;
     authorId UserId;
+    content Text;
 }
-enum CommentState = PendingComment | AcceptedComment | SpamComment;
+enum CommentState = Pending | Accepted | Spam;
 
 entity Comment {
     blogPostId BlogPostId;
@@ -95,6 +96,9 @@ route /comments {
         if param "authorId" = $$ then
             inner join User as p on bp.authorId = p.id
             where p.id = $$;
+
+        if param "query" = $$ then
+            where bp.content ilike "%" || $$ || "%";
 
         default-filter-sort;
     }

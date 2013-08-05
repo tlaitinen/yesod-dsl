@@ -22,5 +22,6 @@ type ExampleRoute = Route Example
  
 instance (YesodAuthPersist master,
           ExampleValidation master,
+          KeyEntity (AuthId master) ~ User,
           YesodPersistBackend master ~ SqlPersistT) => YesodSubDispatch Example (HandlerT master IO) where
     yesodSubDispatch = $(mkYesodSubDispatch resourcesExample)
