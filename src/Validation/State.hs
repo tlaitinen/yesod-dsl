@@ -172,35 +172,59 @@ vHandlerParam (Select sq) = do
     declareLocal "select;" VReserved
     pushScope $ "select"
     let (en,vn) = sqFrom sq
-    vEntityRef en
     withLookupEntity en $ \e -> declareLocal vn (VEntity e)
-    forM_ (sqJoins sq) $ \j -> do
-        vEntityRef (joinEntity j)
-        withLookupEntity (joinEntity j) $ \e -> declareLocal (joinAlias j) 
-                                                             (VEntity e)
-        case joinExpr j of
-            Just e -> do
-                pushScope $ "join expression for " ++ (show j)
-                vExpr e
-                popScope
-            Nothing -> if joinType j /= CrossJoin
-                then vError $ "Missing join expression in " ++ show sq
-                else return () 
+    forM_ (sqJoins sq) vJoin
+    case sqWhere sq of 
+        Just e -> do    
+            pushScope $ "where expression"
+            vExpr e
+            popScope
+    forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
     popScope
-vHandlerParam (IfFilter f) = do
+vHandlerParam (IfFilter (vn,joins,e)) = do
     pushScope "if param"
+    declareLocal vn VReserved
+    forM_ joins vJoin
+    vExpr e
     popScope
-vHandlerParam (DeleteFrom df vn e) = do
+vHandlerParam (DeleteFrom en vn me) = do
     pushScope "delete from"
+    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+    case me of
+        Just e -> vExpr e
+        Nothing -> return ()
     popScope
-vHandlerParam (Update en ifr fs) = do
+vHandlerParam (Update en ifr mifs) = do
     pushScope "update"
+    path <- gets stScopePath
+    withLookupEntity en $ \e -> do
+        case mifs of
+            Just ifs -> forM_ ifs $ \(fn,_) -> 
+                case L.find (\f -> fieldName f == fn) (entityFields e) of
+                    Just f' -> return ()
+                    Nothing -> vError $ "Reference to undeclared field '"
+                                       ++ fn ++ "' in entity " ++ en
+                                       ++ " in " ++ (show path)
+            Nothing -> return ()
     popScope
 vHandlerParam (Insert en fs) = do
     pushScope "insert"
     popScope
 
-
+vJoin :: Join -> Validation
+vJoin j = do
+    path <- gets stScopePath
+    withLookupEntity (joinEntity j) $ \e -> declareLocal (joinAlias j) 
+                                                         (VEntity e)
+    case joinExpr j of
+        Just e -> do
+            pushScope $ "join expression"
+            vExpr e
+            popScope
+        Nothing -> if joinType j /= CrossJoin
+            then vError $ "Missing join expression in " ++ show path
+            else return () 
+     
 vEntityRef :: EntityName -> Validation
 vEntityRef en = withLookupEntity en $ \e -> return ()
 
@@ -228,7 +252,9 @@ vExpr loe@(ListOpExpr fr1 op fr2) = do
         FieldRefSubQuery _ -> return ()
         _ -> vError $ "Unsupported right hand side operand in list expression : " ++ show loe
 vExpr (BinOpExpr ve1 op ve2) = do
-    
+    vValExpr ve1
+    vValExpr ve2
+     
     return ()
 
 vFieldRef :: FieldRef -> Validation
@@ -241,3 +267,23 @@ vFieldRef (FieldRefNormal vn fn) = do
             Nothing -> vError $ "Entity " ++ entityName e ++ " referenced by "
                                ++ vn ++ "." ++ fn ++ " in " ++ (show path)
                                ++ " does not have the field " ++ fn
+vFieldRef (FieldRefSubQuery sq) = do
+    pushScope "sub-select"
+    let (en,vn) = sqFrom sq
+    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+    forM_ (sqJoins sq) vJoin 
+    case sqWhere sq of 
+        Just e -> do    
+            pushScope $ "where expression"
+            vExpr e
+            popScope
+        Nothing -> return ()
+    popScope
+
+vValExpr :: ValExpr -> Validation
+vValExpr ve = case ve of
+    FieldExpr fr -> vFieldRef fr
+    ConstExpr _ -> return ()
+    ConcatExpr ve1 ve2 -> do
+        vValExpr ve1
+        vValExpr ve2
