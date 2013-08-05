@@ -4,7 +4,7 @@ module Validation.State (validate) where
 import AST
 import Control.Monad.State
 import qualified Data.Map as Map
-import Data.List (sort)
+import qualified Data.List as L
 type Info = String
 
 
@@ -12,11 +12,12 @@ type Info = String
 data VState = VState {
     stEnv :: Map.Map String [VId],
     stScope :: Int,
+    stScopePath :: [String],
     stErrors :: [String]
 }
 
 initialState :: VState
-initialState = VState Map.empty 0 []
+initialState = VState Map.empty 0 [] []
 
 data VId = VId Int VIdType deriving(Eq)
 data VIdType = VEnum EnumType
@@ -24,6 +25,9 @@ data VIdType = VEnum EnumType
          | VEntity Entity
          | VField Field
          | VUnique Unique
+         | VRoute Route
+         | VHandler Handler
+         | VReserved
          deriving (Eq,Show)
 
 instance Ord VId where
@@ -32,21 +36,19 @@ instance Ord VId where
 type Validation = State VState ()
 
 
-class Show a => HasLoc a where
-
-
-instance HasLoc Unique where
 
 vError :: String -> Validation
 vError err = modify $ \st -> st { stErrors = stErrors st ++ [err] }
     
 
-pushScope :: Validation
-pushScope = modify $ \st -> st { stScope = stScope st + 1 }
+pushScope :: String -> Validation
+pushScope path = modify $ \st -> st { stScope = stScope st + 1,
+                                 stScopePath = path:stScopePath st }
 
 popScope :: Validation
 popScope = modify $ \st -> let newScope = stScope st - 1 in st {
             stScope = newScope,
+            stScopePath = tail $ stScopePath st,
             stEnv = Map.map (filter (\(VId s _) -> s <= newScope)) $ stEnv st
         }
 
@@ -60,58 +62,182 @@ declare scope name id = do
             if s == scope
                 then vError $ "Identifier " ++ name 
                      ++ " already declared : " ++ show t
-                else put $ st { stEnv = Map.adjust (sort . (newId++)) name e }
+                else put $ st { stEnv = Map.adjust (L.sort . (newId++)) name e }
         Nothing -> put $ st { stEnv = Map.insert name newId e }
-            
+       
+declareGlobal :: String -> VIdType -> Validation        
+declareGlobal = declare 0
+
 declareLocal :: String -> VIdType -> Validation
 declareLocal name id = do
     scope <- gets stScope
     declare scope name id
 
-withLookup :: HasLoc a => a -> String -> (VIdType -> Validation) -> Validation
-withLookup o name f = do
+withLookup :: String -> (VIdType -> Validation) -> Validation
+withLookup name f = do
     env <- gets stEnv
+    path <- gets stScopePath
     case Map.lookup name env of
         Just ((VId _ t):_) -> f t
         Nothing -> vError $ "Reference to an undeclared identifier '" 
-                          ++ name ++ "' by " ++ show o 
+                          ++ name ++ "' in " ++ show path
 
-withLookupField :: HasLoc a => a -> String -> (Field -> Validation) -> Validation
-withLookupField o name f = withLookup o name $ \idt -> case idt of
-    (VField t) -> f t
-    _ -> vError $ "Reference to an incompatible type " ++ show idt 
-                 ++ " by " ++ show o
+withLookupField :: String -> (Field -> Validation) -> Validation
+withLookupField name f = do
+    path <- gets stScopePath
+    withLookup name $ \idt -> case idt of
+        (VField t) -> f t
+        _ -> vError $ "Reference to an incompatible type " ++ show idt 
+                     ++ " in " ++ show path ++ " (expected field)"
+
+withLookupEntity :: String -> (Entity -> Validation) -> Validation
+withLookupEntity name f =do
+    path <- gets stScopePath
+    withLookup name $ \idt -> case idt of
+        (VEntity t) -> f t
+        _ -> vError $ "Reference to an incompatible type " ++ show idt 
+                     ++ " by " ++ show path ++ " (expected entity)"
+
+withLookupEnum :: String -> (EnumType -> Validation) -> Validation
+withLookupEnum name f = do
+    path <- gets stScopePath
+    withLookup name $ \idt -> case idt of
+        (VEnum t) -> f t
+        _ -> vError $ "Reference to an incompatible type " ++ show idt 
+                     ++ " by " ++ show path ++ " (expected enum)"
+
 
 validate :: Module -> [String]
 validate m = stErrors $ execState (validate' m) initialState
 
 validate' :: Module -> Validation
 validate' m = do
-    forM_ (modEnums m) vEnum
+    forM_ (modEnums m) $ \e -> declareGlobal (enumName e) (VEnum e)
+    forM_ (modClasses m) $ \c -> declareGlobal (className c) (VClass c)
+    forM_ (modEntities m) $ \e -> declareGlobal (entityName e) (VEntity e)
     forM_ (modClasses m) vClass
+    forM_ (modEntities m) vEntity
+    forM_ (modRoutes m) vRoute
     return ()
-
-vEnum :: EnumType -> Validation
-vEnum e = declare 0 (enumName e) (VEnum e)
 
 vClass :: Class -> Validation
 vClass c = do
-    declare 0 (className c) (VClass c)
-    pushScope
+    pushScope $ "class " ++ (className c) ++ " in " ++ (show (classLoc c))
     forM_ (classFields c) vField
     forM_ (classUniques c) $ vUnique (className c) 
     popScope
 
+vEntity :: Entity -> Validation
+vEntity e = do
+    pushScope $ "entity " ++ (entityName e) ++ " in " ++ (show $ entityLoc e)
+    forM_ (entityFields e) vField
+    forM_ (entityUniques e) $ vUnique (entityName e)
+    popScope
+
+
 vField :: Field -> Validation
-vField f = declareLocal (fieldName f) (VField f)
+vField f = do
+    declareLocal (fieldName f) (VField f)
+    pushScope $ "field " ++ fieldName f
+    case fieldContent f of
+        EntityField en -> vEntityRef en
+        EnumField en -> vEnumRef en
+    popScope    
 
 vUnique :: String -> Unique -> Validation
 vUnique prefix u = do
-    declare 0 (prefix ++ uniqueName u) (VUnique u)
-    forM_ (uniqueFields u) $ vFieldRef u
+    declareGlobal (prefix ++ uniqueName u) (VUnique u)
+    pushScope $ "unique " ++ uniqueName u
+    forM_ (uniqueFields u) $ \fn -> withLookupField fn $ \f -> return ()
+    popScope
 
-vFieldRef :: HasLoc a => a -> FieldName -> Validation
-vFieldRef o fn = withLookupField o fn $ \f -> return ()
-
+vRoute :: Route -> Validation
+vRoute r = do
+    declareGlobal (show $ routePath r) (VRoute r)
+    pushScope $ "route " ++ (show $ routePath r) ++ " in "++ (show $ routeLoc r)
+    forM_ (routeHandlers r) vHandler
+    popScope
     
+vHandler :: Handler -> Validation
+vHandler h = do
+    declareLocal (show $ handlerType h) (VHandler h)
+    pushScope $ "handler " ++ (show $ handlerType h)
+    forM_ (handlerParams h) vHandlerParam
+    popScope
 
+vHandlerParam :: HandlerParam -> Validation
+vHandlerParam Public = declareLocal "public;" VReserved
+vHandlerParam DefaultFilterSort = declareLocal "default-filter-sort;" VReserved
+vHandlerParam (Select sq) = do
+    declareLocal "select;" VReserved
+    pushScope $ "select"
+    let (en,vn) = sqFrom sq
+    vEntityRef en
+    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+    forM_ (sqJoins sq) $ \j -> do
+        vEntityRef (joinEntity j)
+        withLookupEntity (joinEntity j) $ \e -> declareLocal (joinAlias j) 
+                                                             (VEntity e)
+        case joinExpr j of
+            Just e -> do
+                pushScope $ "join expression for " ++ (show j)
+                vExpr e
+                popScope
+            Nothing -> if joinType j /= CrossJoin
+                then vError $ "Missing join expression in " ++ show sq
+                else return () 
+    popScope
+vHandlerParam (IfFilter f) = do
+    pushScope "if param"
+    popScope
+vHandlerParam (DeleteFrom df vn e) = do
+    pushScope "delete from"
+    popScope
+vHandlerParam (Update en ifr fs) = do
+    pushScope "update"
+    popScope
+vHandlerParam (Insert en fs) = do
+    pushScope "insert"
+    popScope
+
+
+vEntityRef :: EntityName -> Validation
+vEntityRef en = withLookupEntity en $ \e -> return ()
+
+vEnumRef :: EnumName -> Validation
+vEnumRef en = withLookupEnum en $ \e -> return ()
+
+vExpr :: Expr -> Validation
+vExpr (AndExpr e1 e2) = do
+    vExpr e1
+    vExpr e2
+vExpr (OrExpr e1 e2) = do
+    vExpr e1
+    vExpr e2
+vExpr (NotExpr e) = do
+    vExpr e
+vExpr loe@(ListOpExpr fr1 op fr2) = do
+    vFieldRef fr1
+    vFieldRef fr2
+    case (fr1) of   
+        FieldRefId _ -> return ()
+        FieldRefNormal _ _ -> return ()
+        _ -> vError $ "Unsupported left hand side operand in list expression : " ++ show  loe
+    case (fr2) of
+        FieldRefLocalParam -> return ()
+        FieldRefSubQuery _ -> return ()
+        _ -> vError $ "Unsupported right hand side operand in list expression : " ++ show loe
+vExpr (BinOpExpr ve1 op ve2) = do
+    
+    return ()
+
+vFieldRef :: FieldRef -> Validation
+vFieldRef (FieldRefId vn) = vEntityRef vn 
+vFieldRef (FieldRefNormal vn fn) = do
+    path <- gets stScopePath
+    withLookupEntity vn $ \e -> 
+        case L.find (\f -> fieldName f == fn) $ entityFields e of
+            Just f -> return ()
+            Nothing -> vError $ "Entity " ++ entityName e ++ " referenced by "
+                               ++ vn ++ "." ++ fn ++ " in " ++ (show path)
+                               ++ " does not have the field " ++ fn

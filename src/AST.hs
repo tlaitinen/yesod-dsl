@@ -169,7 +169,7 @@ data Route = Route {
     routeLoc :: Location,
     routePath :: [PathPiece],
     routeHandlers :: [Handler]
-} deriving (Show)
+} deriving (Show, Eq)
 routePathParams :: Route -> [PathPiece]
 routePathParams = (filter isPathParam) . routePath
     where isPathParam (PathId _) = True
@@ -185,6 +185,7 @@ routeName ps = "/" ++ intercalate "/" (map show ps)
 
 data PathPiece = PathText String
                | PathId EntityName
+               deriving (Eq)
 instance Show PathPiece where
     show (PathText s) = s
     show (PathId en) = "#" ++ en ++ "Id"
