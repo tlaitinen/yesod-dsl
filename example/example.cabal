@@ -82,6 +82,19 @@ library
                  , resourcet
                  , attoparsec
                  , time
+                 , unordered-containers
+                 , wai
+                 , resourcet
+                 , http-types
+                 , attoparsec
+                 , blaze-builder
+                 , vector
+                 , esqueleto
+                 , yesod-persistent
+                 , old-locale
+                 , filepath
+                 , unix
+                 , path-pieces
 
 executable         example
     if flag(library-only)

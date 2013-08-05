@@ -29,7 +29,10 @@ instance ExampleValidation App where
     nonEmpty "" = return False
     nonEmpty _ = return True
 
-    maxTwoPendingComments _ = return True
+    maxTwoPendingComments c = do
+        comments <- runDB $ count [ CommentAuthorId ==. (commentAuthorId c),
+                             CommentCommentState ==. CommentStatePending ]
+        return $ comments <= 2
 
 
 -- This line actually creates our YesodDispatch instance. It is the second half
