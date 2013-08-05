@@ -11,13 +11,12 @@ type Info = String
 
 data VState = VState {
     stEnv :: Map.Map String [VId],
-    stScope :: Int,
     stScopePath :: [String],
     stErrors :: [String]
 }
 
 initialState :: VState
-initialState = VState Map.empty 0 [] []
+initialState = VState Map.empty [] []
 
 data VId = VId Int VIdType deriving(Eq)
 data VIdType = VEnum EnumType
@@ -43,13 +42,11 @@ vError :: String -> Validation
 vError err = modify $ \st -> st { stErrors = stErrors st ++ [err] }
     
 
-pushScope :: String -> Validation
-pushScope path = modify $ \st -> st { stScope = stScope st + 1,
-                                 stScopePath = path:stScopePath st }
-
-popScope :: Validation
-popScope = modify $ \st -> let newScope = stScope st - 1 in st {
-            stScope = newScope,
+withScope :: String -> Validation -> Validation
+withScope path f = do
+    modify $ \st -> st { stScopePath = path:stScopePath st }
+    f
+    modify $ \st -> let newScope = length (stScopePath st) - 1 in st {
             stScopePath = tail $ stScopePath st,
             stEnv = Map.filter (not . null) $ 
                         Map.map (filter (\(VId s _) -> s <= newScope)) $
@@ -76,8 +73,8 @@ declareGlobal = declare 0
 
 declareLocal :: String -> VIdType -> Validation
 declareLocal name id = do
-    scope <- gets stScope
-    declare scope name id
+    scopePath <- gets stScopePath
+    declare (length scopePath) name id
 
 withLookup :: String -> (VIdType -> Validation) -> Validation
 withLookup name f = do
@@ -129,49 +126,42 @@ validate' m = do
 
 vClass :: Class -> Validation
 vClass c = do
-    pushScope $ "class " ++ (className c) ++ " in " ++ (show (classLoc c))
-    forM_ (classFields c) vField
-    forM_ (classUniques c) $ vUnique (className c) 
-    popScope
+    withScope ("class " ++ (className c) ++ " in " ++ (show (classLoc c))) $ do
+        forM_ (classFields c) vField
+        forM_ (classUniques c) $ vUnique (className c) 
 
 vEntity :: Entity -> Validation
 vEntity e = do
-    pushScope $ "entity " ++ (entityName e) ++ " in " ++ (show $ entityLoc e)
-    forM_ (entityFields e) vField
-    forM_ (entityUniques e) $ vUnique (entityName e)
-    popScope
+    withScope ("entity " ++ (entityName e) ++ " in "++(show $ entityLoc e)) $do
+        forM_ (entityFields e) vField
+        forM_ (entityUniques e) $ vUnique (entityName e)
 
 
 vField :: Field -> Validation
 vField f = do
     declareLocal (fieldName f) (VField f)
-    pushScope $ "field " ++ fieldName f
-    case fieldContent f of
+    withScope ("field " ++ fieldName f) $ case fieldContent f of
         EntityField en -> vEntityRef en
         EnumField en -> vEnumRef en
         _ -> return ()
-    popScope    
 
 vUnique :: String -> Unique -> Validation
 vUnique prefix u = do
     declareGlobal (prefix ++ uniqueName u) (VUnique u)
-    pushScope $ "unique " ++ uniqueName u
-    forM_ (uniqueFields u) $ \fn -> withLookupField fn $ \f -> return ()
-    popScope
+    withScope ("unique " ++ uniqueName u) $
+        forM_ (uniqueFields u) $ \fn -> withLookupField fn $ \f -> return ()
 
 vRoute :: Route -> Validation
 vRoute r = do
     declareGlobal (show $ routePath r) (VRoute r)
-    pushScope $ "route " ++ (show $ routePath r) ++ " in "++ (show $ routeLoc r)
-    forM_ (routeHandlers r) vHandler
-    popScope
+    withScope ("route " ++ (show $ routePath r) ++" in "++(show $ routeLoc r))$
+        forM_ (routeHandlers r) vHandler
     
 vHandler :: Handler -> Validation
 vHandler h = do
     declareLocal (show $ handlerType h) (VHandler h)
-    pushScope $ "handler " ++ (show $ handlerType h)
-    forM_ (handlerParams h) vHandlerParam
-    popScope
+    withScope ("handler " ++ (show $ handlerType h))  $
+        forM_ (handlerParams h) vHandlerParam
 
 vHandlerParam :: HandlerParam -> Validation
 vHandlerParam Public = declareLocal "public;" VReserved
@@ -183,51 +173,45 @@ vHandlerParam (Select sq) = do
     forM_ (sqJoins sq) vJoin
     case sqWhere sq of 
         Just e -> do    
-            pushScope $ "where expression"
-            vExpr e
-            popScope
+            withScope  "where expression" $ vExpr e
         Nothing -> return ()    
     forM_ (sqFields sq) vSelectField
     forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
 vHandlerParam (IfFilter (vn,joins,e)) = do
-    pushScope "if param"
-    declareLocal vn VReserved
-    forM_ joins vJoin
-    vExpr e
-    popScope
+    withScope "if param" $ do
+        declareLocal vn VReserved
+        forM_ joins vJoin
+        vExpr e
 vHandlerParam (DeleteFrom en vn me) = do
-    pushScope "delete from"
-    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
-    case me of
-        Just e -> vExpr e
-        Nothing -> return ()
-    popScope
+    withScope "delete from" $ do
+        withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+        case me of
+            Just e -> vExpr e
+            Nothing -> return ()
 vHandlerParam (Update en ifr mifs) = do
-    pushScope "update"
-    path <- gets stScopePath
-    withLookupEntity en $ \e -> do
-        case mifs of
-            Just ifs -> forM_ ifs $ \(fn,_) -> 
-                case L.find (\f -> fieldName f == fn) (entityFields e) of
-                    Just f' -> return ()
-                    Nothing -> vError $ "Reference to undeclared field '"
-                                       ++ fn ++ "' in entity " ++ en
-                                       ++ " in " ++ (show path)
-            Nothing -> return ()
-    popScope
+    withScope "update" $ do
+        path <- gets stScopePath
+        withLookupEntity en $ \e -> do
+            case mifs of
+                Just ifs -> forM_ ifs $ \(fn,_) -> 
+                    case L.find (\f -> fieldName f == fn) (entityFields e) of
+                        Just f' -> return ()
+                        Nothing -> vError $ "Reference to undeclared field '"
+                                           ++ fn ++ "' in entity " ++ en
+                                           ++ " in " ++ (show path)
+                Nothing -> return ()
 vHandlerParam (Insert en mfs) = do
-    pushScope "insert"
-    path <- gets stScopePath
-    withLookupEntity en $ \e -> do
-        case mfs of
-            Just ifs -> forM_ ifs $ \(fn,_) -> 
-                case L.find (\f -> fieldName f == fn) (entityFields e) of
-                    Just f' -> return ()
-                    Nothing -> vError $ "Reference to undeclared field '"
-                                       ++ fn ++ "' in entity " ++ en
-                                       ++ " in " ++ (show path)
-            Nothing -> return ()
-    popScope
+    withScope "insert" $ do
+        path <- gets stScopePath
+        withLookupEntity en $ \e -> do
+            case mfs of
+                Just ifs -> forM_ ifs $ \(fn,_) -> 
+                    case L.find (\f -> fieldName f == fn) (entityFields e) of
+                        Just f' -> return ()
+                        Nothing -> vError $ "Reference to undeclared field '"
+                                           ++ fn ++ "' in entity " ++ en
+                                           ++ " in " ++ (show path)
+                Nothing -> return ()
 
 vJoin :: Join -> Validation
 vJoin j = do
@@ -236,9 +220,7 @@ vJoin j = do
                                                          (VEntity e)
     case joinExpr j of
         Just e -> do
-            pushScope $ "join expression"
-            vExpr e
-            popScope
+            withScope "join expression" $ vExpr e
         Nothing -> if joinType j /= CrossJoin
             then vError $ "Missing join expression in " ++ show path
             else return () 
@@ -287,22 +269,18 @@ vFieldRef :: FieldRef -> Validation
 vFieldRef (FieldRefId vn) = vEntityRef vn 
 vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn
 vFieldRef (FieldRefSubQuery sq) = do
-    pushScope "sub-select"
-    path <- gets stScopePath
-    let (en,vn) = sqFrom sq
-    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
-    forM_ (sqJoins sq) vJoin 
-    case sqFields sq of
-        [sf] -> vSelectField sf
-        _ -> vError $ "Sub-select must return exactly one field in " ++ (show path)
- 
-    case sqWhere sq of 
-        Just e -> do    
-            pushScope $ "where expression"
-            vExpr e
-            popScope
-        Nothing -> return ()
-    popScope
+    withScope "sub-select" $ do
+        path <- gets stScopePath
+        let (en,vn) = sqFrom sq
+        withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+        forM_ (sqJoins sq) vJoin 
+        case sqFields sq of
+            [sf] -> vSelectField sf
+            _ -> vError $ "Sub-select must return exactly one field in " ++ (show path)
+     
+        case sqWhere sq of 
+            Just e -> withScope "where expression" $ vExpr e
+            Nothing -> return ()
 vFieldRef _ = return ()
 
 vSelectField :: SelectField -> Validation
