@@ -1,6 +1,5 @@
 module Validation.Handlers (handlerErrors) where
 import AST
-import Validation.Names
 import Data.Maybe
 handlerErrors :: Module -> String
 handlerErrors m = (concatMap notAllowedError $ 

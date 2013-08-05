@@ -39,8 +39,6 @@ executable  yesod-dsl
                    Generator.UpdateHandlers
                    Generator.Validation
                    Validation.Fields
-                   Validation.Names
-                   Validation.Refs
                    Validation.Handlers
                    Validation.State
 
