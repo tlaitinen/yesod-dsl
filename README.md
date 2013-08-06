@@ -108,7 +108,7 @@ route /blogposts {
 
         if param "query" = $$ then
             where (bp.name ilike "%" || $$ || "%")
-                  (bg.content ilike "%" || $$ || "%");
+                  or (bg.content ilike "%" || $$ || "%");
 
         default-filter-sort;
     }
