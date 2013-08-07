@@ -1,10 +1,10 @@
-attr_~{fn} <- case HML.lookup "~{fn}" jsonBodyObj of 
-    Just v -> case A.fromJSON v of
-        A.Success v' -> return v'
-        A.Error err -> sendResponseStatus status400 $ A.object [
-                "message" .= ("Could not parse value of type ~{hsFieldType f} from attribute ~{fn} in the JSON object in request body" :: Text),
-                "error" .= err
+    attr_~{fn} <- case HML.lookup "~{fn}" jsonBodyObj of 
+        Just v -> case A.fromJSON v of
+            A.Success v' -> return v'
+            A.Error err -> sendResponseStatus status400 $ A.object [
+                    "message" .= ("Could not parse value from attribute ~{fn} in the JSON object in request body" :: Text),
+                    "error" .= err
+                ]
+        Nothing -> sendResponseStatus status400 $ A.object [
+                "message" .= ("Expected attribute ~{fn} in the JSON object in request body" :: Text)
             ]
-    Nothing -> sendResponseStatus status400 $ A.object [
-            "message" .= ("Expected attribute ~{fn} in the JSON object in request body" :: Text)
-        ]

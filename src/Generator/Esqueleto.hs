@@ -65,7 +65,7 @@ hsFieldRef ctx _  (FieldRefNormal vn fn) = vn ++ projectField (ctxIsMaybe ctx vn
 hsFieldRef _ _ FieldRefAuthId = "(val authId)"
 hsFieldRef _ op  (FieldRefPathParam p) = "(val " ++ coerceType op ("p" ++ show p) ++ ")"
 hsFieldRef _ op FieldRefLocalParam = "(val " ++ coerceType op "localParam" ++ ")"
-
+hsFieldRef _ _ (FieldRefRequest fn) = "(val attr_" ++ fn ++ ")"
 
 hsOrderBy :: Context -> (FieldRef, SortDir) -> String
 hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing f ++ ")"

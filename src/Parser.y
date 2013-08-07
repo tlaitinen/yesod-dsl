@@ -110,6 +110,7 @@ import System.Exit
     true { Tk _ TTrue }
     false { Tk _ TFalse }
     nothing { Tk _ TNothing }
+    request { Tk _ TRequest }
 %%
 
 dbModule : maybeModuleName 
@@ -167,6 +168,7 @@ fieldRef : lowerId dot idField { FieldRefId $1 }
           | pathParam { FieldRefPathParam $1 }
           | authId { FieldRefAuthId }
           | localParam { FieldRefLocalParam }
+          | request dot lowerId { FieldRefRequest $3 }
           | lparen select selectField from upperId as lowerId 
                joins maybeWhere rparen  
                    { FieldRefSubQuery (SelectQuery [$3] ($5,$7) (reverse $8) $9 
@@ -224,7 +226,7 @@ orderByDir : asc { SortAsc }
 inputJson:  lbrace inputJsonFields rbrace { $2 }
 inputJsonField : lowerId equals inputRef { ($1, $3) }
 
-inputRef: lowerId { InputFieldNormal $1 }
+inputRef: request dot lowerId { InputFieldNormal $3 }
         | pathParam { InputFieldPathParam $1 }
         | authId { InputFieldAuthId }
         | value { InputFieldConst $1 }
@@ -243,8 +245,8 @@ binop : equals { Eq }
       | is { Is }
       
 
-expr : lparen expr rparen and lparen expr rparen { AndExpr $2 $6 }
-     | lparen expr rparen or lparen expr rparen { OrExpr $2 $6 }
+expr : expr and expr { AndExpr $1 $3 }
+     | expr or expr { OrExpr $1 $3 }
      | not expr { NotExpr $2 }
      | lparen expr rparen { $2 } 
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }

@@ -12,11 +12,12 @@ type Info = String
 data VState = VState {
     stEnv :: Map.Map String [VId],
     stScopePath :: [String],
-    stErrors :: [String]
+    stErrors :: [String],
+    stHandlerType :: Maybe HandlerType
 }
 
 initialState :: VState
-initialState = VState Map.empty [] []
+initialState = VState Map.empty [] [] Nothing
 
 data VId = VId Int VIdType deriving(Eq)
 data VIdType = VEnum EnumType
@@ -40,7 +41,12 @@ type Validation = State VState ()
 
 vError :: String -> Validation
 vError err = modify $ \st -> st { stErrors = stErrors st ++ [err] }
-    
+
+withHandler :: HandlerType -> Validation -> Validation
+withHandler ht f = do
+    modify $ \st -> st { stHandlerType = Just ht }
+    f
+    modify $ \st -> st { stHandlerType = Nothing }
 
 withScope :: String -> Validation -> Validation
 withScope path f = do
@@ -161,7 +167,8 @@ vHandler :: Handler -> Validation
 vHandler h = do
     declareLocal (show $ handlerType h) (VHandler h)
     withScope ("handler " ++ (show $ handlerType h))  $
-        forM_ (handlerParams h) vHandlerParam
+        withHandler (handlerType h) $
+            forM_ (handlerParams h) vHandlerParam
 
 vHandlerParam :: HandlerParam -> Validation
 vHandlerParam Public = declareLocal "public;" VReserved
@@ -281,6 +288,11 @@ vFieldRef (FieldRefSubQuery sq) = do
         case sqWhere sq of 
             Just e -> withScope "where expression" $ vExpr e
             Nothing -> return ()
+vFieldRef (FieldRefRequest fn) = do
+    ht <- gets stHandlerType
+    case ht of
+        Just GetHandler -> vError $ "Reference to request param 'request." ++ fn ++ "' not allowed in GET handler"
+        _ -> return ()
 vFieldRef _ = return ()
 
 vSelectField :: SelectField -> Validation

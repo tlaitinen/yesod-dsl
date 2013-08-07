@@ -103,6 +103,7 @@ tokens :-
     "instance" { mkT TInstance }
     "of" { mkT TOf }
     "deriving" { mkT TDeriving }
+    "request" { mkT TRequest }
     $digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
      "id" { mkT TId }
@@ -212,6 +213,7 @@ data TokenType = TSemicolon
            | TTrue
            | TFalse
            | TNothing
+           | TRequest
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

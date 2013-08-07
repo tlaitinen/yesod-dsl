@@ -195,6 +195,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefAuthId
               | FieldRefLocalParam
               | FieldRefPathParam Int 
+              | FieldRefRequest FieldName
               | FieldRefSubQuery SelectQuery deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field

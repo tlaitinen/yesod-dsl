@@ -1,5 +1,4 @@
     e~{show pId} <- do
-~{indent 8 $ prepareFields e fields}
 ~{maybeSelectExisting e fields fr}
         return $ ~{entityName e} {
 ~{indent 16 $ mapFields e fields} 

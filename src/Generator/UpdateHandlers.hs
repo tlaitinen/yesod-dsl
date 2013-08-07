@@ -12,6 +12,8 @@ import Data.String.Utils (rstrip)
 import Generator.Esqueleto
 import Generator.Common
 import Generator.Models
+
+
 inputFieldRef :: Context -> InputFieldRef -> String
 -- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
 inputFieldRef ps InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
@@ -48,10 +50,8 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
             Nothing -> T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
 matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef
 matchInputField ifields fn =  listToMaybe [ inp | (pn,inp) <- ifields, pn == fn ]
-prepareJsonInputField :: [InputField] -> (Entity,Field) -> String
-prepareJsonInputField ifields (e,f) = case matchInputField ifields (fieldName f) of
-    Just (InputFieldNormal fn) -> T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
-    _ -> ""
+prepareJsonInputField :: FieldName -> String
+prepareJsonInputField fn = T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
 
  
 updateHandlerDecode :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
@@ -70,10 +70,45 @@ updateHandlerDecode m r ps (pId,p) = case p of
               | otherwise = ""
           mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
                                       [ (e,f) | f <- entityFields e ]
-          prepareFields e fields = concatMap (prepareJsonInputField fields) [ (e,f) | f <- entityFields e ]                    
+fieldRefToJsonAttr :: FieldRef -> Maybe FieldName
+fieldRefToJsonAttr (FieldRefRequest fn) = Just fn
+fieldRefToJsonAttr _ = Nothing
+                         
+inputFieldRefToJsonAttr :: InputFieldRef -> Maybe FieldName
+inputFieldRefToJsonAttr (InputFieldNormal fn) = Just fn
+inputFieldRefToJsonAttr _ = Nothing
+
+inputFieldToJsonAttr :: InputField -> Maybe FieldName
+inputFieldToJsonAttr (_,fr) = inputFieldRefToJsonAttr fr
+inputFieldToJsonAttr _ = Nothing
+
+valExprToJsonAttr :: ValExpr -> [FieldName]
+valExprToJsonAttr (FieldExpr fr) = maybeToList $ fieldRefToJsonAttr fr
+valExprToJsonAttr (ConcatExpr ve1 ve2) = concatMap valExprToJsonAttr [ve1,ve2]
+valExprToJsonAttr _ = []
+
+exprToJsonAttrs :: Expr -> [FieldName]
+exprToJsonAttrs (AndExpr e1 e2) = concatMap exprToJsonAttrs [e1,e2]
+exprToJsonAttrs (OrExpr e1 e2) = concatMap exprToJsonAttrs [e1,e2]
+exprToJsonAttrs (NotExpr e) = exprToJsonAttrs e
+exprToJsonAttrs (ListOpExpr fr1 _ fr2) = mapMaybe fieldRefToJsonAttr [fr1,fr2]
+exprToJsonAttrs (BinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
+
+getJsonAttrs :: HandlerParam -> [FieldName]
+getJsonAttrs (Update _ fr io) = maybeToList (inputFieldRefToJsonAttr fr)
+                            ++ (mapMaybe inputFieldToJsonAttr (fromMaybe [] io))
+getJsonAttrs (Insert _ io) = mapMaybe inputFieldToJsonAttr (fromMaybe [] io)
+getJsonAttrs (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
+getJsonAttrs _ = []
+
+updateHandlerReadJsonFields :: Module -> Route -> [HandlerParam] -> String
+updateHandlerReadJsonFields m r ps = concatMap prepareJsonInputField jsonAttrs
+    where
+        jsonAttrs = concatMap getJsonAttrs ps
 
 updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
+            ++ (updateHandlerReadJsonFields m r ps)
             ++ (concatMap (updateHandlerDecode m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
