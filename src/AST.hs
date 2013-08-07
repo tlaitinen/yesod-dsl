@@ -266,6 +266,13 @@ instance Show FieldValue where
     show (BoolValue b) = show b
     show NothingValue = "nothing"
 
+fieldValueToHs :: FieldValue -> String
+fieldValueToHs fv = case fv of
+    StringValue s -> "\"" ++ s ++ "\""
+    IntValue i -> show i
+    FloatValue d -> show d
+    BoolValue b -> show b
+    NothingValue -> "Nothing"
 fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)
     where fieldContentOptions (NormalField  _ options) = options
