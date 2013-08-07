@@ -4,11 +4,11 @@ import Data.Maybe
 handlerErrors :: Module -> String
 handlerErrors m = (concatMap notAllowedError $ 
                     [ (r, ht, routeLoc r, p)
-                    | r <- modRoutes m, (Handler l ht ps) <- routeHandlers r,
+                    | r <- modRoutes m, (Handler _ ht ps) <- routeHandlers r,
                       p <- ps, not $ allowed ht p ])
                 ++ (concatMap missingError $
                      [ (r, ht, routeLoc r, pt)
-                    | r <- modRoutes m, (Handler l ht ps) <- routeHandlers r,
+                    | r <- modRoutes m, (Handler _ ht ps) <- routeHandlers r,
                       pt <- missing ht ps ])
                         
     where             
@@ -16,8 +16,12 @@ handlerErrors m = (concatMap notAllowedError $
         allowed _ Public = True
         allowed PostHandler (Insert _ _) = True
         allowed PostHandler (Update _ _ _) = True
+        allowed PostHandler (DeleteFrom _ _ _) = True
         allowed PutHandler (Insert _ _) = True
         allowed PutHandler (Update _ _ _) = True
+        allowed PutHandler (DeleteFrom _ _ _) = True
+        allowed DeleteHandler (Insert _ _) = True
+        allowed DeleteHandler (Update _ _ _) = True
         allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (Select _) = True
