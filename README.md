@@ -285,7 +285,7 @@ route /pathPiece[/pathPiece]* {
                [fieldName = inputValue]
                [, fieldName = inputValue]*  
            }];]*
-        [insert EntityName  
+        [[variableName <- ] insert EntityName  
            [from { 
                [fieldName = inputValue]
                [, fieldName = inputValue]* 
@@ -316,6 +316,8 @@ inputValue: $i
           | $authId
           | $$
           | request.field
+          | now()
+          | variableName
 
 sub_select: (select entityAlias.fieldName 
              from EntityName as entityAlias
