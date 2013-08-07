@@ -1,9 +1,8 @@
 module Generator.Common where
 
-maybeJust :: Bool -> String -> String
-maybeJust True = makeJust 1
-maybeJust False = makeJust 0
-
+maybeHsJust :: Bool -> String -> String
+maybeHsJust True v = "(Just " ++ v ++ ")"
+maybeHsJust False v = v
 makeJust :: Int -> String -> String
 makeJust n t 
     | n > 0 = "(just " ++ makeJust (n - 1) t ++ ")"

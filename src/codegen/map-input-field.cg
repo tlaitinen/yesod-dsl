@@ -1,1 +1,1 @@
-        ~{entityFieldName e f} = ~{maybeJust (fieldOptional f) content}
+        ~{entityFieldName e f} = ~{maybeHsJust promoteJust content}

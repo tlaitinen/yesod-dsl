@@ -22,15 +22,25 @@ inputFieldRef _ _ = undefined
 
 updateHandlerRunDB :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerRunDB m r ps (pId,p) = case p of
-    (Update en fr io) -> T.unpack $(codegenFile "codegen/replace.cg")
-    (Insert en io) -> T.unpack $(codegenFile "codegen/insert.cg")
+    Update en fr io          -> T.unpack $(codegenFile "codegen/replace.cg")
+    Insert en io             -> T.unpack $(codegenFile "codegen/insert.cg")
+    DeleteFrom en vn Nothing -> let 
+            maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
+            ctx = Context { ctxNames = [(en,vn, False)], ctxModule = m }
+        in T.unpack $(codegenFile "codegen/delete.cg")
+    DeleteFrom en vn (Just e) -> 
+        let maybeExpr = hsExpr ctx e 
+            ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m }
+        in T.unpack $(codegenFile "codegen/delete.cg")
     _ -> ""
     where ctx = Context { ctxNames = [], ctxModule = m }
 
 mapJsonInputField :: [InputField] -> (Entity,Field) -> String
 mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
     where 
-        content = case matchInputField ifields (fieldName f) of
+        maybeInput = matchInputField ifields (fieldName f)
+        promoteJust = fieldOptional f && isJust maybeInput
+        content = case maybeInput of
             Just (InputFieldNormal fn) -> T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             Just InputFieldAuthId -> T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
             Just (InputFieldPathParam i) -> T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
@@ -69,21 +79,4 @@ updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))
 
-deleteHandlerRunDB :: Module -> Route -> [HandlerParam] -> HandlerParam -> String
-deleteHandlerRunDB m r ps p = T.unpack $ case p of
-    DeleteFrom en vn Nothing -> let 
-            maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
-            ctx = Context { ctxNames = [(en,vn, False)], ctxModule = m }
-        in $(codegenFile "codegen/delete.cg")
-    DeleteFrom en vn (Just e) -> 
-        let maybeExpr = hsExpr ctx e 
-            ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m }
-        in $(codegenFile "codegen/delete.cg")
-    _ -> ""
-
-deleteHandler :: Module -> Route -> [HandlerParam] -> String
-deleteHandler m r ps = 
-            (T.unpack $(codegenFile "codegen/rundb.cg" ))
-            ++ (concatMap (deleteHandlerRunDB m r ps) ps)
-            ++ (T.unpack $(codegenFile "codegen/delete-handler-footer.cg"))
 

@@ -34,6 +34,6 @@ handler m r (Handler _ ht ps) = T.unpack $(codegenFile "codegen/handler-header.c
             GetHandler -> getHandler m r ps
             PutHandler -> updateHandler m r ps
             PostHandler -> updateHandler m r ps
-            DeleteHandler -> deleteHandler m r ps)
+            DeleteHandler -> updateHandler m r ps)
 
 
