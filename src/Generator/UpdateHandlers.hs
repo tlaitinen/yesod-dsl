@@ -104,7 +104,7 @@ getJsonAttrs _ = []
 updateHandlerReadJsonFields :: Module -> Route -> [HandlerParam] -> String
 updateHandlerReadJsonFields m r ps = concatMap prepareJsonInputField jsonAttrs
     where
-        jsonAttrs = concatMap getJsonAttrs ps
+        jsonAttrs = nub $ concatMap getJsonAttrs ps
 
 updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
