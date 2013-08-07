@@ -1,7 +1,7 @@
-       vErrors <- lift $ validate e~{show pId}
-       case vErrors of
-            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
-                        "message" .= ("Entity validation failed" :: Text),
-                        "errors" .= toJSON xs 
-                    ])
-            _ -> P.repsert ~{inputFieldRef ctx fr} (e~{show pId} :: ~{en})
+        vErrors <- lift $ validate e~{show pId}
+        case vErrors of
+             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                         "message" .= ("Entity validation failed" :: Text),
+                         "errors" .= toJSON xs 
+                     ])
+             _ -> P.repsert ~{inputFieldRef ctx fr} (e~{show pId} :: ~{en})

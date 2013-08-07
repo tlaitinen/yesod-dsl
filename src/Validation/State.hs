@@ -200,14 +200,18 @@ vHandlerParam (Update en ifr mifs) = do
         path <- gets stScopePath
         withLookupEntity en $ \e -> do
             case mifs of
-                Just ifs -> forM_ ifs $ \(fn,_) -> 
+                Just ifs -> forM_ ifs $ \(fn,ifr) -> 
+                    -- TODO: validate ifr
                     case L.find (\f -> fieldName f == fn) (entityFields e) of
                         Just f' -> return ()
                         Nothing -> vError $ "Reference to undeclared field '"
                                            ++ fn ++ "' in entity " ++ en
                                            ++ " in " ++ (show path)
                 Nothing -> return ()
-vHandlerParam (Insert en mfs) = do
+vHandlerParam (Insert en mfs mbv) = do
+    case mbv of
+        Just vn -> declareLocal ("bound result " ++ vn) VReserved
+        Nothing -> return ()
     withScope "insert" $ do
         path <- gets stScopePath
         withLookupEntity en $ \e -> do

@@ -23,9 +23,9 @@ inputFieldRef _ _ = undefined
 
 
 updateHandlerRunDB :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
-updateHandlerRunDB m r ps (pId,p) = case p of
+updateHandlerRunDB m r ps (pId,p) = indent 4 (updateHandlerDecode m r ps (pId,p)) ++ case p of
     Update en fr io          -> T.unpack $(codegenFile "codegen/replace.cg")
-    Insert en io             -> T.unpack $(codegenFile "codegen/insert.cg")
+    Insert en io mbv          -> T.unpack $(codegenFile "codegen/insert.cg")
     DeleteFrom en vn Nothing -> let 
             maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
             ctx = Context { ctxNames = [(en,vn, False)], ctxModule = m }
@@ -35,7 +35,10 @@ updateHandlerRunDB m r ps (pId,p) = case p of
             ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m }
         in T.unpack $(codegenFile "codegen/delete.cg")
     _ -> ""
-    where ctx = Context { ctxNames = [], ctxModule = m }
+    where 
+        ctx = Context { ctxNames = [], ctxModule = m }
+        maybeBindResult (Just vn) = "result_" ++ vn ++ " <- "
+        maybeBindResult _ = ""
 
 mapJsonInputField :: [InputField] -> (Entity,Field) -> String
 mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
@@ -47,6 +50,8 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
             Just InputFieldAuthId -> T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
             Just (InputFieldPathParam i) -> T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
             Just (InputFieldConst v) -> T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+            Just (InputFieldNow) -> T.unpack $(codegenFile "codegen/map-input-field-now.cg")
+            Just (InputFieldLocalParam vn) -> T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
             Nothing -> T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
 matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef
 matchInputField ifields fn =  listToMaybe [ inp | (pn,inp) <- ifields, pn == fn ]
@@ -57,7 +62,7 @@ prepareJsonInputField fn = T.unpack $(codegenFile "codegen/prepare-input-field-n
 updateHandlerDecode :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerDecode m r ps (pId,p) = case p of
     Update en fr io -> readInputObject (fromJust $ lookupEntity m en) io fr
-    Insert en io -> let e = (fromJust $ lookupEntity m en) in 
+    Insert en io _ -> let e = (fromJust $ lookupEntity m en) in 
         T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
     _ -> ""
     where readInputObject e (Just fields) fr = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
@@ -97,7 +102,7 @@ exprToJsonAttrs (BinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 getJsonAttrs :: HandlerParam -> [FieldName]
 getJsonAttrs (Update _ fr io) = maybeToList (inputFieldRefToJsonAttr fr)
                             ++ (mapMaybe inputFieldToJsonAttr (fromMaybe [] io))
-getJsonAttrs (Insert _ io) = mapMaybe inputFieldToJsonAttr (fromMaybe [] io)
+getJsonAttrs (Insert _ io _) = mapMaybe inputFieldToJsonAttr (fromMaybe [] io)
 getJsonAttrs (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
 getJsonAttrs _ = []
 
@@ -109,7 +114,7 @@ updateHandlerReadJsonFields m r ps = concatMap prepareJsonInputField jsonAttrs
 updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (updateHandlerReadJsonFields m r ps)
-            ++ (concatMap (updateHandlerDecode m r ps) $ zip [1..] ps)
+            ++ (T.unpack $(codegenFile "codegen/prepare-now.cg"))
             ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))

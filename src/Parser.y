@@ -111,6 +111,8 @@ import System.Exit
     false { Tk _ TFalse }
     nothing { Tk _ TNothing }
     request { Tk _ TRequest }
+    larrow { Tk _ TLArrow }
+    now { Tk _ TNow }
 %%
 
 dbModule : maybeModuleName 
@@ -187,10 +189,14 @@ handlerParam : public { Public }
              | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
              | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
              | update upperId identified by inputRef { Update $2 $5 Nothing }
-             | insert upperId from inputJson { Insert $2 (Just $4) }
-             | insert upperId { Insert $2 Nothing }
+             | maybeBindResult insert upperId from inputJson { Insert $3 (Just $5) $1 }
+             | maybeBindResult insert upperId { Insert $3 Nothing $1 }
              | defaultfiltersort { DefaultFilterSort }
              | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
+
+maybeBindResult: { Nothing }
+               | lowerId larrow { Just $1 }
+
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 
 moreSelectFields: { [] }
@@ -227,9 +233,11 @@ inputJson:  lbrace inputJsonFields rbrace { $2 }
 inputJsonField : lowerId equals inputRef { ($1, $3) }
 
 inputRef: request dot lowerId { InputFieldNormal $3 }
+        | lowerId { InputFieldLocalParam $1 }
         | pathParam { InputFieldPathParam $1 }
         | authId { InputFieldAuthId }
         | value { InputFieldConst $1 }
+        | now { InputFieldNow }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }

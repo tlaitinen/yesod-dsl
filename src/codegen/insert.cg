@@ -4,4 +4,5 @@
                         "message" .= ("Entity validation failed" :: Text),
                         "errors" .= toJSON xs 
                     ])
-            _ -> P.insert (e~{show pId} :: ~{en})
+            _ -> return ()
+        ~{maybeBindResult mbv}P.insert (e~{show pId} :: ~{en})

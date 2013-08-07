@@ -33,6 +33,7 @@ tokens :-
     \> { mkT TGt }
     \<\= { mkT TLe }
     \>\= { mkT TGe }
+    \<\- { mkT TLArrow }
     "like" { mkT TLike }
     "ilike" { mkT TIlike }
     "||" { mkT TConcat }
@@ -114,6 +115,7 @@ tokens :-
     @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
     @authId { mkT TAuthId }
      "$$"  { mkT TLocalParam }
+     "now()" { mkT TNow }
 
 {
 
@@ -214,6 +216,8 @@ data TokenType = TSemicolon
            | TFalse
            | TNothing
            | TRequest
+           | TLArrow
+           | TNow
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

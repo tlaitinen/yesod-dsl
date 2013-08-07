@@ -14,13 +14,13 @@ handlerErrors m = (concatMap notAllowedError $
     where             
         
         allowed _ Public = True
-        allowed PostHandler (Insert _ _) = True
+        allowed PostHandler (Insert _ _ _) = True
         allowed PostHandler (Update _ _ _) = True
         allowed PostHandler (DeleteFrom _ _ _) = True
-        allowed PutHandler (Insert _ _) = True
+        allowed PutHandler (Insert _ _ _) = True
         allowed PutHandler (Update _ _ _) = True
         allowed PutHandler (DeleteFrom _ _ _) = True
-        allowed DeleteHandler (Insert _ _) = True
+        allowed DeleteHandler (Insert _ _ _) = True
         allowed DeleteHandler (Update _ _ _) = True
         allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed GetHandler DefaultFilterSort = True
@@ -34,7 +34,7 @@ handlerErrors m = (concatMap notAllowedError $
             | ht == GetHandler = mapMaybe (requireMatch ps) [
            (\p -> case p of (Select _) -> True; _ -> False, "select from")]
             | ht == PutHandler || ht == PostHandler = mapMaybe (requireMatch ps) [   
-           (\p -> case p of (Insert _ _) -> True ; (Update _ _ _ ) -> True ; _ -> False, "insert or update")]
+           (\p -> case p of (Insert _ _ _) -> True ; (Update _ _ _ ) -> True ; _ -> False, "insert or update")]
             | otherwise = []
         requireMatch ps (f,err) = case listToMaybe (filter f ps) of
             Just _ -> Nothing

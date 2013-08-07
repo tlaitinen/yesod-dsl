@@ -106,7 +106,7 @@ data HandlerParam = Public
                   | IfFilter IfFilterParams
                   | DeleteFrom EntityName VariableName (Maybe Expr)
                   | Update EntityName InputFieldRef (Maybe [InputField])
-                  | Insert EntityName (Maybe [InputField])
+                  | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
                   deriving (Show, Eq) 
 type IfFilterParams = (ParamName,[Join],Expr)
 
@@ -144,7 +144,9 @@ type InputField = (ParamName, InputFieldRef)
 data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldAuthId
                    | InputFieldPathParam Int
+                   | InputFieldLocalParam FieldName
                    | InputFieldConst FieldValue
+                   | InputFieldNow
                     deriving (Show, Eq)
                     
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
