@@ -313,8 +313,9 @@ valExpr: "string-constant"
        | inputValue
 
 inputValue: $i
-          | authId
+          | $authId
           | $$
+          | request.field
 
 sub_select: (select entityAlias.fieldName 
              from EntityName as entityAlias
@@ -325,8 +326,9 @@ sub_select: (select entityAlias.fieldName
 ```
 where:
  * $i refers to the *i*th parameter in the route path
- * *authId* refers to the return value of requireAuthId
+ * *$authId* refers to the return value of requireAuthId
  * *$$* refers to the named parameter in the query string
+ * request refers to the JSON object parsed from the request body
 
 If *public;* is present, then handler can be accessed without authenticating, 
 otherwise, requireAuthId is used to authenticate requests.
