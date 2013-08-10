@@ -13,7 +13,6 @@ $upper = [A-Z]
 @string = \" (@stringWithoutSpecialChars | @specialChars)* \"
 @fieldName = \' $lower [$alpha $digit \_ ]* \'
 @pathParam = \$ ($digit)+
-@authId = \$ "authId"
 @entityId = $upper [$alpha $digit \_]* "Id"
 tokens :-
 	$white+	;
@@ -104,7 +103,8 @@ tokens :-
     "instance" { mkT TInstance }
     "of" { mkT TOf }
     "deriving" { mkT TDeriving }
-    "request" { mkT TRequest }
+    "$request" { mkT TRequest }
+    "$auth"  { mkT TAuth }
     $digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
      "id" { mkT TId }
@@ -113,7 +113,6 @@ tokens :-
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
     @fieldName { mkTvar (TLowerId . stripQuotes) }
     @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
-    @authId { mkT TAuthId }
      "$$"  { mkT TLocalParam }
      "now()" { mkT TNow }
 
@@ -209,7 +208,6 @@ data TokenType = TSemicolon
            | TDeriving
            | TDefault
            | TPathParam Int
-           | TAuthId 
            | TEntityId String
            | TLocalParam
            | TTrue
@@ -218,6 +216,7 @@ data TokenType = TSemicolon
            | TRequest
            | TLArrow
            | TNow
+           | TAuth
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

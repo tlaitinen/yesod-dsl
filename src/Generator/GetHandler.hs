@@ -132,9 +132,44 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
           resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
           mappedResultFields = concatMap mapResultField fieldNames
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
-            
+
+valExprRefs :: ValExpr -> [FieldRef]
+valExprRefs (FieldExpr fr) = [fr]
+valExprRefs (ConstExpr _) = []
+valExprRefs (ConcatExpr ve1 ve2) = concatMap valExprRefs [ve1,ve2]
+
+exprFieldRefs :: Expr -> [FieldRef]
+exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
+exprFieldRefs (OrExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
+exprFieldRefs (NotExpr e) = exprFieldRefs e
+exprFieldRefs (BinOpExpr ve1 _ ve2) = valExprRefs ve1 ++ (valExprRefs ve2)
+exprFieldRefs (ListOpExpr fr1 _ fr2) = [fr1,fr2]
+          
+joinFieldRefs :: Join -> [FieldRef]
+joinFieldRefs j = maybe [] exprFieldRefs (joinExpr j)
+
+sqFieldRefs :: SelectQuery -> [FieldRef]
+sqFieldRefs sq = concatMap joinFieldRefs (sqJoins sq) ++ case sqWhere sq of
+    Just e -> exprFieldRefs e
+    _ -> []
+
+getHandlerParamFieldRefs :: HandlerParam-> [FieldRef]
+getHandlerParamFieldRefs h = case h of
+    (Select sq) -> sqFieldRefs sq
+    (IfFilter (_,joins,e)) -> concatMap joinFieldRefs joins ++ exprFieldRefs e
+    _ -> []
+
+getHandlerMaybeAuth :: [HandlerParam] -> String
+getHandlerMaybeAuth ps 
+    | (not . null) (filter isAuthField fieldRefs) = T.unpack $(codegenFile "codegen/load-auth.cg")
+    | otherwise = ""
+        where fieldRefs = concatMap getHandlerParamFieldRefs ps
+              isAuthField (FieldRefAuth _) = True
+              isAuthField _ =False
+    
 getHandler :: Module -> Route -> [HandlerParam] -> String
 getHandler m r ps = 
+    getHandlerMaybeAuth ps ++ 
     (concatMap (getHandlerParam m r ctx) ps)
     ++ (getHandlerSelect m sq defaultFilterSort ifFilters)
     ++ (getHandlerReturn m sq)

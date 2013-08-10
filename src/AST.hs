@@ -143,6 +143,7 @@ type InputField = (ParamName, InputFieldRef)
 
 data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldAuthId
+                   | InputFieldAuth FieldName
                    | InputFieldPathParam Int
                    | InputFieldLocalParam FieldName
                    | InputFieldConst FieldValue
@@ -195,6 +196,7 @@ instance Show PathPiece where
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
               | FieldRefAuthId
+              | FieldRefAuth FieldName
               | FieldRefLocalParam
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName

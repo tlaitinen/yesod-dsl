@@ -103,7 +103,6 @@ import System.Exit
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
     pathParam { Tk _ (TPathParam $$) }
-    authId { Tk _ TAuthId }
     idField { Tk _ TId }
     entityId { Tk _ (TEntityId $$) }
     localParam { Tk _ TLocalParam }
@@ -113,6 +112,7 @@ import System.Exit
     request { Tk _ TRequest }
     larrow { Tk _ TLArrow }
     now { Tk _ TNow }
+    auth { Tk _ TAuth }
 %%
 
 dbModule : maybeModuleName 
@@ -168,7 +168,8 @@ handlerdef : get handlerParamsBlock { Handler (mkLoc $1) GetHandler $2 }
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
           | pathParam { FieldRefPathParam $1 }
-          | authId { FieldRefAuthId }
+          | auth dot idField { FieldRefAuthId }
+          | auth dot lowerId { FieldRefAuth $3 }
           | localParam { FieldRefLocalParam }
           | request dot lowerId { FieldRefRequest $3 }
           | lparen select selectField from upperId as lowerId 
@@ -235,7 +236,8 @@ inputJsonField : lowerId equals inputRef { ($1, $3) }
 inputRef: request dot lowerId { InputFieldNormal $3 }
         | lowerId { InputFieldLocalParam $1 }
         | pathParam { InputFieldPathParam $1 }
-        | authId { InputFieldAuthId }
+        | auth dot idField { InputFieldAuthId }
+        | auth dot lowerId { InputFieldAuth $3 }
         | value { InputFieldConst $1 }
         | now { InputFieldNow }
 

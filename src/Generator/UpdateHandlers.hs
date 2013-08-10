@@ -17,6 +17,8 @@ import Generator.Models
 inputFieldRef :: Context -> InputFieldRef -> String
 -- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
 inputFieldRef ps InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
+inputFieldRef ps (InputFieldAuth fn) = T.unpack $(codegenFile "codegen/input-field-auth.cg")
+
 inputFieldRef ps (InputFieldPathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
 inputFieldRef _ _ = undefined
 
@@ -51,6 +53,7 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
         content = case maybeInput of
             Just (InputFieldNormal fn) -> T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             Just InputFieldAuthId -> T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+            Just (InputFieldAuth fn) -> T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
             Just (InputFieldPathParam i) -> T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
             Just (InputFieldConst v) -> T.unpack $(codegenFile "codegen/map-input-field-const.cg")
             Just (InputFieldNow) -> T.unpack $(codegenFile "codegen/map-input-field-now.cg")
@@ -125,10 +128,21 @@ updateHandlerMaybeCurrentTime ps = if  InputFieldNow  `elem` inputFields
     then (T.unpack $(codegenFile "codegen/prepare-now.cg"))
     else ""
     where inputFields = concatMap handlerParamToInputFieldRefs ps
+
+updateHandlerMaybeAuth :: [HandlerParam] -> String
+updateHandlerMaybeAuth ps 
+    | (not . null) (filter isAuthField inputFields) = T.unpack $(codegenFile "codegen/load-auth.cg")
+    | otherwise = ""
+    where inputFields = concatMap handlerParamToInputFieldRefs ps
+          isAuthField (InputFieldAuth _) = True
+          isAuthField _ = False
+
+   
 updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (updateHandlerReadJsonFields m r ps)
             ++ updateHandlerMaybeCurrentTime ps
+            ++ updateHandlerMaybeAuth ps
             ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
             ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))

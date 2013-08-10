@@ -313,9 +313,10 @@ valExpr: "string-constant"
        | inputValue
 
 inputValue: $i
-          | $authId
+          | $auth.id
+          | $auth.field
           | $$
-          | request.field
+          | $request.field
           | now()
           | variableName
 
@@ -328,7 +329,8 @@ sub_select: (select entityAlias.fieldName
 ```
 where:
  * $i refers to the *i*th parameter in the route path
- * *$authId* refers to the return value of requireAuthId
+ * *$auth.id* refers to the return value of requireAuthId
+ * *$auth.field$ refers to the field of the entity User returned by requireAuth
  * *$$* refers to the named parameter in the query string
  * request refers to the JSON object parsed from the request body
 
