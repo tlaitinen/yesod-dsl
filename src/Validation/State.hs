@@ -40,7 +40,9 @@ type Validation = State VState ()
 
 
 vError :: String -> Validation
-vError err = modify $ \st -> st { stErrors = stErrors st ++ [err] }
+vError err = do
+    path <- gets stScopePath
+    modify $ \st -> st { stErrors = stErrors st ++ [err ++ " in " ++ (show path)] }
 
 withHandler :: HandlerType -> Validation -> Validation
 withHandler ht f = do
@@ -62,15 +64,13 @@ withScope path f = do
 declare :: Int -> String -> VIdType -> Validation
 declare scope name id = do
     st <- get
-    path <- gets stScopePath
     let e = stEnv st
     let newId = [VId scope id]
     case Map.lookup name e of
         Just ((VId s t):_) -> do
             if s == scope
                 then vError $ "Identifier '" ++ name 
-                     ++ "' already declared : " ++ show t ++ ". New declaration in " 
-                     ++ show path
+                     ++ "' already declared : " ++ show t ++ ". New declaration" 
                 else put $ st { stEnv = Map.adjust (L.sort . (newId++)) name e }
         Nothing -> put $ st { stEnv = Map.insert name newId e }
        
@@ -90,31 +90,28 @@ withLookup name f = do
         Just ((VId _ t):_) -> f t
         Nothing -> err path
     where err path = vError $ "Reference to an undeclared identifier '" 
-                          ++ name ++ "' in " ++ show path
+                          ++ name ++ "'" 
 
 withLookupField :: String -> (Field -> Validation) -> Validation
 withLookupField name f = do
-    path <- gets stScopePath
     withLookup name $ \idt -> case idt of
         (VField t) -> f t
         _ -> vError $ "Reference to an incompatible type " ++ show idt 
-                     ++ " in " ++ show path ++ " (expected field)"
+                     ++ " (expected field) "
 
 withLookupEntity :: String -> (Entity -> Validation) -> Validation
 withLookupEntity name f =do
-    path <- gets stScopePath
     withLookup name $ \idt -> case idt of
         (VEntity t) -> f t
         _ -> vError $ "Reference to an incompatible type " ++ show idt 
-                     ++ " by " ++ show path ++ " (expected entity)"
+                     ++ " (expected entity)"
 
 withLookupEnum :: String -> (EnumType -> Validation) -> Validation
 withLookupEnum name f = do
-    path <- gets stScopePath
     withLookup name $ \idt -> case idt of
         (VEnum t) -> f t
         _ -> vError $ "Reference to an incompatible type " ++ show idt 
-                     ++ " by " ++ show path ++ " (expected enum)"
+                     ++ " (expected enum)"
 
 
 validate :: Module -> [String]
@@ -197,31 +194,34 @@ vHandlerParam (DeleteFrom en vn me) = do
             Nothing -> return ()
 vHandlerParam (Update en ifr mifs) = do
     withScope "update" $ do
-        path <- gets stScopePath
         withLookupEntity en $ \e -> do
             case mifs of
-                Just ifs -> forM_ ifs $ \(fn,ifr) -> 
+                Just ifs -> forM_ ifs $ \(fn,ifr) -> do
+                    declareLocal fn VReserved
                     -- TODO: validate ifr
                     case L.find (\f -> fieldName f == fn) (entityFields e) of
                         Just f' -> return ()
                         Nothing -> vError $ "Reference to undeclared field '"
                                            ++ fn ++ "' in entity " ++ en
-                                           ++ " in " ++ (show path)
                 Nothing -> return ()
 vHandlerParam (Insert en mfs mbv) = do
     case mbv of
         Just vn -> declareLocal ("bound result " ++ vn) VReserved
         Nothing -> return ()
     withScope "insert" $ do
-        path <- gets stScopePath
         withLookupEntity en $ \e -> do
             case mfs of
-                Just ifs -> forM_ ifs $ \(fn,_) -> 
-                    case L.find (\f -> fieldName f == fn) (entityFields e) of
-                        Just f' -> return ()
-                        Nothing -> vError $ "Reference to undeclared field '"
-                                           ++ fn ++ "' in entity " ++ en
-                                           ++ " in " ++ (show path)
+                Just ifs -> do
+                    case [ fieldName f | f <- entityFields e ] L.\\ 
+                            [ fn | (fn,_) <- ifs ] of
+                        fs@(_:_) -> vError $ "Missing required fields : " ++ (show fs)
+                        _ -> return ()    
+                    forM_ ifs $ \(fn,_) -> do
+                        declareLocal fn VReserved
+                        case L.find (\f -> fieldName f == fn) (entityFields e) of
+                            Just f' -> return ()
+                            Nothing -> vError $ "Reference to undeclared field '"
+                                               ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
 
 vJoin :: Join -> Validation
@@ -233,7 +233,7 @@ vJoin j = do
         Just e -> do
             withScope "join expression" $ vExpr e
         Nothing -> if joinType j /= CrossJoin
-            then vError $ "Missing join expression in " ++ show path
+            then vError $ "Missing join expression"
             else return () 
      
 vEntityRef :: EntityName -> Validation
@@ -270,24 +270,22 @@ vExpr (BinOpExpr ve1 op ve2) = do
 
 ensureField :: String -> String -> Entity -> Validation
 ensureField vn fn e = do
-    path <- gets stScopePath
     case L.find (\f -> fieldName f == fn) $ entityFields e of
         Just f -> return ()
         Nothing -> vError $ "Entity " ++ entityName e ++ " referenced by "
-                           ++ vn ++ "." ++ fn ++ " in " ++ (show path)
+                           ++ vn ++ "." ++ fn 
                            ++ " does not have the field " ++ fn
 vFieldRef :: FieldRef -> Validation
 vFieldRef (FieldRefId vn) = vEntityRef vn 
 vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn
 vFieldRef (FieldRefSubQuery sq) = do
     withScope "sub-select" $ do
-        path <- gets stScopePath
         let (en,vn) = sqFrom sq
         withLookupEntity en $ \e -> declareLocal vn (VEntity e)
         forM_ (sqJoins sq) vJoin 
         case sqFields sq of
             [sf] -> vSelectField sf
-            _ -> vError $ "Sub-select must return exactly one field in " ++ (show path)
+            _ -> vError $ "Sub-select must return exactly one field"
      
         case sqWhere sq of 
             Just e -> withScope "where expression" $ vExpr e
