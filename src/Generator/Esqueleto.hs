@@ -28,7 +28,8 @@ hsListOp op = case op of
 
 data Context = Context {
     ctxNames :: [(EntityName, VariableName, MaybeFlag)],
-    ctxModule :: Module
+    ctxModule :: Module,
+    ctxHandlerParams :: [HandlerParam]
 }
 
 ctxLookupEntity :: Context -> VariableName -> Maybe EntityName

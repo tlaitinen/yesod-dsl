@@ -204,6 +204,13 @@ vHandlerParam (Update en ifr mifs) = do
                         Nothing -> vError $ "Reference to undeclared field '"
                                            ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
+vHandlerParam (GetById en ifr vn) = do
+    declareLocal ("bound result " ++ vn) VReserved
+    withScope "get" $ do
+        withLookupEntity en $ \e -> do
+            -- TODO: validate input field ref
+            return ()
+
 vHandlerParam (Insert en mfs mbv) = do
     case mbv of
         Just vn -> declareLocal ("bound result " ++ vn) VReserved

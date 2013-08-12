@@ -16,9 +16,13 @@ import Generator.Models
 
 inputFieldRef :: Context -> InputFieldRef -> String
 -- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
-inputFieldRef ps InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
-inputFieldRef ps (InputFieldAuth fn) = T.unpack $(codegenFile "codegen/input-field-auth.cg")
-
+inputFieldRef ctx InputFieldAuthId = T.unpack $(codegenFile "codegen/input-field-authid.cg")
+inputFieldRef ctx (InputFieldAuth fn) = T.unpack $(codegenFile "codegen/input-field-auth.cg")
+inputFieldRef ctx (InputFieldLocalParamField vn fn) = rstrip $ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
+    where en = fromJust $ listToMaybe $ concatMap f (ctxHandlerParams ctx)
+          f (GetById en _ vn') = if vn' == vn then [en] else []
+          f _ = []
+            
 inputFieldRef ps (InputFieldPathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
 inputFieldRef _ _ = undefined
 
@@ -26,11 +30,12 @@ inputFieldRef _ _ = undefined
 
 updateHandlerRunDB :: Module -> Route -> [HandlerParam] -> (Int,HandlerParam) -> String
 updateHandlerRunDB m r ps (pId,p) = indent 4 (updateHandlerDecode m r ps (pId,p)) ++ case p of
+    GetById en fr vn     -> T.unpack $(codegenFile "codegen/get-by-id.cg")
     Update en fr io          -> T.unpack $(codegenFile "codegen/replace.cg")
     Insert en io mbv          -> T.unpack $(codegenFile "codegen/insert.cg")
     DeleteFrom en vn Nothing -> let 
             maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
-            ctx = Context { ctxNames = [(en,vn, False)], ctxModule = m }
+            ctx = Context { ctxNames = [(en,vn, False)], ctxModule = m, ctxHandlerParams = ps  }
         in T.unpack $(codegenFile "codegen/delete.cg")
     DeleteFrom en vn (Just e) -> 
         let maybeExpr = hsExpr ctx e 
@@ -38,7 +43,7 @@ updateHandlerRunDB m r ps (pId,p) = indent 4 (updateHandlerDecode m r ps (pId,p)
         in T.unpack $(codegenFile "codegen/delete.cg")
     _ -> ""
     where 
-        ctx = Context { ctxNames = [], ctxModule = m }
+        ctx = Context { ctxNames = [], ctxModule = m, ctxHandlerParams = ps }
         maybeBindResult (Just vn) = "result_" ++ vn ++ " <- "
         maybeBindResult _ = ""
 
@@ -77,7 +82,7 @@ updateHandlerDecode m r ps (pId,p) = case p of
 
           maybeSelectExisting e fields (Just fr)
               | Nothing `elem` [ matchInputField fields (fieldName f) 
-                                 | f <- entityFields e ] = let ctx = Context { ctxNames = [], ctxModule = m }  in T.unpack $(codegenFile "codegen/select-existing.cg")
+                                 | f <- entityFields e ] = let ctx = Context { ctxNames = [], ctxModule = m, ctxHandlerParams = ps }  in T.unpack $(codegenFile "codegen/select-existing.cg")
               | otherwise = ""
           maybeSelectExisting _ _ _ = ""    
           mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
@@ -121,6 +126,7 @@ updateHandlerReadJsonFields m r ps = concatMap prepareJsonInputField jsonAttrs
 handlerParamToInputFieldRefs :: HandlerParam -> [InputFieldRef]
 handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr') <- fromMaybe [] io]
 handlerParamToInputFieldRefs (Insert _ io _) = [ fr | (_,fr) <- fromMaybe [] io ]
+handlerParamToInputFieldRefs (GetById _ ifr _) = [ifr]
 handlerParamToInputFieldRefs _ = []
 
 updateHandlerMaybeCurrentTime :: [HandlerParam] -> String

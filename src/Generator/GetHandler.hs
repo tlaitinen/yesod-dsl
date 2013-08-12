@@ -102,7 +102,8 @@ getHandlerSelect m sq defaultFilterSort ifFilters =
           (limit, offset) = sqLimitOffset sq
           ctx = Context {
               ctxNames = sqAliases sq,
-              ctxModule = m
+              ctxModule = m,
+              ctxHandlerParams = []
           }
           (selectEntity, selectVar) = sqFrom sq 
           maybeWhere = case sqWhere sq of
@@ -122,7 +123,7 @@ getHandlerSelect m sq defaultFilterSort ifFilters =
 getHandlerReturn :: Module -> SelectQuery -> String
 getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
     where 
-          ctx = Context { ctxNames = sqAliases sq, ctxModule = m }
+          ctx = Context { ctxNames = sqAliases sq, ctxModule = m, ctxHandlerParams = [] }
           fieldNames = zip (concatMap expand (sqFields sq)) ([1..]:: [Int])
           expand (SelectAllFields vn) = map fieldName $ entityFields e
                 where en = fromJust $ ctxLookupEntity ctx vn
@@ -175,7 +176,7 @@ getHandler m r ps =
     ++ (getHandlerReturn m sq)
     where 
         (Select sq) = (fromJust . listToMaybe . (filter isSelect)) ps
-        ctx = Context { ctxNames = sqAliases sq, ctxModule = m }
+        ctx = Context { ctxNames = sqAliases sq, ctxModule = m, ctxHandlerParams = [] }
         isSelect (Select _) = True
         isSelect _ = False
     

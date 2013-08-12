@@ -1,0 +1,7 @@
+        ~{vn} <- do
+            r <- get $ ((~{inputFieldRef ctx fr}) :: ~{en}Id)
+            case r of
+                Just e -> return e
+                _ -> sendResponseStatus status400 $ A.object [  
+                    "message" .= ("Could not get entity ~{en}" :: Text) 
+                   ] 

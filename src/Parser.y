@@ -190,13 +190,16 @@ handlerParam : public { Public }
              | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
              | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
              | update upperId identified by inputRef { Update $2 $5 Nothing }
+             | bindResult get upperId identified by inputRef { GetById $3 $6 $1 }
              | maybeBindResult insert upperId from inputJson { Insert $3 (Just $5) $1 }
              | maybeBindResult insert upperId { Insert $3 Nothing $1 }
              | defaultfiltersort { DefaultFilterSort }
              | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
 
 maybeBindResult: { Nothing }
-               | lowerId larrow { Just $1 }
+               | bindResult { Just $1 }
+
+bindResult: lowerId larrow { $1 }
 
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 
@@ -235,6 +238,7 @@ inputJsonField : lowerId equals inputRef { ($1, $3) }
 
 inputRef: request dot lowerId { InputFieldNormal $3 }
         | lowerId { InputFieldLocalParam $1 }
+        | lowerId dot lowerId { InputFieldLocalParamField $1 $3 }
         | pathParam { InputFieldPathParam $1 }
         | auth dot idField { InputFieldAuthId }
         | auth dot lowerId { InputFieldAuth $3 }

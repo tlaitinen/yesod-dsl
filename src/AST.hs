@@ -105,6 +105,7 @@ data HandlerParam = Public
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
                   | DeleteFrom EntityName VariableName (Maybe Expr)
+                  | GetById EntityName InputFieldRef VariableName
                   | Update EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
                   deriving (Show, Eq) 
@@ -145,7 +146,8 @@ data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldAuthId
                    | InputFieldAuth FieldName
                    | InputFieldPathParam Int
-                   | InputFieldLocalParam FieldName
+                   | InputFieldLocalParam VariableName
+                   | InputFieldLocalParamField VariableName FieldName
                    | InputFieldConst FieldValue
                    | InputFieldNow
                     deriving (Show, Eq)
