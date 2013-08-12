@@ -280,6 +280,7 @@ route /pathPiece[/pathPiece]* {
     }]
     [put | post | delete {
         [public;]
+        [variableName <- get EntityName identified by inputValue;]*
         [update EntityName identified by inputValue 
            [with { 
                [fieldName = inputValue]
@@ -319,6 +320,7 @@ inputValue: $i
           | $request.field
           | now()
           | variableName
+          | variableName.field
 
 sub_select: (select entityAlias.fieldName 
              from EntityName as entityAlias
