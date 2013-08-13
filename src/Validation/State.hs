@@ -91,6 +91,10 @@ withLookup name f = do
         Nothing -> err path
     where err path = vError $ "Reference to an undeclared identifier '" 
                           ++ name ++ "'" 
+ensureReserved :: String -> Validation
+ensureReserved name = withLookup name $ \idt -> case idt of 
+    VReserved -> return ()
+    _ -> vError $ "Reference to an incompatible type"
 
 withLookupField :: String -> (Field -> Validation) -> Validation
 withLookupField name f = do
@@ -157,15 +161,23 @@ vUnique prefix u = do
 vRoute :: Route -> Validation
 vRoute r = do
     declareGlobal (show $ routePath r) (VRoute r)
-    withScope ("route " ++ (show $ routePath r) ++" in "++(show $ routeLoc r))$
+    withScope ("route " ++ (show $ routePath r) ++ " in " ++ (show $ routeLoc r)) $ do
+        forM_ [ n | (n,_) <- zip [1..] $ routePathParams r ] 
+            $ \n -> declareLocal ("$" ++ show n) VReserved
         forM_ (routeHandlers r) vHandler
     
 vHandler :: Handler -> Validation
 vHandler h = do
     declareLocal (show $ handlerType h) (VHandler h)
-    withScope ("handler " ++ (show $ handlerType h))  $
+    withScope ("handler " ++ (show $ handlerType h))  $ do
+        case dropWhile notReturn (handlerParams h) of
+            (r:(_:_)) -> vError $ "return must be the last statement"
+            _ -> return ()
         withHandler (handlerType h) $
             forM_ (handlerParams h) vHandlerParam
+    where
+        notReturn (Return _) = False
+        notReturn _ = True    
 
 vHandlerParam :: HandlerParam -> Validation
 vHandlerParam Public = declareLocal "public;" VReserved
@@ -195,10 +207,10 @@ vHandlerParam (DeleteFrom en vn me) = do
 vHandlerParam (Update en ifr mifs) = do
     withScope "update" $ do
         withLookupEntity en $ \e -> do
+            vInputFieldRef ifr
             case mifs of
                 Just ifs -> forM_ ifs $ \(fn,ifr) -> do
                     declareLocal fn VReserved
-                    -- TODO: validate ifr
                     case L.find (\f -> fieldName f == fn) (entityFields e) of
                         Just f' -> return ()
                         Nothing -> vError $ "Reference to undeclared field '"
@@ -207,13 +219,15 @@ vHandlerParam (Update en ifr mifs) = do
 
 vHandlerParam (Return ofrs) = do
     declareLocal "return statement" VReserved
-    -- TODO: validate output field refs
+    withScope "return" $ 
+        forM_ ofrs  vOutputField
+
 
 vHandlerParam (GetById en ifr vn) = do
-    declareLocal ("bound result " ++ vn) VReserved
-    withScope "get" $ do
-        withLookupEntity en $ \e -> do
-            -- TODO: validate input field ref
+    withLookupEntity en $ \e -> do
+        declareLocal ("bound result " ++ vn) (VEntity e)
+        withScope "get" $ do
+            vInputFieldRef ifr
             return ()
 
 vHandlerParam (Insert en mfs mbv) = do
@@ -224,6 +238,7 @@ vHandlerParam (Insert en mfs mbv) = do
         withLookupEntity en $ \e -> do
             case mfs of
                 Just ifs -> do
+                    forM_ [ ifr | (_,ifr) <- ifs] $ vInputFieldRef
                     case [ fieldName f | f <- entityFields e ] L.\\ 
                             [ fn | (fn,_) <- ifs ] of
                         fs@(_:_) -> vError $ "Missing required fields : " ++ (show fs)
@@ -235,6 +250,20 @@ vHandlerParam (Insert en mfs mbv) = do
                             Nothing -> vError $ "Reference to undeclared field '"
                                                ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
+
+vOutputField :: (ParamName, OutputFieldRef) -> Validation
+vOutputField (pn,ofr) = do
+    declareLocal ("return field " ++ pn) VReserved
+    case ofr of
+        OutputFieldLocalParam vn -> ensureReserved ("bound result " ++ vn)
+        _ -> return ()
+
+vInputFieldRef :: InputFieldRef -> Validation
+vInputFieldRef ifr = case ifr of
+    InputFieldPathParam n -> withLookup ("$" ++ show n) $ \_ -> return ()
+    InputFieldLocalParam vn -> withLookup ("bound result " ++ vn) $ \ _ -> return()
+    InputFieldLocalParamField vn fn -> withLookupEntity ("bound result " ++ vn) $ ensureField vn fn
+    _ -> return ()
 
 vJoin :: Join -> Validation
 vJoin j = do
