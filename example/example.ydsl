@@ -10,7 +10,12 @@ class Named {
 entity User {
     instance of Named, Versioned;
 
+    groupId Maybe GroupId;
     deriving Typeable;
+}
+
+entity Group {
+    instance of Named;
 }
 
 entity BlogPost {
@@ -32,6 +37,7 @@ entity Comment {
 route /users {
     get {
         select p.id, p.* from User as p
+            where p.groupId in (select g.id from Group as g)
             order by p.name asc
             limit 1000;
         default-filter-sort;

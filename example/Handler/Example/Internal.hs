@@ -19,7 +19,7 @@ import Database.Esqueleto
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)
 import qualified Database.Persist as P
 import Database.Persist.TH
-import Yesod.Auth (requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
+import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
 import Yesod.Core
 import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
@@ -161,10 +161,14 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
             return (filterJsonMsg_value v)
 share [mkPersist sqlOnlySettings, mkMigrate "migrateExample" ] [persistLowerCase|
 User json
+    groupId GroupId Maybe   default=NULL
     name Text  
     version VersionId Maybe   default=NULL
     UniqueUserName name !force
     deriving Typeable
+Group json
+    name Text  
+    UniqueGroupName name !force
 BlogPost json
     authorId UserId  
     content Text  
@@ -190,6 +194,8 @@ class Named a where
     namedName :: a -> Text
 instance Named User where
     namedName = userName
+instance Named Group where
+    namedName = groupName
 instance Named BlogPost where
     namedName = blogPostName
 class Versioned a where
@@ -222,6 +228,11 @@ instance Validatable User where
     validate v = do
         results <- sequence [
                 checkResult "User.name nonEmpty" (nonEmpty $ userName v)            ]
+        return $ catMaybes results
+instance Validatable Group where
+    validate v = do
+        results <- sequence [
+                checkResult "Group.name nonEmpty" (nonEmpty $ groupName v)            ]
         return $ catMaybes results
 instance Validatable BlogPost where
     validate v = do
@@ -279,6 +290,7 @@ getUsersR  = do
     let defaultLimit = (maybe Nothing fromPathPiece defaultLimitParam) :: Maybe Int64
     let baseQuery limitOffsetOrder = from $ \(p ) -> do
         let pId' = p ^. UserId
+        where_ ((p ^. UserGroupId) `in_` (just ((subList_select $ from $ \(g) -> do {  ;  ; return (g ^. GroupId) ; }))))
 
         _ <- if limitOffsetOrder
             then do 
@@ -286,6 +298,10 @@ getUsersR  = do
                 limit 1000
                 case defaultSortJson of 
                     Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
+                            "groupId" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserGroupId) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserGroupId) ] 
+                                _      -> return ()
                             "name" -> case (sortJsonMsg_direction sjm) of 
                                 "ASC"  -> orderBy [ asc (p  ^.  UserName) ] 
                                 "DESC" -> orderBy [ desc (p  ^.  UserName) ] 
@@ -309,6 +325,9 @@ getUsersR  = do
             else return ()
         case defaultFilterJson of 
             Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
+                "groupId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserGroupId) (just (val v)) 
+                    _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
@@ -319,7 +338,7 @@ getUsersR  = do
                 _ -> return ()
                 ) xs
             Nothing -> return ()  
-        return (p ^. UserId, p ^. UserName, p ^. UserVersion)
+        return (p ^. UserId, p ^. UserGroupId, p ^. UserName, p ^. UserVersion)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -329,10 +348,11 @@ getUsersR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
                     "id" .= toJSON f1,
-                    "name" .= toJSON f2,
-                    "version" .= toJSON f3                                    
+                    "groupId" .= toJSON f2,
+                    "name" .= toJSON f3,
+                    "version" .= toJSON f4                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -353,18 +373,20 @@ postUsersR  = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    e1 <- case A.fromJSON jsonBody of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type User from JSON object in the request body : " ++ err )
-    _ <- lift $ runDB $ do
+    runDB_result <- lift $ runDB $ do
+        e1 <- case A.fromJSON jsonBody of
+            A.Success e -> return e
+            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type User from JSON object in the request body : " ++ err )
         vErrors <- lift $ validate e1
         case vErrors of
             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
                         "message" .= ("Entity validation failed" :: Text),
                         "errors" .= toJSON xs 
                     ])
-            _ -> P.insert (e1 :: User)
-    return $ A.Null
+            _ -> return ()
+        P.insert (e1 :: User)
+        return A.Null
+    return $ runDB_result
 getUserUserIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -383,7 +405,7 @@ getUserUserIdR p1 = do
 
                  
             else return ()
-        return (p ^. UserName, p ^. UserVersion)
+        return (p ^. UserGroupId, p ^. UserName, p ^. UserVersion)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -393,9 +415,10 @@ getUserUserIdR p1 = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2)) -> A.object [
-                    "name" .= toJSON f1,
-                    "version" .= toJSON f2                                    
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
+                    "groupId" .= toJSON f1,
+                    "name" .= toJSON f2,
+                    "version" .= toJSON f3                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -416,18 +439,19 @@ putUserUserIdR p1 = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    e1 <- case A.fromJSON jsonBody of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type User from JSON object in the request body : " ++ err )
-    _ <- lift $ runDB $ do
-       vErrors <- lift $ validate e1
-       case vErrors of
-            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
-                        "message" .= ("Entity validation failed" :: Text),
-                        "errors" .= toJSON xs 
-                    ])
-            _ -> P.repsert p1 (e1 :: User)
-    return $ A.Null
+    runDB_result <- lift $ runDB $ do
+        e1 <- case A.fromJSON jsonBody of
+            A.Success e -> return e
+            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type User from JSON object in the request body : " ++ err )
+        vErrors <- lift $ validate e1
+        case vErrors of
+             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                         "message" .= ("Entity validation failed" :: Text),
+                         "errors" .= toJSON xs 
+                     ])
+             _ -> P.repsert p1 (e1 :: User)
+        return A.Null
+    return $ runDB_result
 deleteUserUserIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -435,9 +459,19 @@ deleteUserUserIdR :: forall master. (ExampleValidation master,
     => UserId -> HandlerT Example (HandlerT master IO) A.Value
 deleteUserUserIdR p1 = do
     authId <- lift $ requireAuthId
-    _ <- lift $ runDB $ do
+    yReq <- getRequest
+    let wReq = reqWaiRequest yReq
+    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
+    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         Right o -> return o
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
+    runDB_result <- lift $ runDB $ do
         delete $ from $ (\p -> where_ $ (p ^. UserId) ==. ((val p1)))
-    return $ A.Null
+        return A.Null
+    return $ runDB_result
 getBlogpostsR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -494,6 +528,9 @@ getBlogpostsR  = do
             else return ()
         case defaultFilterJson of 
             Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
+                "groupId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserGroupId) (just (val v)) 
+                    _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
@@ -554,18 +591,20 @@ postBlogpostsR  = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    e1 <- case A.fromJSON jsonBody of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
-    _ <- lift $ runDB $ do
+    runDB_result <- lift $ runDB $ do
+        e1 <- case A.fromJSON jsonBody of
+            A.Success e -> return e
+            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
         vErrors <- lift $ validate e1
         case vErrors of
             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
                         "message" .= ("Entity validation failed" :: Text),
                         "errors" .= toJSON xs 
                     ])
-            _ -> P.insert (e1 :: BlogPost)
-    return $ A.Null
+            _ -> return ()
+        P.insert (e1 :: BlogPost)
+        return A.Null
+    return $ runDB_result
 getBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -619,18 +658,19 @@ putBlogpostsBlogPostIdR p1 = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    e1 <- case A.fromJSON jsonBody of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
-    _ <- lift $ runDB $ do
-       vErrors <- lift $ validate e1
-       case vErrors of
-            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
-                        "message" .= ("Entity validation failed" :: Text),
-                        "errors" .= toJSON xs 
-                    ])
-            _ -> P.repsert p1 (e1 :: BlogPost)
-    return $ A.Null
+    runDB_result <- lift $ runDB $ do
+        e1 <- case A.fromJSON jsonBody of
+            A.Success e -> return e
+            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
+        vErrors <- lift $ validate e1
+        case vErrors of
+             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                         "message" .= ("Entity validation failed" :: Text),
+                         "errors" .= toJSON xs 
+                     ])
+             _ -> P.repsert p1 (e1 :: BlogPost)
+        return A.Null
+    return $ runDB_result
 deleteBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -638,9 +678,19 @@ deleteBlogpostsBlogPostIdR :: forall master. (ExampleValidation master,
     => BlogPostId -> HandlerT Example (HandlerT master IO) A.Value
 deleteBlogpostsBlogPostIdR p1 = do
     authId <- lift $ requireAuthId
-    _ <- lift $ runDB $ do
+    yReq <- getRequest
+    let wReq = reqWaiRequest yReq
+    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
+    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         Right o -> return o
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
+    runDB_result <- lift $ runDB $ do
         delete $ from $ (\bp -> where_ $ (bp ^. BlogPostId) ==. ((val p1)))
-    return $ A.Null
+        return A.Null
+    return $ runDB_result
 getCommentsR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -753,18 +803,20 @@ postCommentsR  = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    e1 <- case A.fromJSON jsonBody of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
-    _ <- lift $ runDB $ do
+    runDB_result <- lift $ runDB $ do
+        e1 <- case A.fromJSON jsonBody of
+            A.Success e -> return e
+            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
         vErrors <- lift $ validate e1
         case vErrors of
             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
                         "message" .= ("Entity validation failed" :: Text),
                         "errors" .= toJSON xs 
                     ])
-            _ -> P.insert (e1 :: BlogPost)
-    return $ A.Null
+            _ -> return ()
+        P.insert (e1 :: BlogPost)
+        return A.Null
+    return $ runDB_result
 getCommentsCommentIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -818,18 +870,19 @@ putCommentsCommentIdR p1 = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    e1 <- case A.fromJSON jsonBody of
-        A.Success e -> return e
-        A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Comment from JSON object in the request body : " ++ err )
-    _ <- lift $ runDB $ do
-       vErrors <- lift $ validate e1
-       case vErrors of
-            xs@(_:_) -> sendResponseStatus status400 (A.object [ 
-                        "message" .= ("Entity validation failed" :: Text),
-                        "errors" .= toJSON xs 
-                    ])
-            _ -> P.repsert p1 (e1 :: Comment)
-    return $ A.Null
+    runDB_result <- lift $ runDB $ do
+        e1 <- case A.fromJSON jsonBody of
+            A.Success e -> return e
+            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type Comment from JSON object in the request body : " ++ err )
+        vErrors <- lift $ validate e1
+        case vErrors of
+             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
+                         "message" .= ("Entity validation failed" :: Text),
+                         "errors" .= toJSON xs 
+                     ])
+             _ -> P.repsert p1 (e1 :: Comment)
+        return A.Null
+    return $ runDB_result
 deleteCommentsCommentIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -837,9 +890,19 @@ deleteCommentsCommentIdR :: forall master. (ExampleValidation master,
     => CommentId -> HandlerT Example (HandlerT master IO) A.Value
 deleteCommentsCommentIdR p1 = do
     authId <- lift $ requireAuthId
-    _ <- lift $ runDB $ do
+    yReq <- getRequest
+    let wReq = reqWaiRequest yReq
+    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
+    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
+         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         Right o -> return o
+    jsonBodyObj <- case jsonBody of
+        A.Object o -> return o
+        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
+    runDB_result <- lift $ runDB $ do
         delete $ from $ (\c -> where_ $ (c ^. CommentId) ==. ((val p1)))
-    return $ A.Null
+        return A.Null
+    return $ runDB_result
 
 data Example = Example
 
