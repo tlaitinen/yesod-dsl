@@ -108,6 +108,7 @@ data HandlerParam = Public
                   | GetById EntityName InputFieldRef VariableName
                   | Update EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
+                  | Return [OutputField]
                   deriving (Show, Eq) 
 type IfFilterParams = (ParamName,[Join],Expr)
 
@@ -152,6 +153,10 @@ data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldNow
                     deriving (Show, Eq)
                     
+type OutputField = (ParamName, OutputFieldRef)
+data OutputFieldRef = OutputFieldLocalParam VariableName 
+    deriving (Show,Eq)
+
 data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
 
 data Handler = Handler {

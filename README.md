@@ -292,6 +292,8 @@ route /pathPiece[/pathPiece]* {
                [, fieldName = inputValue]* 
            }];]*
         [delete from EntityName as entityAlias [where expr];]*
+        [return { [fieldName = outputValue]
+                  [, fieldName = outputValue]* };]
     }]*
 }
 ``` 
@@ -321,6 +323,8 @@ inputValue: $i
           | now()
           | variableName
           | variableName.field
+
+outputValue: variableName
 
 sub_select: (select entityAlias.fieldName 
              from EntityName as entityAlias

@@ -143,7 +143,15 @@ updateHandlerMaybeAuth ps
           isAuthField (InputFieldAuth _) = True
           isAuthField _ = False
 
-   
+updateHandlerReturnRunDB :: [HandlerParam] -> String
+updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
+    Just (Return ofrs) -> T.unpack $(codegenFile "codegen/rundb-return-fields.cg")
+    _ -> T.unpack $(codegenFile "codegen/rundb-return-none.cg")
+    where
+        isReturn (Return _) = True
+        isReturn _ = False
+        trOutputField (pn,OutputFieldLocalParam vn) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
+
 updateHandler :: Module -> Route -> [HandlerParam] -> String
 updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (updateHandlerReadJsonFields m r ps)
@@ -151,6 +159,7 @@ updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ updateHandlerMaybeAuth ps
             ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
+            ++ updateHandlerReturnRunDB ps
             ++ (T.unpack $(codegenFile "codegen/update-handler-footer.cg"))
 
 

@@ -113,6 +113,7 @@ import System.Exit
     larrow { Tk _ TLArrow }
     now { Tk _ TNow }
     auth { Tk _ TAuth }
+    return { Tk _ TReturn }
 %%
 
 dbModule : maybeModuleName 
@@ -195,6 +196,7 @@ handlerParam : public { Public }
              | maybeBindResult insert upperId { Insert $3 Nothing $1 }
              | defaultfiltersort { DefaultFilterSort }
              | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
+             | return outputJson { Return $2 }
 
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
@@ -247,7 +249,18 @@ inputRef: request dot lowerId { InputFieldNormal $3 }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }
-            
+
+outputJson: lbrace maybeOutputJsonFields rbrace { $2 }
+
+maybeOutputJsonFields: { [] }
+                     | outputJsonFields { $1 }
+outputJsonFields: outputJsonField { [ $1 ] }
+                | outputJsonFields comma outputJsonField { $3:$1 }
+
+outputJsonField : lowerId equals outputRef { ($1,$3) }
+
+outputRef: lowerId { OutputFieldLocalParam $1 }
+
 binop : equals { Eq }
       | ne { Ne }
       | lt { Lt }

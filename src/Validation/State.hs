@@ -204,6 +204,11 @@ vHandlerParam (Update en ifr mifs) = do
                         Nothing -> vError $ "Reference to undeclared field '"
                                            ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
+
+vHandlerParam (Return ofrs) = do
+    declareLocal "return statement" VReserved
+    -- TODO: validate output field refs
+
 vHandlerParam (GetById en ifr vn) = do
     declareLocal ("bound result " ++ vn) VReserved
     withScope "get" $ do

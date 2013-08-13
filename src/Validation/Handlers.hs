@@ -18,6 +18,7 @@ handlerErrors m = (concatMap notAllowedError $
         allowed PostHandler (Update _ _ _) = True
         allowed PostHandler (DeleteFrom _ _ _) = True
         allowed ht (GetById _ _ _) = ht /= GetHandler
+        allowed ht (Return _) = ht /= GetHandler
         allowed PutHandler (Insert _ _ _) = True
         allowed PutHandler (Update _ _ _) = True
         allowed PutHandler (DeleteFrom _ _ _) = True
