@@ -9,7 +9,8 @@ class Named {
 
 entity User {
     instance of Named, Versioned;
-
+    firstName Text;
+    lastName Text;
     groupId Maybe GroupId;
     deriving Typeable;
 }

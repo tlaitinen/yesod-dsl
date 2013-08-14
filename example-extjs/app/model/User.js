@@ -3,8 +3,6 @@ Ext.define('example.model.User', {
     
     fields: [
         { name: 'id', type: 'int' },
-        { name: 'name', type: 'auto' },
-        { name: 'version', type: 'auto' }
-
+        { name: 'name', type: 'auto' }
     ]
 });

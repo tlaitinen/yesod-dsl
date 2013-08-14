@@ -1,12 +1,13 @@
 class Versioned {
-    version Maybe VersionId;
+    deletedVersionId Maybe VersionId;
 }
-
 
 entity Version {
     time UTCTime;
     userId UserId;
 }
+
+
 entity ChangeRecord {
     field    Text;
     oldValue Text;

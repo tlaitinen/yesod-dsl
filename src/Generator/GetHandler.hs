@@ -94,7 +94,7 @@ getHandlerSelect m sq defaultFilterSort ifFilters =
         then baseDefaultFilterSort m ctx  
              ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
         else "")
-   ++ (selectReturnFields m ctx sq)
+   ++ (selectReturnFields m ctx sq 0)
    ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
    ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
     where 

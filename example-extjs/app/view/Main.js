@@ -2,7 +2,8 @@ Ext.define('example.view.Main', {
     extend: 'Ext.container.Container',
     requires:[
         'Ext.tab.Panel',
-        'Ext.layout.container.Border'
+        'Ext.layout.container.Border',
+        'example.view.user.List'
     ],
     
     xtype: 'app-main',
@@ -12,15 +13,11 @@ Ext.define('example.view.Main', {
     },
 
     items: [{
-        region: 'west',
-        xtype: 'panel',
-        title: 'west',
-        width: 150
-    },{
         region: 'center',
         xtype: 'tabpanel',
         items:[{
-            title: 'Center Tab 1'
+            title: 'Users',
+            xtype: 'userlist'
         }]
     }]
 });

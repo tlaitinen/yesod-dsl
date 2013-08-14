@@ -101,16 +101,16 @@ exprMaybeLevel ctx ve = case ve of
     ConstExpr _ -> 0
     ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLevel ctx e2)
 
-hsListFieldRef :: Context -> FieldRef -> String
-hsListFieldRef ctx (FieldRefId vn) = vn ++ " ^. " 
+hsListFieldRef :: Context -> FieldRef -> Int -> String
+hsListFieldRef ctx (FieldRefId vn) mkJust = makeJust mkJust $ vn ++ " ^. " 
                  ++  (fromJust $ ctxLookupEntity ctx vn) ++ "Id"
-hsListFieldRef ctx  (FieldRefNormal vn fn) = vn ++ " ^. " 
+hsListFieldRef ctx  (FieldRefNormal vn fn) mkJust = makeJust mkJust $ vn ++ " ^. " 
                  ++ (fromJust $ ctxLookupEntity ctx vn) 
                  ++ (upperFirst fn)
-hsListFieldRef _ FieldRefAuthId = "(valList authId"
-hsListFieldRef _  (FieldRefPathParam p) = "(valList p" ++ show p ++ ")"
-hsListFieldRef _ FieldRefLocalParam = "(valList localParam)"
-hsListFieldRef ctx (FieldRefSubQuery sq) = "(" ++ subQuery ctx sq ++ ")"
+hsListFieldRef _ FieldRefAuthId mkJust = makeJust mkJust $ "(valList authId)"
+hsListFieldRef _  (FieldRefPathParam p) mkJust = makeJust mkJust $ "(valList p" ++ show p ++ ")"
+hsListFieldRef _ FieldRefLocalParam mkJust = makeJust mkJust $ "(valList localParam)"
+hsListFieldRef ctx (FieldRefSubQuery sq) mkJust = "(" ++ subQuery ctx sq mkJust ++ ")"
 
 mapJoinExpr :: Module -> Context -> Join -> String
 mapJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/join-expr.cg")
@@ -127,8 +127,8 @@ selectFieldRefs m ctx (SelectIdField vn _) = [FieldRefId vn ]
 
 
 
-selectReturnFields :: Module -> Context -> SelectQuery -> String
-selectReturnFields m ctx sq = T.unpack $(codegenFile "codegen/select-return-fields.cg")
+selectReturnFields :: Module -> Context -> SelectQuery -> Int -> String
+selectReturnFields m ctx sq mkJust = T.unpack $(codegenFile "codegen/select-return-fields.cg")
     where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
         
 joinDef :: Join-> String
@@ -136,12 +136,12 @@ joinDef (Join jt _ vn _) = rstrip $ T.unpack $(codegenFile "codegen/join-def.cg"
 
 
 
-subQuery :: Context -> SelectQuery -> String
-subQuery ctx' sq = "subList_select $ from $ \\(" ++ vn ++ 
+subQuery :: Context -> SelectQuery -> Int ->  String
+subQuery ctx' sq mkJust = "subList_select $ from $ \\(" ++ vn ++ 
     (concatMap joinDef (sqJoins sq)) ++ ") -> do { " ++
     (concatMap (makeInline . (mapJoinExpr m ctx)) (reverse (sqJoins sq)))
     ++ " ; " ++ maybeWhere 
-    ++ " ; " ++ (makeInline $ selectReturnFields m ctx sq)
+    ++ " ; " ++ (makeInline $ selectReturnFields m ctx sq mkJust)
     ++ " }"
 
     where
@@ -164,13 +164,10 @@ hsExpr ctx expr = case expr of
     BinOpExpr e1 op e2 -> binOpExpr e1 op e2 
     ListOpExpr fr1 op fr2 -> listOpExpr fr1 op fr2 
     where
-        listOpExpr fr1 op fr2 = promoteJust2 fr1 fr2 ("(" ++ hsListFieldRef ctx fr1 ++ ")") ++ " " ++ hsListOp op ++ " " ++ promoteJust2 fr2 fr1 ("(" ++ hsListFieldRef ctx fr2 ++ ")")
-        promoteJust2 :: FieldRef -> FieldRef -> String -> String
-        promoteJust2 fr1 fr2 content = let
-            lvl1 = fieldRefMaybeLevel ctx fr1
-            lvl2 = fieldRefMaybeLevel ctx fr2
-            count = max (lvl2 - lvl1) 0
-            in makeJust count content
+        listOpExpr fr1 op fr2 = ("(" ++ hsListFieldRef ctx fr1 (justLevel2 fr1 fr2) ++ ")") ++ " " ++ hsListOp op ++ " " ++ ("(" ++ hsListFieldRef ctx fr2 (justLevel2 fr2 fr1) ++ ")")
+        justLevel2 :: FieldRef -> FieldRef -> Int
+        justLevel2 fr1 fr2 = max (fieldRefMaybeLevel ctx fr2
+                                  - fieldRefMaybeLevel ctx fr1) 0
     
         binOpExpr e1 op e2 = promoteJust e1 e2 ("(" ++ (hsValExpr ctx op e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust e2 e1 ("(" ++ (hsValExpr ctx op e2) ++ ")"))
         promoteJust :: ValExpr -> ValExpr -> String -> String

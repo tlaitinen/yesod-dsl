@@ -161,9 +161,11 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
             return (filterJsonMsg_value v)
 share [mkPersist sqlOnlySettings, mkMigrate "migrateExample" ] [persistLowerCase|
 User json
+    firstName Text  
+    lastName Text  
     groupId GroupId Maybe   default=NULL
     name Text  
-    version VersionId Maybe   default=NULL
+    deletedVersionId VersionId Maybe   default=NULL
     UniqueUserName name !force
     deriving Typeable
 Group json
@@ -199,9 +201,9 @@ instance Named Group where
 instance Named BlogPost where
     namedName = blogPostName
 class Versioned a where
-    versionedVersion :: a -> Maybe VersionId
+    versionedDeletedVersionId :: a -> Maybe VersionId
 instance Versioned User where
-    versionedVersion = userVersion
+    versionedDeletedVersionId = userDeletedVersionId
 checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m (Maybe Text)
 checkResult msg f = do
    result <- f
@@ -290,7 +292,7 @@ getUsersR  = do
     let defaultLimit = (maybe Nothing fromPathPiece defaultLimitParam) :: Maybe Int64
     let baseQuery limitOffsetOrder = from $ \(p ) -> do
         let pId' = p ^. UserId
-        where_ ((p ^. UserGroupId) `in_` (just ((subList_select $ from $ \(g) -> do {  ;  ; return (g ^. GroupId) ; }))))
+        where_ ((p ^. UserGroupId) `in_` ((subList_select $ from $ \(g) -> do {  ;  ; return ((just $ g ^. GroupId)) ; })))
 
         _ <- if limitOffsetOrder
             then do 
@@ -298,6 +300,14 @@ getUsersR  = do
                 limit 1000
                 case defaultSortJson of 
                     Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
+                            "firstName" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserFirstName) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserFirstName) ] 
+                                _      -> return ()
+                            "lastName" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserLastName) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserLastName) ] 
+                                _      -> return ()
                             "groupId" -> case (sortJsonMsg_direction sjm) of 
                                 "ASC"  -> orderBy [ asc (p  ^.  UserGroupId) ] 
                                 "DESC" -> orderBy [ desc (p  ^.  UserGroupId) ] 
@@ -306,9 +316,9 @@ getUsersR  = do
                                 "ASC"  -> orderBy [ asc (p  ^.  UserName) ] 
                                 "DESC" -> orderBy [ desc (p  ^.  UserName) ] 
                                 _      -> return ()
-                            "version" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p  ^.  UserVersion) ] 
-                                "DESC" -> orderBy [ desc (p  ^.  UserVersion) ] 
+                            "deletedVersionId" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserDeletedVersionId) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserDeletedVersionId) ] 
                                 _      -> return ()
                 
                             _ -> return ()
@@ -325,20 +335,26 @@ getUsersR  = do
             else return ()
         case defaultFilterJson of 
             Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
+                "firstName" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserFirstName) (val v) 
+                    _        -> return ()
+                "lastName" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserLastName) (val v) 
+                    _        -> return ()
                 "groupId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserGroupId) (just (val v)) 
                     _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
-                "version" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserVersion) (just (val v)) 
+                "deletedVersionId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserDeletedVersionId) (just (val v)) 
                     _        -> return ()
 
                 _ -> return ()
                 ) xs
             Nothing -> return ()  
-        return (p ^. UserId, p ^. UserGroupId, p ^. UserName, p ^. UserVersion)
+        return (p ^. UserId, p ^. UserFirstName, p ^. UserLastName, p ^. UserGroupId, p ^. UserName, p ^. UserDeletedVersionId)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -348,11 +364,13 @@ getUsersR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5), (Database.Esqueleto.Value f6)) -> A.object [
                     "id" .= toJSON f1,
-                    "groupId" .= toJSON f2,
-                    "name" .= toJSON f3,
-                    "version" .= toJSON f4                                    
+                    "firstName" .= toJSON f2,
+                    "lastName" .= toJSON f3,
+                    "groupId" .= toJSON f4,
+                    "name" .= toJSON f5,
+                    "deletedVersionId" .= toJSON f6                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -366,10 +384,10 @@ postUsersR  = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -405,7 +423,7 @@ getUserUserIdR p1 = do
 
                  
             else return ()
-        return (p ^. UserGroupId, p ^. UserName, p ^. UserVersion)
+        return (p ^. UserFirstName, p ^. UserLastName, p ^. UserGroupId, p ^. UserName, p ^. UserDeletedVersionId)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -415,10 +433,12 @@ getUserUserIdR p1 = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3)) -> A.object [
-                    "groupId" .= toJSON f1,
-                    "name" .= toJSON f2,
-                    "version" .= toJSON f3                                    
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
+                    "firstName" .= toJSON f1,
+                    "lastName" .= toJSON f2,
+                    "groupId" .= toJSON f3,
+                    "name" .= toJSON f4,
+                    "deletedVersionId" .= toJSON f5                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -432,10 +452,10 @@ putUserUserIdR p1 = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -461,10 +481,10 @@ deleteUserUserIdR p1 = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -528,14 +548,20 @@ getBlogpostsR  = do
             else return ()
         case defaultFilterJson of 
             Just xs -> mapM_ (\fjm -> case filterJsonMsg_field_or_property fjm of
+                "firstName" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserFirstName) (val v) 
+                    _        -> return ()
+                "lastName" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserLastName) (val v) 
+                    _        -> return ()
                 "groupId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserGroupId) (just (val v)) 
                     _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
-                "version" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
-                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserVersion) (just (val v)) 
+                "deletedVersionId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserDeletedVersionId) (just (val v)) 
                     _        -> return ()
                 "authorId" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostAuthorId) (val v) 
@@ -584,10 +610,10 @@ postBlogpostsR  = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -651,10 +677,10 @@ putBlogpostsBlogPostIdR p1 = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -680,10 +706,10 @@ deleteBlogpostsBlogPostIdR p1 = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -796,10 +822,10 @@ postCommentsR  = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -863,10 +889,10 @@ putCommentsCommentIdR p1 = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
@@ -892,10 +918,10 @@ deleteCommentsCommentIdR p1 = do
     authId <- lift $ requireAuthId
     yReq <- getRequest
     let wReq = reqWaiRequest yReq
-    bss <- liftIO $ runResourceT $ lazyConsume $ W.requestBody wReq
-    jsonBody <- case AP.eitherResult $ AP.parse A.json (B.concat bss) of
-         Left err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         Right o -> return o
+    jsonResult <- parseJsonBody
+    jsonBody <- case jsonResult of
+         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
+         A.Success o -> return o
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
