@@ -6,7 +6,7 @@ Ext.define('example.store.Users', {
     remoteSort:true,
     proxy: {
         type: 'rest',
-        url: 'example/users',
+        url: 'backend/example/users',
         reader: {
             type: 'json', 
             root: 'result',

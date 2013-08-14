@@ -12,12 +12,31 @@ Ext.define('example.view.Main', {
         type: 'border'
     },
 
-    items: [{
+    items: [ {
+        region:'west',
+        title:'Info',
+        xtype:'panel',
+        width:150,
+        layout:'vbox',
+        items: [ { 
+            xtype: 'box',
+            width: '100%',
+            html:'This is a simple ExtJS application demonstrating '
+                + ' basic usage of yesod-dsl with ExtJS. '
+                + ' Some of the handlers require you to login while some are public.'},
+        { xtype:'panel', layout:'hbox', items: [
+                { xtype:'button', name:'login', text:'Login'},
+                { xtype:'button', name:'logout', text:'Logout'} ]
+            }]
+        },
+        {
         region: 'center',
         xtype: 'tabpanel',
         items:[{
             title: 'Users',
             xtype: 'userlist'
-        }]
-    }]
+        }, {
+            title: 'Blog posts'
+        }
+        ]}]
 });

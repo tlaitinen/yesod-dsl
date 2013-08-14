@@ -8,6 +8,8 @@ module Application
 import Import
 import Settings
 import Yesod.Auth
+import Yesod.Auth.BrowserId
+import Yesod.Auth.GoogleEmail
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
@@ -19,11 +21,10 @@ import Control.Monad.Logger (runLoggingT)
 import System.IO (stdout)
 import System.Log.FastLogger (mkLogger)
 import Handler.Example
-
-
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Home
+
 
 instance ExampleValidation App where
     nonEmpty "" = return False
@@ -33,7 +34,6 @@ instance ExampleValidation App where
         comments <- runDB $ count [ CommentAuthorId ==. (commentAuthorId c),
                              CommentCommentState ==. CommentStatePending ]
         return $ comments <= 2
-
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the

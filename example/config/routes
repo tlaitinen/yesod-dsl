@@ -1,6 +1,6 @@
 /static StaticR Static getStatic
 /auth   AuthR   Auth   getAuth
-
+/example ExampleR Example getExample
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 

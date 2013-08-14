@@ -20,6 +20,7 @@ import Text.Jasmine (minifym)
 import Text.Hamlet (hamletFile)
 import System.Log.FastLogger (Logger)
 import Handler.Example
+import qualified Data.Text as T
 -- | The site argument for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
@@ -139,7 +140,9 @@ instance YesodAuth App where
         case x of
             Just (Entity uid _) -> return $ Just uid
             Nothing -> do
-                fmap Just $ insert $ User "" "" Nothing (credsIdent creds) Nothing
+                fmap Just $ insert $ User (T.concat [(credsIdent creds),
+                                             T.pack " (double-click to edit)"])
+                                          "" (credsIdent creds) Nothing
 
     -- You can add other plugins like BrowserID, email or OAuth here
     authPlugins _ = [authBrowserId def, authGoogleEmail]

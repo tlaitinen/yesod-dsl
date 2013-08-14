@@ -11,7 +11,6 @@ entity User {
     instance of Named, Versioned;
     firstName Text;
     lastName Text;
-    groupId Maybe GroupId;
     deriving Typeable;
 }
 
@@ -38,25 +37,19 @@ entity Comment {
 route /users {
     get {
         select p.id, p.* from User as p
-            where p.groupId in (select g.id from Group as g)
             order by p.name asc
             limit 1000;
         default-filter-sort;
     }
-    post {
-        insert User;
-    }
+ 
 }
 
-route /user/#UserId {
-    get {
-        select p.* from User as p where p.id = $1;
-    }
+route /users/#UserId {
     put {
-        update User identified by $1;
-    }
-    delete {
-        delete from User as p where p.id = $1;
+        update User identified by $1 with {
+            firstName = $request.firstName,
+            lastName = $request.lastName
+        };
     }
 }
 

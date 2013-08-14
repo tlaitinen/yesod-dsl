@@ -6,7 +6,7 @@ Ext.define('example.store.Comments', {
     remoteSort:true,
     proxy: {
         type: 'rest',
-        url: 'example/comments',
+        url: 'backend/example/comments',
         reader: {
             type: 'json', 
             root: 'result',
