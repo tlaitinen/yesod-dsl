@@ -4,6 +4,7 @@ Ext.define('example.model.User', {
     fields: [
         { name: 'id', type: 'int' },
         { name: 'firstName', type:'string'},
-        { name: 'lastName', type:'string'}
+        { name: 'lastName', type:'string'},
+        { name: 'age', type:'auto'}
     ]
 });

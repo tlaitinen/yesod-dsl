@@ -13,8 +13,10 @@ Ext.define('example.view.user.List',{
     initComponent: function() {
 
         this.columns = [
-            {header: 'First Name',  dataIndex: 'firstName', flex:1, filterable:true },
-            {header: 'Last Name', dataIndex: 'lastName', flex:1, filterable:true }
+            {header: 'First Name',  dataIndex: 'firstName', flex:3, filterable:true },
+            {header: 'Last Name', dataIndex: 'lastName', flex:3, filterable:true },
+            {header:'Age', dataIndex:'age', flex:1, filterable:true,
+filter:{type:'numeric'}}
         ];
 
         this.bbar = Ext.create('Ext.PagingToolbar', {

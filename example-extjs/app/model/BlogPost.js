@@ -4,7 +4,8 @@ Ext.define('example.model.BlogPost', {
     fields: [
         { name: 'id', type: 'int' },
         { name: 'authorId', type: 'int' },
-        { name: 'name', type: 'auto' }
-
+        { name: 'name', type: 'auto' },
+        { name: 'content', type: 'string' },
+        { name: 'time', type:'auto'}
     ]
 });

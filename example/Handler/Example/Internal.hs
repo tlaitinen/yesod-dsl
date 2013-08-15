@@ -31,6 +31,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable (Typeable)
 import qualified Data.Attoparsec as AP
 import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as AT
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
 import qualified Data.Text.Read
@@ -48,6 +49,7 @@ import Network.HTTP.Types (status200, status400, status404)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
+import qualified Data.HashMap.Strict as HMS
 
 data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_type :: Text,
@@ -64,11 +66,17 @@ filterJsonMsg_field_or_property fjm
 instance FromJSON FilterJsonMsg where
     parseJSON (A.Object v) = FilterJsonMsg <$>
         v .:? "type" .!= "string" <*> 
-        v .: "value" <*>
+        (parseStringOrInt v) <*>
         v .:? "field" .!= "" <*>
         v .:? "property" .!= "" <*>
         v .:? "comparison" .!= "eq"
     parseJSON _ = mzero
+
+parseStringOrInt :: HMS.HashMap Text A.Value -> AT.Parser Text
+parseStringOrInt hm = case HMS.lookup "value" hm of
+    Just (A.Number n) -> return $ T.pack $ show n
+    Just (A.String s) -> return s
+    _ -> mzero
 
 data SortJsonMsg = SortJsonMsg {
     sortJsonMsg_property :: Text,
@@ -163,6 +171,7 @@ share [mkPersist sqlOnlySettings, mkMigrate "migrateExample" ] [persistLowerCase
 User json
     firstName Text  
     lastName Text  
+    age Int32 Maybe  
     name Text  
     deletedVersionId VersionId Maybe   default=NULL
     UniqueUserName name !force
@@ -173,13 +182,14 @@ Group json
 BlogPost json
     authorId UserId  
     content Text  
+    time UTCTime  
     name Text  
     UniqueBlogPostName name !force
 Comment json
     blogPostId BlogPostId  
     authorId UserId  
     comment Text  
-    time ZonedTime  
+    time UTCTime  
     commentState CommentState  
 Version json
     time UTCTime  
@@ -306,6 +316,10 @@ getUsersR  = do
                                 "ASC"  -> orderBy [ asc (p  ^.  UserLastName) ] 
                                 "DESC" -> orderBy [ desc (p  ^.  UserLastName) ] 
                                 _      -> return ()
+                            "age" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserAge) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserAge) ] 
+                                _      -> return ()
                             "name" -> case (sortJsonMsg_direction sjm) of 
                                 "ASC"  -> orderBy [ asc (p  ^.  UserName) ] 
                                 "DESC" -> orderBy [ desc (p  ^.  UserName) ] 
@@ -335,6 +349,9 @@ getUsersR  = do
                 "lastName" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserLastName) (val v) 
                     _        -> return ()
+                "age" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserAge) (just (val v)) 
+                    _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
@@ -345,7 +362,7 @@ getUsersR  = do
                 _ -> return ()
                 ) xs
             Nothing -> return ()  
-        return (p ^. UserId, p ^. UserFirstName, p ^. UserLastName, p ^. UserName, p ^. UserDeletedVersionId)
+        return (p ^. UserId, p ^. UserFirstName, p ^. UserLastName, p ^. UserAge, p ^. UserName, p ^. UserDeletedVersionId)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -355,12 +372,13 @@ getUsersR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5), (Database.Esqueleto.Value f6)) -> A.object [
                     "id" .= toJSON f1,
                     "firstName" .= toJSON f2,
                     "lastName" .= toJSON f3,
-                    "name" .= toJSON f4,
-                    "deletedVersionId" .= toJSON f5                                    
+                    "age" .= toJSON f4,
+                    "name" .= toJSON f5,
+                    "deletedVersionId" .= toJSON f6                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -381,6 +399,16 @@ putUsersUserIdR p1 = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
+    attr_age <- case HML.lookup "age" jsonBodyObj of 
+        Just v -> case A.fromJSON v of
+            A.Success v' -> return v'
+            A.Error err -> sendResponseStatus status400 $ A.object [
+                    "message" .= ("Could not parse value from attribute age in the JSON object in request body" :: Text),
+                    "error" .= err
+                ]
+        Nothing -> sendResponseStatus status400 $ A.object [
+                "message" .= ("Expected attribute age in the JSON object in request body" :: Text)
+            ]
     attr_lastName <- case HML.lookup "lastName" jsonBodyObj of 
         Just v -> case A.fromJSON v of
             A.Success v' -> return v'
@@ -419,6 +447,9 @@ putUsersUserIdR p1 = do
                     ,
                             userLastName = attr_lastName
                     
+                    ,
+                            userAge = (Just attr_age
+                    )
                     ,
                             userName = userName e
                     
@@ -469,13 +500,21 @@ getBlogpostsR  = do
                                 "ASC"  -> orderBy [ asc (bp  ^.  BlogPostContent) ] 
                                 "DESC" -> orderBy [ desc (bp  ^.  BlogPostContent) ] 
                                 _      -> return ()
+                            "time" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostTime) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostTime) ] 
+                                _      -> return ()
                             "name" -> case (sortJsonMsg_direction sjm) of 
                                 "ASC"  -> orderBy [ asc (bp  ^.  BlogPostName) ] 
                                 "DESC" -> orderBy [ desc (bp  ^.  BlogPostName) ] 
                                 _      -> return ()
-                            "authorName" -> case (sortJsonMsg_direction sjm) of 
-                                "ASC"  -> orderBy [ asc (p  ^.  UserName) ] 
-                                "DESC" -> orderBy [ desc (p  ^.  UserName) ] 
+                            "authorFirstName" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserFirstName) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserFirstName) ] 
+                                _      -> return ()
+                            "authorLastName" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (p  ^.  UserLastName) ] 
+                                "DESC" -> orderBy [ desc (p  ^.  UserLastName) ] 
                                 _      -> return ()
                 
                             _ -> return ()
@@ -498,6 +537,9 @@ getBlogpostsR  = do
                 "lastName" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserLastName) (val v) 
                     _        -> return ()
+                "age" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserAge) (just (val v)) 
+                    _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (p  ^.  UserName) (val v) 
                     _        -> return ()
@@ -510,6 +552,9 @@ getBlogpostsR  = do
                 "content" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostContent) (val v) 
                     _        -> return ()
+                "time" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostTime) (val v) 
+                    _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostName) (val v) 
                     _        -> return ()
@@ -520,9 +565,9 @@ getBlogpostsR  = do
         case getDefaultFilter filterParam_blogPostName defaultFilterJson "blogPostName" of
             Just localParam -> do 
 
-                where_ $ (bp ^. BlogPostName) `like` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))
+                where_ $ ((bp ^. BlogPostName) `ilike` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))) ||. (((p ^. UserFirstName) `ilike` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))) ||. ((p ^. UserLastName) `ilike` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))))
             Nothing -> return ()
-        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostName, p ^. UserName)
+        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostTime, bp ^. BlogPostName, p ^. UserFirstName, p ^. UserLastName)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -532,12 +577,14 @@ getBlogpostsR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5), (Database.Esqueleto.Value f6), (Database.Esqueleto.Value f7)) -> A.object [
                     "id" .= toJSON f1,
                     "authorId" .= toJSON f2,
                     "content" .= toJSON f3,
-                    "name" .= toJSON f4,
-                    "authorName" .= toJSON f5                                    
+                    "time" .= toJSON f4,
+                    "name" .= toJSON f5,
+                    "authorFirstName" .= toJSON f6,
+                    "authorLastName" .= toJSON f7                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -558,10 +605,44 @@ postBlogpostsR  = do
     jsonBodyObj <- case jsonBody of
         A.Object o -> return o
         v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
+    attr_content <- case HML.lookup "content" jsonBodyObj of 
+        Just v -> case A.fromJSON v of
+            A.Success v' -> return v'
+            A.Error err -> sendResponseStatus status400 $ A.object [
+                    "message" .= ("Could not parse value from attribute content in the JSON object in request body" :: Text),
+                    "error" .= err
+                ]
+        Nothing -> sendResponseStatus status400 $ A.object [
+                "message" .= ("Expected attribute content in the JSON object in request body" :: Text)
+            ]
+    attr_name <- case HML.lookup "name" jsonBodyObj of 
+        Just v -> case A.fromJSON v of
+            A.Success v' -> return v'
+            A.Error err -> sendResponseStatus status400 $ A.object [
+                    "message" .= ("Could not parse value from attribute name in the JSON object in request body" :: Text),
+                    "error" .= err
+                ]
+        Nothing -> sendResponseStatus status400 $ A.object [
+                "message" .= ("Expected attribute name in the JSON object in request body" :: Text)
+            ]
+    __currentTime <- liftIO $ getCurrentTime
     runDB_result <- lift $ runDB $ do
-        e1 <- case A.fromJSON jsonBody of
-            A.Success e -> return e
-            A.Error err -> sendResponseStatus status400 ("Could not decode an entity of type BlogPost from JSON object in the request body : " ++ err )
+        e1 <- do
+    
+            return $ BlogPost {
+                            blogPostAuthorId = authId
+                    
+                    ,
+                            blogPostContent = attr_content
+                    
+                    ,
+                            blogPostTime = __currentTime
+                    
+                    ,
+                            blogPostName = attr_name
+                    
+     
+                }
         vErrors <- lift $ validate e1
         case vErrors of
             xs@(_:_) -> sendResponseStatus status400 (A.object [ 
@@ -572,43 +653,6 @@ postBlogpostsR  = do
         P.insert (e1 :: BlogPost)
         return A.Null
     return $ runDB_result
-getBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
-    YesodAuthPersist master,
-    KeyEntity (AuthId master) ~ User,
-    YesodPersistBackend master ~ SqlPersistT)
-    => BlogPostId -> HandlerT Example (HandlerT master IO) A.Value
-getBlogpostsBlogPostIdR p1 = do
-    let baseQuery limitOffsetOrder = from $ \(bp  `InnerJoin` p) -> do
-        on ((p ^. UserId) ==. (bp ^. BlogPostAuthorId))
-        let bpId' = bp ^. BlogPostId
-        where_ ((bp ^. BlogPostId) ==. ((val p1)))
-
-        _ <- if limitOffsetOrder
-            then do 
-                offset 0
-                limit 10000
-
-                 
-            else return ()
-        return (bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostName, p ^. UserName)
-    count <- lift $ runDB $ select $ do
-        baseQuery False
-        let countRows' = countRows
-        orderBy []
-        return $ (countRows' :: SqlExpr (Database.Esqueleto.Value Int))
-    results <- lift $ runDB $ select $ baseQuery True
-    return $ A.object [
-        "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
-        "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
-                    "authorId" .= toJSON f1,
-                    "content" .= toJSON f2,
-                    "name" .= toJSON f3,
-                    "authorName" .= toJSON f4                                    
-                    ]
-                _ -> A.object []
-            ) results)
-       ]
 putBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
@@ -636,26 +680,6 @@ putBlogpostsBlogPostIdR p1 = do
                          "errors" .= toJSON xs 
                      ])
              _ -> P.repsert p1 (e1 :: BlogPost)
-        return A.Null
-    return $ runDB_result
-deleteBlogpostsBlogPostIdR :: forall master. (ExampleValidation master, 
-    YesodAuthPersist master,
-    KeyEntity (AuthId master) ~ User,
-    YesodPersistBackend master ~ SqlPersistT)
-    => BlogPostId -> HandlerT Example (HandlerT master IO) A.Value
-deleteBlogpostsBlogPostIdR p1 = do
-    authId <- lift $ requireAuthId
-    yReq <- getRequest
-    let wReq = reqWaiRequest yReq
-    jsonResult <- parseJsonBody
-    jsonBody <- case jsonResult of
-         A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
-         A.Success o -> return o
-    jsonBodyObj <- case jsonBody of
-        A.Object o -> return o
-        v -> sendResponseStatus status400 $ A.object [ "message" .= ("Expected JSON object in the request body, got: " ++ show v) ]
-    runDB_result <- lift $ runDB $ do
-        delete $ from $ (\bp -> where_ $ (bp ^. BlogPostId) ==. ((val p1)))
         return A.Null
     return $ runDB_result
 getCommentsR :: forall master. (ExampleValidation master, 
@@ -691,6 +715,10 @@ getCommentsR  = do
                                 "ASC"  -> orderBy [ asc (bp  ^.  BlogPostContent) ] 
                                 "DESC" -> orderBy [ desc (bp  ^.  BlogPostContent) ] 
                                 _      -> return ()
+                            "time" -> case (sortJsonMsg_direction sjm) of 
+                                "ASC"  -> orderBy [ asc (bp  ^.  BlogPostTime) ] 
+                                "DESC" -> orderBy [ desc (bp  ^.  BlogPostTime) ] 
+                                _      -> return ()
                             "name" -> case (sortJsonMsg_direction sjm) of 
                                 "ASC"  -> orderBy [ asc (bp  ^.  BlogPostName) ] 
                                 "DESC" -> orderBy [ desc (bp  ^.  BlogPostName) ] 
@@ -716,6 +744,9 @@ getCommentsR  = do
                 "content" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostContent) (val v) 
                     _        -> return ()
+                "time" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostTime) (val v) 
+                    _        -> return ()
                 "name" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
                     (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (bp  ^.  BlogPostName) (val v) 
                     _        -> return ()
@@ -735,7 +766,7 @@ getCommentsR  = do
 
                 where_ $ (bp ^. BlogPostContent) `ilike` (((val "%")) ++. (((val (localParam :: Text))) ++. ((val "%"))))
             Nothing -> return ()
-        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostName)
+        return (bp ^. BlogPostId, bp ^. BlogPostAuthorId, bp ^. BlogPostContent, bp ^. BlogPostTime, bp ^. BlogPostName)
     count <- lift $ runDB $ select $ do
         baseQuery False
         let countRows' = countRows
@@ -745,11 +776,12 @@ getCommentsR  = do
     return $ A.object [
         "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
-                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4)) -> A.object [
+                ((Database.Esqueleto.Value f1), (Database.Esqueleto.Value f2), (Database.Esqueleto.Value f3), (Database.Esqueleto.Value f4), (Database.Esqueleto.Value f5)) -> A.object [
                     "id" .= toJSON f1,
                     "authorId" .= toJSON f2,
                     "content" .= toJSON f3,
-                    "name" .= toJSON f4                                    
+                    "time" .= toJSON f4,
+                    "name" .= toJSON f5                                    
                     ]
                 _ -> A.object []
             ) results)
@@ -880,7 +912,7 @@ mkYesodSubData "Example" [parseRoutes|
 /users        UsersR      GET
 /users/#UserId        UsersUserIdR      PUT
 /blogposts        BlogpostsR      GET POST
-/blogposts/#BlogPostId        BlogpostsBlogPostIdR      GET PUT DELETE
+/blogposts/#BlogPostId        BlogpostsBlogPostIdR      PUT
 /comments        CommentsR      GET POST
 /comments/#CommentId        CommentsCommentIdR      GET PUT DELETE
 |]

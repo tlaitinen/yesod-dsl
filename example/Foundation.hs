@@ -142,7 +142,7 @@ instance YesodAuth App where
             Nothing -> do
                 fmap Just $ insert $ User (T.concat [(credsIdent creds),
                                              T.pack " (double-click to edit)"])
-                                          "" (credsIdent creds) Nothing
+                                          "" Nothing (credsIdent creds) Nothing
 
     -- You can add other plugins like BrowserID, email or OAuth here
     authPlugins _ = [authBrowserId def, authGoogleEmail]

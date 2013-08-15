@@ -36,7 +36,8 @@ Ext.define('example.view.Main', {
             title: 'Users',
             xtype: 'userlist'
         }, {
-            title: 'Blog posts'
+            title: 'Blog posts',
+            xtype: 'blogpostlist'
         }
         ]}]
 });

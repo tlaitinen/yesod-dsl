@@ -11,6 +11,7 @@ entity User {
     instance of Named, Versioned;
     firstName Text;
     lastName Text;
+    age      Maybe Int32;
     deriving Typeable;
 }
 
@@ -22,6 +23,7 @@ entity BlogPost {
     instance of Named;
     authorId UserId;
     content Text;
+    time UTCTime;
 }
 enum CommentState = Pending | Accepted | Spam;
 
@@ -29,7 +31,7 @@ entity Comment {
     blogPostId BlogPostId;
     authorId UserId;
     comment Text;
-    time ZonedTime;
+    time UTCTime;
     commentState CommentState;
     check maxTwoPendingComments;
 }
@@ -48,7 +50,8 @@ route /users/#UserId {
     put {
         update User identified by $1 with {
             firstName = $request.firstName,
-            lastName = $request.lastName
+            lastName = $request.lastName,
+            age = $request.age
         };
     }
 }
@@ -56,33 +59,33 @@ route /users/#UserId {
 route /blogposts {
     get {
         public;
-        select bp.id, bp.*, p.name as authorName 
+        select bp.id, bp.*, 
+               p.firstName as authorFirstName, 
+               p.lastName as authorLastName 
             from BlogPost as bp
             inner join User as p on p.id = bp.authorId
             order by bp.name asc
             limit 1000;
 
         if param "blogPostName" = $$ then
-            where bp.name like "%" || $$ || "%";
+            where bp.name ilike "%" || $$ || "%"
+                  or p.firstName ilike "%" || $$ || "%"
+                  or p.lastName ilike "%" || $$ || "%";
         default-filter-sort;
     }
     post {
-        insert BlogPost;
+        insert BlogPost from {
+            authorId = $auth.id,
+            name = $request.name,
+            content = $request.content,
+            time = now()
+        };
     }
 }
 
 route /blogposts/#BlogPostId {
-    get {
-        public;
-        select bp.*, p.name as authorName from BlogPost as bp 
-            inner join User as p on p.id = bp.authorId
-            where bp.id = $1;
-    }
     put {
         update BlogPost identified by $1;
-    }
-    delete {
-        delete from BlogPost as bp where bp.id = $1;
     }
 }
 

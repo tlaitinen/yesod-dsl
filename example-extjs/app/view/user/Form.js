@@ -22,6 +22,7 @@ Ext.define('example.view.user.Form' ,{
             xtype:'textfield',
             fieldLabel:'Last Name',
             width:350,
+            name:'lastName'
         }
    ]
 });
