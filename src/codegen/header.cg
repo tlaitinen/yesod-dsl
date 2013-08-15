@@ -31,6 +31,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable (Typeable)
 import qualified Data.Attoparsec as AP
 import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as AT
 import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
 import qualified Data.Text.Read
@@ -48,6 +49,7 @@ import Network.HTTP.Types (status200, status400, status404)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
+import qualified Data.HashMap.Strict as HMS
 
 data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_type :: Text,
@@ -64,11 +66,17 @@ filterJsonMsg_field_or_property fjm
 instance FromJSON FilterJsonMsg where
     parseJSON (A.Object v) = FilterJsonMsg <$>
         v .:? "type" .!= "string" <*> 
-        v .: "value" <*>
+        (parseStringOrInt v) <*>
         v .:? "field" .!= "" <*>
         v .:? "property" .!= "" <*>
         v .:? "comparison" .!= "eq"
     parseJSON _ = mzero
+
+parseStringOrInt :: HMS.HashMap Text A.Value -> AT.Parser Text
+parseStringOrInt hm = case HMS.lookup "value" hm of
+    Just (A.Number n) -> return $ T.pack $ show n
+    Just (A.String s) -> return s
+    _ -> mzero
 
 data SortJsonMsg = SortJsonMsg {
     sortJsonMsg_property :: Text,
