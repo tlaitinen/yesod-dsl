@@ -114,6 +114,7 @@ import System.Exit
     now { Tk _ TNow }
     auth { Tk _ TAuth }
     return { Tk _ TReturn }
+    require { Tk _ TRequire }
 %%
 
 dbModule : maybeModuleName 
@@ -168,6 +169,7 @@ handlerdef : get handlerParamsBlock { Handler (mkLoc $1) GetHandler $2 }
 
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
+          | upperId dot upperId { FieldRefEnum $1 $3 }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
           | auth dot lowerId { FieldRefAuth $3 }
@@ -197,7 +199,7 @@ handlerParam : public { Public }
              | defaultfiltersort { DefaultFilterSort }
              | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
              | return outputJson { Return $2 }
-
+             | require upperId as lowerId joins where expr { Require (SelectQuery [] ($2,$4) (reverse $5) (Just $7) [] (0,0)) }
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
 

@@ -193,6 +193,15 @@ vHandlerParam (Select sq) = do
         Nothing -> return ()    
     forM_ (sqFields sq) vSelectField
     forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
+vHandlerParam (Require sq) = do
+    let (en,vn) = sqFrom sq
+    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+    forM_ (sqJoins sq) vJoin
+    case sqWhere sq of 
+        Just e -> do    
+            withScope  "where expression" $ vExpr e
+        Nothing -> return ()    
+
 vHandlerParam (IfFilter (vn,joins,e)) = do
     withScope "if param" $ do
         declareLocal vn VReserved
@@ -316,6 +325,15 @@ ensureField vn fn e = do
         Nothing -> vError $ "Entity " ++ entityName e ++ " referenced by "
                            ++ vn ++ "." ++ fn 
                            ++ " does not have the field " ++ fn
+
+ensureEnumValue :: String -> EnumType -> Validation
+ensureEnumValue vn e = do
+    case L.find (== vn) $ enumValues e of
+        Just f -> return ()
+        Nothing -> vError $ "Enum " ++ enumName e 
+                           ++ " does not have the value " ++ vn
+
+                           
 vFieldRef :: FieldRef -> Validation
 vFieldRef (FieldRefId vn) = vEntityRef vn 
 vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn
@@ -336,6 +354,7 @@ vFieldRef (FieldRefRequest fn) = do
     case ht of
         Just GetHandler -> vError $ "Reference to request param 'request." ++ fn ++ "' not allowed in GET handler"
         _ -> return ()
+vFieldRef (FieldRefEnum en vn) = withLookupEnum en $ ensureEnumValue vn
 vFieldRef _ = return ()
 
 vSelectField :: SelectField -> Validation

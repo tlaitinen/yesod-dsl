@@ -430,7 +430,7 @@ putUsersUserIdR p1 = do
                 "message" .= ("Expected attribute firstName in the JSON object in request body" :: Text)
             ]
     runDB_result <- lift $ runDB $ do
-        e1 <- do
+        e3 <- do
             es <- lift $ runDB $ select $ from $ \o -> do
                 where_ (o ^. UserId ==. (val p1))
                 limit 1
@@ -458,13 +458,13 @@ putUsersUserIdR p1 = do
                     
      
                 }
-        vErrors <- lift $ validate e1
+        vErrors <- lift $ validate e3
         case vErrors of
              xs@(_:_) -> sendResponseStatus status400 (A.object [ 
                          "message" .= ("Entity validation failed" :: Text),
                          "errors" .= toJSON xs 
                      ])
-             _ -> P.repsert p1 (e1 :: User)
+             _ -> P.repsert p1 (e3 :: User)
         return A.Null
     return $ runDB_result
 getBlogpostsR :: forall master. (ExampleValidation master, 

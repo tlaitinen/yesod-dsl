@@ -30,6 +30,7 @@ emptyModule = Module {
 type ClassName = String
 type ParamName = String
 type EntityName = String
+type EnumName = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
@@ -109,6 +110,7 @@ data HandlerParam = Public
                   | Update EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
                   | Return [OutputField]
+                  | Require SelectQuery
                   deriving (Show, Eq) 
 type IfFilterParams = (ParamName,[Join],Expr)
 
@@ -205,6 +207,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefAuthId
               | FieldRefAuth FieldName
               | FieldRefLocalParam
+              | FieldRefEnum EnumName FieldName
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName
               | FieldRefSubQuery SelectQuery deriving (Show, Eq) 
@@ -228,7 +231,6 @@ data Class = Class {
 
 type DefaultValue = String
 type IsListFlag = Bool
-type EnumName = String
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
                     | EnumField EnumName

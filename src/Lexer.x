@@ -104,7 +104,7 @@ tokens :-
     "of" { mkT TOf }
     "deriving" { mkT TDeriving }
     "$request" { mkT TRequest }
-
+    "require" { mkT TRequire }
      "return" { mkT TReturn }
     "$auth"  { mkT TAuth }
     $digit+ 		{ mkTvar (TInt . read) }
@@ -220,6 +220,7 @@ data TokenType = TSemicolon
            | TNow
            | TAuth
            | TReturn
+           | TRequire
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

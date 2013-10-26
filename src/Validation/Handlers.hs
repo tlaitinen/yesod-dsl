@@ -17,17 +17,21 @@ handlerErrors m = (concatMap notAllowedError $
         allowed PostHandler (Insert _ _ _) = True
         allowed PostHandler (Update _ _ _) = True
         allowed PostHandler (DeleteFrom _ _ _) = True
+        allowed PostHandler (Require _) = True
         allowed ht (GetById _ _ _) = ht /= GetHandler
         allowed ht (Return _) = ht /= GetHandler
         allowed PutHandler (Insert _ _ _) = True
         allowed PutHandler (Update _ _ _) = True
         allowed PutHandler (DeleteFrom _ _ _) = True
+        allowed PutHandler (Require _) = True
         allowed DeleteHandler (Insert _ _ _) = True
         allowed DeleteHandler (Update _ _ _) = True
         allowed DeleteHandler (DeleteFrom _ _ _) =True
+        allowed DeleteHandler (Require _) = True
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (Select _) = True
         allowed GetHandler (IfFilter (_, joins, _)) = onlyInnerJoins joins
+        allowed GetHandler (Require _) = True
         allowed _ _ = False
 
         onlyInnerJoins js = all (\j -> joinType j == InnerJoin) js
