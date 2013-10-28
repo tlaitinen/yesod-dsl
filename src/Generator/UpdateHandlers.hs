@@ -12,7 +12,7 @@ import Data.String.Utils (rstrip)
 import Generator.Esqueleto
 import Generator.Common
 import Generator.Models
-
+import Generator.Require
 
 inputFieldRef :: Context -> InputFieldRef -> String
 -- inputFieldRef ps (InputFieldNormal fn) = T.unpack $(codegenFile "codegen/input-field-normal.cg") TODO
@@ -39,7 +39,7 @@ updateHandlerRunDB m r ps (pId,p) = indent 4 (updateHandlerDecode m r ps (pId,p)
         in T.unpack $(codegenFile "codegen/delete.cg")
     DeleteFrom en vn (Just e) -> 
         let maybeExpr = hsExpr ctx e 
-            ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m }
+            ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m, ctxHandlerParams = ps }
         in T.unpack $(codegenFile "codegen/delete.cg")
     _ -> ""
     where 
@@ -157,6 +157,7 @@ updateHandler m r ps = (T.unpack $(codegenFile "codegen/json-body.cg"))
             ++ (updateHandlerReadJsonFields m r ps)
             ++ updateHandlerMaybeCurrentTime ps
             ++ updateHandlerMaybeAuth ps
+            ++ (requireStmts m ps)
             ++ (T.unpack $(codegenFile "codegen/rundb.cg"))
             ++ (concatMap (updateHandlerRunDB m r ps) $ zip [1..] ps)
             ++ updateHandlerReturnRunDB ps

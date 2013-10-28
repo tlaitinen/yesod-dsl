@@ -38,6 +38,7 @@ executable  yesod-dsl
                    Generator.Routes
                    Generator.UpdateHandlers
                    Generator.Validation
+                   Generator.Require
                    Validation.Fields
                    Validation.Handlers
                    Validation.State

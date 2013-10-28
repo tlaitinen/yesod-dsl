@@ -48,14 +48,12 @@ route /users {
 
 route /users/#UserId {
     put {
-        require User as u where $1 = $auth.id;
-        require Comment as c where c.commentState = CommentState.Pending;
+        require User as u where u.id = $1 and $1 = $auth.id;
         update User identified by $1 with {
             firstName = $request.firstName,
             lastName = $request.lastName,
             age = $request.age
         };
-
     }
 }
 

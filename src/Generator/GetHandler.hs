@@ -16,6 +16,7 @@ import Data.Char
 import Generator.Common
 import Generator.Esqueleto
 import Generator.Models
+import Generator.Require
 getHandlerParam :: Module -> Route -> Context -> HandlerParam -> String
 getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
@@ -172,6 +173,7 @@ getHandler :: Module -> Route -> [HandlerParam] -> String
 getHandler m r ps = 
     getHandlerMaybeAuth ps ++ 
     (concatMap (getHandlerParam m r ctx) ps)
+    ++ (requireStmts m ps)
     ++ (getHandlerSelect m sq defaultFilterSort ifFilters)
     ++ (getHandlerReturn m sq)
     where 

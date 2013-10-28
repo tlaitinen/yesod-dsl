@@ -45,7 +45,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Network.HTTP.Conduit as C
 import qualified Network.Wai as W
 import Data.Conduit.Lazy (lazyConsume)
-import Network.HTTP.Types (status200, status400, status404)
+import Network.HTTP.Types (status200, status400, status403, status404)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
@@ -429,8 +429,20 @@ putUsersUserIdR p1 = do
         Nothing -> sendResponseStatus status400 $ A.object [
                 "message" .= ("Expected attribute firstName in the JSON object in request body" :: Text)
             ]
+    _ <- do
+        result <- lift $ runDB $ select $ from $ \(u ) -> do
+            let uId' = u ^. UserId
+            where_ (((u ^. UserId) ==. ((val p1))) &&. (((val p1)) ==. ((val authId))))
+
+            limit 1
+            return u
+        case result of
+            ((Entity _ _):_) -> return ()
+            _ -> sendResponseStatus status403 (A.object [
+                    "message" .= ("require condition #1 failed" :: Text)
+                    ])
     runDB_result <- lift $ runDB $ do
-        e3 <- do
+        e2 <- do
             es <- lift $ runDB $ select $ from $ \o -> do
                 where_ (o ^. UserId ==. (val p1))
                 limit 1
@@ -458,13 +470,13 @@ putUsersUserIdR p1 = do
                     
      
                 }
-        vErrors <- lift $ validate e3
+        vErrors <- lift $ validate e2
         case vErrors of
              xs@(_:_) -> sendResponseStatus status400 (A.object [ 
                          "message" .= ("Entity validation failed" :: Text),
                          "errors" .= toJSON xs 
                      ])
-             _ -> P.repsert p1 (e3 :: User)
+             _ -> P.repsert p1 (e2 :: User)
         return A.Null
     return $ runDB_result
 getBlogpostsR :: forall master. (ExampleValidation master, 

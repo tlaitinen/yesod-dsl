@@ -23,6 +23,13 @@ Ext.define('example.view.user.Form' ,{
             fieldLabel:'Last Name',
             width:350,
             name:'lastName'
+        },
+        { 
+            xtype:'numberfield',
+            fieldLabel:'Age',
+            width:350,
+            allowBlank:false,
+            name:'age'
         }
    ]
 });

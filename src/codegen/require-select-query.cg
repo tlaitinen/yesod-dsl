@@ -1,0 +1,11 @@
+    _ <- do
+        result <- lift $ runDB $ select $ from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
+~{indent 4 $ concatMap (mapJoinExpr m ctx) (reverse (sqJoins sq))}            let ~{selectVar}Id' = ~{selectVar} ^. ~{selectEntity}Id
+~{indent 4 $ maybeWhere}
+            limit 1
+            return ~{selectVar}
+        case result of
+            ((Entity _ _):_) -> return ()
+            _ -> sendResponseStatus status403 (A.object [
+                    "message" .= ("require condition #~{show requireId} failed" :: Text)
+                    ])

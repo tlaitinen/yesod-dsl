@@ -45,7 +45,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Network.HTTP.Conduit as C
 import qualified Network.Wai as W
 import Data.Conduit.Lazy (lazyConsume)
-import Network.HTTP.Types (status200, status400, status404)
+import Network.HTTP.Types (status200, status400, status403, status404)
 import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
