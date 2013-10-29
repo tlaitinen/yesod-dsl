@@ -83,7 +83,7 @@ data SortJsonMsg = SortJsonMsg {
     sortJsonMsg_direction :: Text
 }
 
-$(deriveJSON (drop 12) ''SortJsonMsg)
+$(deriveJSON defaultOptions{fieldLabelModifier = drop 12} ''SortJsonMsg)
 
 -- defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
 defaultFilterOp "eq" = (==.)
