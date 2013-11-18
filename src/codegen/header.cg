@@ -52,6 +52,8 @@ import Control.Applicative ((<$>), (<*>))
 import qualified Data.HashMap.Lazy as HML
 import qualified Data.HashMap.Strict as HMS
 
+data ~{moduleName m} = ~{moduleName m}
+
 data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_type :: Text,
     filterJsonMsg_value :: Text,

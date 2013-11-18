@@ -8,6 +8,10 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Data.Char
+routeModuleName :: Route -> String
+routeModuleName r = "Route" ++ (concat $ map f (routePath r))
+    where f (PathText s) = upperFirst s
+          f (PathId en) = upperFirst en
 hsRouteName :: [PathPiece] -> String
 hsRouteName = f . routeName 
     where f ('/':'#':xs) = f xs
@@ -28,5 +32,8 @@ routes :: Module -> String
 routes m = T.unpack $(codegenFile "codegen/routes-header.cg")
          ++ (concatMap hsRoutePath (modRoutes m))
          ++ (T.unpack $(codegenFile "codegen/routes-footer.cg"))
+     where
+           routeImport r = T.unpack $(codegenFile "codegen/route-import.cg")
+
 
 

@@ -1,5 +1,27 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+module Handler.~{moduleName m}.Routes where
+import Prelude (const)
+import Handler.~{moduleName m}.Enums
+import Handler.~{moduleName m}.Esqueleto
+import Handler.~{moduleName m}.Internal
+~{concatMap routeImport (modRoutes m)}
+import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
+import Yesod.Core
+import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
 
-data ~{moduleName m} = ~{moduleName m}
 
 get~{moduleName m} :: a -> ~{moduleName m}
 get~{moduleName m} = const ~{moduleName m}

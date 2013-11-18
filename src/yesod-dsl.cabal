@@ -26,6 +26,7 @@ executable  yesod-dsl
                  , filepath >= 1.3.0.0
                  , containers >= 0.4.2.1
                  , mtl >= 2.1.2
+                 , strict
                  
     Build-tools:         alex, happy
     other-modules: Lexer Parser AST Generator ClassImplementer ModuleMerger Validation 
