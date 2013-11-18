@@ -20,6 +20,7 @@ import Generator.Classes
 import Generator.Routes
 import Generator.Validation
 import Generator.Handlers
+import Generator.EsqueletoInstances
 
 generate :: Module -> IO ()
 generate m = do
@@ -27,6 +28,9 @@ generate m = do
     writeFile (joinPath ["Handler", moduleName m, "Enums.hs"]) $
         T.unpack $(codegenFile "codegen/enums-header.cg")
             ++ (concatMap enum $ modEnums m)
+    writeFile (joinPath ["Handler", moduleName m, "Esqueleto.hs"]) $
+        T.unpack $(codegenFile "codegen/esqueleto-header.cg")
+        ++ (esqueletoInstances m)        
     writeFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
         T.unpack $(codegenFile "codegen/header.cg")
             ++ models m

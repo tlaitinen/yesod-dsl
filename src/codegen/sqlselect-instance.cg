@@ -1,0 +1,11 @@
+instance ( ~{intercalate ", " (map sqlSelectTypeLhs nums)} ) => SqlSelect (~{intercalate ", " (map ifield nums)}) (~{intercalate ", " (map ofield nums)}) where
+  sqlSelectCols esc (~{intercalate ", " (map ifield nums)}) =
+    uncommas' [ ~{intercalate ", " (map sqlSelectCols nums)} ]
+  sqlSelectColCount   = sqlSelectColCount . from~{show fnum}P
+  sqlSelectProcessRow = fmap to~{show fnum} . sqlSelectProcessRow
+
+from~{show fnum}P :: Proxy (~{intercalate ", " (map ifield nums)}) -> Proxy (~{pairs (map ifield nums)})
+from~{show fnum}P = const Proxy
+
+to~{show fnum} :: (~{pairs (map ifield nums)}) -> (~{intercalate ", " (map ifield nums)})
+to~{show fnum} (~{pairs (map ifield nums)}) = (~{intercalate ", " (map ifield nums)})
