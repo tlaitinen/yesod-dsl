@@ -23,23 +23,20 @@ import Generator.Routes
 import Generator.Validation
 import Generator.Handlers
 import Generator.EsqueletoInstances
-
-syncFile :: FilePath -> String -> IO ()
-syncFile path content = do
-    oldContent <- catch (readFile path) (\_ -> return "")
-    if content /= oldContent
-        then do
-            putStrLn $ "Updating " ++ path
-            writeFile path content
-        else return ()
+import Generator.Cabal
+import SyncFile
 
 writeRoute :: Module -> Route -> IO ()
 writeRoute m r = syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
     T.unpack $(codegenFile "codegen/route-header.cg")
         ++ (concatMap (handler m r) (routeHandlers r))
-generate :: Module -> IO ()
-generate m = do
+
+
+    
+generate :: FilePath -> Module -> IO ()
+generate path m = do
+    syncCabal path m
     createDirectoryIfMissing True (joinPath ["Handler", moduleName m])
     syncFile (joinPath ["Handler", moduleName m, "Enums.hs"]) $
         T.unpack $(codegenFile "codegen/enums-header.cg")

@@ -34,5 +34,5 @@ main = do
             let ast  = implementClasses . mergeModules $ dbs
             let errors = validate ast
             if null errors 
-                then generate $ ast 
+                then generate path $ ast 
                 else hPutStrLn stderr errors

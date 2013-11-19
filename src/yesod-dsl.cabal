@@ -27,6 +27,7 @@ executable  yesod-dsl
                  , containers >= 0.4.2.1
                  , mtl >= 2.1.2
                  , strict
+                 , Cabal
                  
     Build-tools:         alex, happy
     other-modules: Lexer Parser AST Generator ClassImplementer ModuleMerger Validation 
