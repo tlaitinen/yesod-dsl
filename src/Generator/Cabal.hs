@@ -5,6 +5,7 @@ import Distribution.ModuleName
 import Distribution.PackageDescription.Parse
 import Distribution.PackageDescription.PrettyPrint
 import Distribution.Package
+import Distribution.Version
 import Data.Maybe (fromMaybe)
 import System.Directory
 import Distribution.Verbosity
@@ -18,16 +19,37 @@ stripGenerated m mods = [ mn | mn <- mods,
     where mnToString mn = intercalate "." (components mn)            
 
 generatedMods :: Module -> [ModuleName]
-generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes"]
+generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto"]
                 ++ [pfx ++ "." ++ (routeModuleName r) | r <- modRoutes m ]
     where pfx = "Handler." ++ (fromMaybe "" $ modName m)
+
+ensureDeps :: [Dependency] -> [Dependency]
+ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) AnyVersion 
+                       | name <- ["unordered-containers",
+                                  "blaze-builder",
+                                  "http-types",
+                                  "wai",
+                                  "resourcet",
+                                  "attoparsec",
+                                  "time",
+                                  "vector",
+                                  "esqueleto",
+                                  "yesod-persistent",
+                                  "old-locale",
+                                  "filepath",
+                                  "unix",
+                                  "path-pieces" ] ] ++ deps)
+    where samePackage (Dependency pn1 _) (Dependency pn2 _) = pn1 == pn2
+          
+
 modifyDesc :: Module -> GenericPackageDescription -> GenericPackageDescription
 modifyDesc m d = d {
         condLibrary = (condLibrary d) >>= modifyCtree
     }
     where 
         modifyCtree ctree = Just $ ctree {
-            condTreeData = modifyLib (condTreeData ctree)
+            condTreeData = modifyLib (condTreeData ctree),
+            condTreeConstraints = ensureDeps (condTreeConstraints ctree)
         }
         modifyLib l = l {
             exposedModules = modifyExposed (exposedModules l)            

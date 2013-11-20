@@ -73,8 +73,6 @@ library
                  , conduit                       >= 1.0
                  , monad-logger                  >= 0.3
                  , fast-logger                   >= 0.3
-                 , esqueleto                     >= 1.2
-                 , yesod-persistent              >= 1.2
                  , unordered-containers
                  , blaze-builder
                  , http-types   
@@ -82,12 +80,6 @@ library
                  , resourcet
                  , attoparsec
                  , time
-                 , unordered-containers
-                 , wai
-                 , resourcet
-                 , http-types
-                 , attoparsec
-                 , blaze-builder
                  , vector
                  , esqueleto
                  , yesod-persistent
