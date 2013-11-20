@@ -26,6 +26,8 @@ generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pf
 ensureDeps :: [Dependency] -> [Dependency]
 ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) AnyVersion 
                        | name <- ["unordered-containers",
+                                  "transformers",
+                                  "tagged",
                                   "blaze-builder",
                                   "http-types",
                                   "wai",

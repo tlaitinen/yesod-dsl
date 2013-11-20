@@ -10,9 +10,17 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Handler.Example 
-    ( module Handler.Example.Enums, module Handler.Example.Internal ) where
+    ( module Handler.Example.Enums, module Handler.Example.Internal, module Handler.Example.Routes ) where
 import Handler.Example.Enums
 import Handler.Example.Internal
+import Handler.Example.RouteUsers
+import Handler.Example.RouteUsersUser
+import Handler.Example.RouteBlogposts
+import Handler.Example.RouteBlogpostsBlogPost
+import Handler.Example.RouteComments
+import Handler.Example.RouteCommentsComment
+
+import Handler.Example.Routes
 import Yesod.Core
 import Yesod.Auth
 import Yesod.Persist
