@@ -453,5 +453,14 @@ Otherwise, the following steps are required:
 Due to the GHC stage restriction (and ghc's tendency to blow up when optimizing large Haskell modules), 
 the code generator generates a number of Haskell modules that constitute a Yesod subsite: Handler/ModuleName.hs, Handler/ModuleName/Enums.hs, Handler/ModuleName/Routes.hs, Handler/ModuleName/Esqueleto.hs, Handler/ModuleName/Route*.hs, and Handler/ModuleName/Internal.hs.
 For the example above, the result can be examined in the following links:
-
+ * [Handler.Example](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example.hs)
+ * [Handler.Example.Enums](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Enums.hs)
+ * [Handler.Example.Esqueleto](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Esqueleto.hs)
+ * [Handler.Example.Internal](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Internal.hs)
+ * [Handler.Example.RouteBlogposts](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteBlogposts.hs)
+ * [Handler.Example.RouteComments](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteComments.hs)
+ * [Handler.Example.RouteCommentsComment](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteCommentsComment.hs)
+ * [Handler.Example.RouteUsers](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteUsers.hs)
+ * [Handler.Example.RouteUsersUser](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteUsersUser.hs)
+ * [Handler.Example.Routes](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Routes.hs)
 
