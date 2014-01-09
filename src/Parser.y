@@ -115,6 +115,7 @@ import System.Exit
     auth { Tk _ TAuth }
     return { Tk _ TReturn }
     require { Tk _ TRequire }
+    underscore { Tk _ TUnderScore }
 %%
 
 dbModule : maybeModuleName 
@@ -197,7 +198,8 @@ handlerParam : public { Public }
              | maybeBindResult insert upperId from inputJson { Insert $3 (Just $5) $1 }
              | maybeBindResult insert upperId { Insert $3 Nothing $1 }
              | defaultfiltersort { DefaultFilterSort }
-             | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9) }
+             | if param stringval equals localParam then joins where expr { IfFilter ($3 ,(reverse $7) ,$9, True) }
+             | if param stringval equals underscore then joins where expr { IfFilter ($3, (reverse $7), $9, False) }
              | return outputJson { Return $2 }
              | require upperId as lowerId joins where expr { Require (SelectQuery [] ($2,$4) (reverse $5) (Just $7) [] (0,0)) }
 maybeBindResult: { Nothing }

@@ -170,3 +170,10 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
             j <- defaultFilterJson
             v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
             return (filterJsonMsg_value v)
+hasDefaultFilter maybeGetParam defaultFilterJson p = isJust $
+    maybe maybeGetParam Just getFilter
+    where
+        getFilter = do
+            j <- defaultFilterJson
+            v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
+            return (filterJsonMsg_value v)

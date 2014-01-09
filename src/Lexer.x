@@ -116,6 +116,7 @@ tokens :-
     @fieldName { mkTvar (TLowerId . stripQuotes) }
     @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
      "$$"  { mkT TLocalParam }
+     "_" { mkT TUnderScore }
      "now()" { mkT TNow }
 
 {
@@ -221,6 +222,7 @@ data TokenType = TSemicolon
            | TAuth
            | TReturn
            | TRequire
+           | TUnderScore
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

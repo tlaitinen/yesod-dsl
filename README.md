@@ -320,7 +320,7 @@ route /pathPiece[/pathPiece]* {
                [limit N [offset M]];
 
         [default-filter-sort;]
-        [if param "paramName" = $$ then
+        [if param "paramName" = [$$ | _] then
             [inner join EntityName as entityAlias on entityAlias.field binOp entityAlias.field]*
             [where expr];]*
     }]
@@ -389,8 +389,9 @@ sub_select: (select entityAlias.fieldName
 where:
  * $i refers to the *i*th parameter in the route path
  * *$auth.id* refers to the return value of requireAuthId
- * *$auth.field$ refers to the field of the entity User returned by requireAuth
+ * *$auth.field* refers to the field of the entity User returned by requireAuth
  * *$$* refers to the named parameter in the query string
+ * *_* is a value for a parameter that is required but not used
  * request refers to the JSON object parsed from the request body
 
 If *public;* is present, then handler can be accessed without authenticating, 

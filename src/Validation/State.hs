@@ -202,7 +202,7 @@ vHandlerParam (Require sq) = do
             withScope  "where expression" $ vExpr e
         Nothing -> return ()    
 
-vHandlerParam (IfFilter (vn,joins,e)) = do
+vHandlerParam (IfFilter (vn,joins,e,useFlag)) = do
     withScope "if param" $ do
         declareLocal vn VReserved
         forM_ joins vJoin

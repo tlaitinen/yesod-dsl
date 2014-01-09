@@ -112,7 +112,8 @@ data HandlerParam = Public
                   | Return [OutputField]
                   | Require SelectQuery
                   deriving (Show, Eq) 
-type IfFilterParams = (ParamName,[Join],Expr)
+type UseParamFlag = Bool    
+type IfFilterParams = (ParamName,[Join],Expr,UseParamFlag)
 
 data SelectQuery = SelectQuery {
     sqFields       :: [SelectField],

@@ -30,7 +30,7 @@ handlerErrors m = (concatMap notAllowedError $
         allowed DeleteHandler (Require _) = True
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (Select _) = True
-        allowed GetHandler (IfFilter (_, joins, _)) = onlyInnerJoins joins
+        allowed GetHandler (IfFilter (_, joins, _,_)) = onlyInnerJoins joins
         allowed GetHandler (Require _) = True
         allowed _ _ = False
 

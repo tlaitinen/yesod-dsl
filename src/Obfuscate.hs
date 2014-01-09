@@ -55,7 +55,7 @@ obfuscate dbs = [ (fp,f m) | (fp,m) <- dbs ]
         handlerParams = map oParam $ handlerParams h
     }
     oParam (Select sq) = Select (oSelectQuery sq)
-    oParam (IfFilter (pn,joins,expr)) = IfFilter (hash pn, map oJoin joins,oExpr expr)
+    oParam (IfFilter (pn,joins,expr, useFlag)) = IfFilter (hash pn, map oJoin joins,oExpr expr, useFlag)
     oParam (DeleteFrom en vn expr) = DeleteFrom (hash en) vn (maybe Nothing (Just . oExpr) expr)
     oParam (GetById en ifr vn) = GetById (hash en) (oInputFieldRef ifr) vn
     oParam (Update en ifr ifs) = Update (hash en) (oInputFieldRef ifr)

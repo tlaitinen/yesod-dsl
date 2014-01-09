@@ -1,1 +1,1 @@
-    filterParam_~{pn} <- lookupGetParam "~{pn}"
+    (filterParam_~{pn}~{forceType}) <- lookupGetParam "~{pn}"

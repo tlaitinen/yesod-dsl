@@ -1,0 +1,5 @@
+        if hasDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" 
+            then ~{maybeFrom} 
+~{indent 8 (concatMap (implicitJoinExpr m ctx) joins)}
+                where_ $ ~{hsExpr ctx expr}
+            else return ()

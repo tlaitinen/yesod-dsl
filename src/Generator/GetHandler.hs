@@ -20,7 +20,8 @@ import Generator.Require
 getHandlerParam :: Module -> Route -> Context -> HandlerParam -> String
 getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getHandlerParam m r ps (IfFilter (pn,_,_)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
+getHandlerParam m r ps (IfFilter (pn,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
+    where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
 getHandlerParam _ _ _ _ = ""      
 
 
@@ -79,7 +80,9 @@ baseDefaultFilterSort :: Module -> Context -> String
 baseDefaultFilterSort = defaultFilterFields
 
 baseIfFilter :: Module -> Context -> VariableName -> IfFilterParams -> String
-baseIfFilter m ctx' selectVar (pn,joins,expr) = T.unpack $(codegenFile "codegen/base-if-filter.cg")
+baseIfFilter m ctx' selectVar (pn,joins,expr,useFlag) = T.unpack $ if useFlag
+    then $(codegenFile "codegen/base-if-filter.cg")
+    else $(codegenFile "codegen/base-if-filter-nouse.cg")
     where ctx = ctx' { ctxNames = ctxNames ctx' 
               ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins] }
           maybeFrom = if null joins 
@@ -158,7 +161,7 @@ sqFieldRefs sq = concatMap joinFieldRefs (sqJoins sq) ++ case sqWhere sq of
 getHandlerParamFieldRefs :: HandlerParam-> [FieldRef]
 getHandlerParamFieldRefs h = case h of
     (Select sq) -> sqFieldRefs sq
-    (IfFilter (_,joins,e)) -> concatMap joinFieldRefs joins ++ exprFieldRefs e
+    (IfFilter (_,joins,e,_)) -> concatMap joinFieldRefs joins ++ exprFieldRefs e
     _ -> []
 
 getHandlerMaybeAuth :: [HandlerParam] -> String
