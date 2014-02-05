@@ -14,10 +14,12 @@ import Control.Monad
 import System.IO
 import Obfuscate
 
-data Flag = Obfuscate deriving Eq
+data Flag = Obfuscate 
+          | FayPath String deriving Eq
 options :: [OptDescr Flag]
 options = [
-    Option ['o']     ["obfuscate"] (NoArg Obfuscate)       "obfuscated output"
+    Option ['o']     ["obfuscate"] (NoArg Obfuscate)        "obfuscated output",
+    Option ['f']     ["fay"] (ReqArg FayPath "FILE") "translate DSL definition to Fay compatible code and store it in FILE"
   ]
 
 header = "Usage: yesod-dsl FILE"
@@ -36,5 +38,10 @@ main = do
             let ast  = implementClasses . mergeModules $ dbs
             let errors = validate ast
             if null errors 
-                then generate path $ ast 
+                then do
+                    generate path $ ast 
+                    forM_ o (processFlag ast)
                 else hPutStrLn stderr errors
+        processFlag ast (FayPath path) = genFay path ast
+            
+        processFlag _ _ = return ()

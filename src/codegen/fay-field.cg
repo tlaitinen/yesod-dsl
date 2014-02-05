@@ -1,0 +1,5 @@
+Field {
+    fieldOptional = ~{show $ fieldOptional f},
+    fieldName     = "~{fieldName f}",
+    fieldContent  = ~{show $ fieldContent f}
+}

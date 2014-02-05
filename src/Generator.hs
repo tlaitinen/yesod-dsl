@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator (generate, hsRouteName) where
+module Generator (generate, hsRouteName, genFay) where
 import Prelude hiding (readFile)
 import System.IO (FilePath, writeFile)
 import System.IO.Strict (readFile)
@@ -24,6 +24,7 @@ import Generator.Validation
 import Generator.Handlers
 import Generator.EsqueletoInstances
 import Generator.Cabal
+import Generator.Fay
 import SyncFile
 
 writeRoute :: Module -> Route -> IO ()
@@ -60,5 +61,7 @@ generate path m = do
 
                             
 
-
+genFay :: FilePath -> Module -> IO ()
+genFay path m = do
+    syncFile path $ fay m
 

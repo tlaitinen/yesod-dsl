@@ -1,0 +1,6 @@
+Clsas {
+    className = "~{className c}",
+    classFields = [
+~{indent 8 $ intercalate ",\n" (map trField (classFields c))}        
+    ]
+}

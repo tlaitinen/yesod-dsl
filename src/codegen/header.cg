@@ -21,7 +21,7 @@ import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)
 import qualified Database.Persist as P
 import Database.Persist.TH
 import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
-import Yesod.Core
+import Yesod.Core hiding (fileName, fileContentType)
 import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH

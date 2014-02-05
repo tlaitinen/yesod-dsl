@@ -34,20 +34,21 @@ type EnumName = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-               | FTZonedTime deriving (Eq)
+               | FTZonedTime deriving (Eq,Show)
 
-instance Show FieldType where
-    show FTWord32 = "Word32"
-    show FTWord64 = "Word64"
-    show FTInt32 = "Int32"
-    show FTInt64 = "Int64"
-    show FTText = "Text"
-    show FTBool = "Bool"
-    show FTDouble = "Double"
-    show FTTimeOfDay = "TimeOfDay"
-    show FTDay = "Day"
-    show FTUTCTime = "UTCTime"
-    show FTZonedTime = "ZonedTime"
+fieldTypeToHsType :: FieldType -> String
+fieldTypeToHsType ft = case ft of
+    FTWord32 -> "Word32"
+    FTWord64 -> "Word64"
+    FTInt32 -> "Int32"
+    FTInt64 -> "Int64"
+    FTText -> "Text"
+    FTBool -> "Bool"
+    FTDouble -> "Double"
+    FTTimeOfDay -> "TimeOfDay"
+    FTDay -> "Day"
+    FTUTCTime -> "UTCTime"
+    FTZonedTime -> "ZonedTime"
 
 type FieldName = String 
 type PathName = String
@@ -246,7 +247,7 @@ data Field = Field {
 
 baseFieldType :: Field -> String
 baseFieldType f = case fieldContent f of
-    (NormalField ft _) -> show ft
+    (NormalField ft _) -> fieldTypeToHsType ft
     (EntityField en) -> en ++ "Id"
     (EnumField en) -> en
 
