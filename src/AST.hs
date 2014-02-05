@@ -271,13 +271,22 @@ data FieldValue = StringValue String
                 | FloatValue Double
                 | BoolValue Bool
                 | NothingValue
-                deriving (Eq)
-instance Show FieldValue where
-    show (StringValue s) = "\"" ++ s ++ "\""
-    show (IntValue i) = show i
-    show (FloatValue d) = show d
-    show (BoolValue b) = show b
-    show NothingValue = "nothing"
+                deriving (Show, Eq)
+fieldValueToSql :: FieldValue -> String    
+fieldValueToSql fv = case fv of
+    (StringValue s) -> "'" ++ s ++ "'"
+    (IntValue i) -> show i
+    (FloatValue d) -> show d
+    (BoolValue b) -> show b
+    NothingValue -> "NULL"
+   
+fieldValueToEsqueleto :: FieldValue -> String    
+fieldValueToEsqueleto fv = case fv of
+    (StringValue s) -> "\"" ++ s ++ "\""
+    (IntValue i) -> show i
+    (FloatValue d) -> show d
+    (BoolValue b) -> show b
+    NothingValue -> "nothing"
 
 fieldValueToHs :: FieldValue -> String
 fieldValueToHs fv = case fv of

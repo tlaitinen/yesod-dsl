@@ -76,8 +76,8 @@ hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing f ++ ")"
 hsValExpr :: Context -> BinOp -> ValExpr -> String
 hsValExpr ctx op ve =  case ve of
     FieldExpr fr -> hsFieldRef ctx (Just op) fr
-    ConstExpr (fv@(NothingValue)) -> show fv
-    ConstExpr fv ->  "(val " ++ show fv ++  ")" 
+    ConstExpr (fv@(NothingValue)) -> fieldValueToEsqueleto fv
+    ConstExpr fv ->  "(val " ++ fieldValueToEsqueleto fv ++  ")" 
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
 
 boolToInt :: Bool -> Int

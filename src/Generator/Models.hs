@@ -15,10 +15,8 @@ persistFieldType f = baseFieldType f
                    ++ " " ++ (boolToMaybe . fieldOptional) f
                    ++ (maybeDefault . fieldDefault) f
                    ++ (maybeDefaultNull f)
-    where maybeDefault (Just d) = " default='" ++ stripQuotes (show d) ++ "'"
+    where maybeDefault (Just d) = " default=" ++ (fieldValueToSql d) 
           maybeDefault _ = " "
-          stripQuotes ('"':xs)  = take ((length xs) -1) xs
-          stripQuotes xs = xs
           maybeDefaultNull (Field True _ (EntityField _)) = " default=NULL"
           maybeDefaultNull _ = ""
 

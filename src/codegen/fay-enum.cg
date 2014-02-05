@@ -1,4 +1,4 @@
 EnumType {
     enumName = "~{enumName e}",
-    enumValues = [~{intercalate ", " (map show (enumValues e))}],
+    enumValues = [~{intercalate ", " (map show (enumValues e))}]
 }

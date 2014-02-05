@@ -5,7 +5,7 @@ data Module = Module {
     modClasses   :: [Class],
     modEnums     :: [EnumType],
     modRoutes    :: [Route]
-} deriving (Show)
+}
 
 type ClassName = String
 type ParamName = String
@@ -49,53 +49,36 @@ routePathParams = (filter isPathParam) . routePath
     where isPathParam (PathId _) = True
           isPathParam _ = False    
 
-handlerName :: Route -> Handler -> String
-handlerName r h = routeName (routePath r) ++ " " ++ show (handlerType h)
-
-routeName :: [PathPiece] -> String
-routeName ps = "/" ++ intercalate "/" (map show ps)
 
 data PathPiece = PathText String
                | PathId EntityName
                deriving (Eq)
-instance Show PathPiece where
-    show (PathText s) = s
-    show (PathId en) = "#" ++ en ++ "Id"
     
-
-entityFieldByName :: Entity -> FieldName -> Field
-entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
-                               (find (\f -> fieldName f == fn) (entityFields e))
-
 data EnumType = EnumType {
     enumName :: String,
     enumValues :: [String]
-} deriving (Show, Eq)
+} deriving (Eq)
 
 data Class = Class {
     className    :: String,
     classFields  :: [Field]
-} deriving (Show, Eq)
-
-type DefaultValue = String
-type IsListFlag = Bool
+} deriving (Eq)
 
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
                     | EnumField EnumName
-                deriving (Show,Eq)
+                deriving (Eq)
   
-
 data Field = Field {
     fieldOptional :: Bool,
     fieldName     :: FieldName,
     fieldContent  :: FieldContent
-} deriving (Show,Eq)
+} deriving (Eq)
 
 type FunctionName = String
 data FieldOption = FieldDefault FieldValue
                  | FieldCheck FunctionName
-                 deriving (Show, Eq)
+                 deriving (Eq)
 
 data FieldValue = StringValue String
                 | IntValue Int
