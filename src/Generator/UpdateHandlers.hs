@@ -116,6 +116,9 @@ getJsonAttrs (Update _ fr io) = maybeToList (inputFieldRefToJsonAttr fr)
                             ++ (mapMaybe inputFieldToJsonAttr (fromMaybe [] io))
 getJsonAttrs (Insert _ io _) = mapMaybe inputFieldToJsonAttr (fromMaybe [] io)
 getJsonAttrs (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
+getJsonAttrs (Require sq) = let
+    exprs = catMaybes $ [sqWhere sq] ++ [joinExpr j| j <- sqJoins sq]
+    in concatMap exprToJsonAttrs exprs
 getJsonAttrs _ = []
 
 updateHandlerReadJsonFields :: Module -> Route -> [HandlerParam] -> String
