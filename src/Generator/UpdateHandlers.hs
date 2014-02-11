@@ -52,9 +52,12 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
     where 
         maybeInput = matchInputField ifields (fieldName f)
         notNothing = case maybeInput of
-           Just (InputFieldConst NothingValue) -> False
-           _ -> True 
-        promoteJust = fieldOptional f && isJust maybeInput && notNothing
+            Just (InputFieldConst NothingValue) -> False
+            _ -> True 
+        notInputField = case maybeInput of
+            Just (InputFieldNormal _) -> False
+            _ -> True
+        promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
         content = case maybeInput of
             Just (InputFieldNormal fn) -> T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             Just InputFieldAuthId -> T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
