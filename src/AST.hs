@@ -241,6 +241,7 @@ data FieldContent = NormalField FieldType [FieldOption]
 
 data Field = Field {
     fieldOptional :: Bool,
+    fieldInternal :: Bool,
     fieldName     :: FieldName,
     fieldContent  :: FieldContent
 } deriving (Show,Eq)

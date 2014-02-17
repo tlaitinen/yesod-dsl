@@ -10,6 +10,7 @@ import Prelude hiding (catch)
 import Control.Exception hiding (Handler)
 import System.Exit
 
+
 }
 
 %name moduleDefs
@@ -115,6 +116,7 @@ import System.Exit
     auth { Tk _ TAuth }
     return { Tk _ TReturn }
     require { Tk _ TRequire }
+    internal { Tk _ TInternal }
     underscore { Tk _ TUnderScore }
 %%
 
@@ -313,9 +315,9 @@ classDef : class upperId lbrace
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : lowerId maybeMaybe fieldType fieldOptions { Field $2 $1 (NormalField $3 (reverse $4)) } 
-      | lowerId maybeMaybe entityId { Field $2 $1 (EntityField $3) }
-      | lowerId maybeMaybe upperId { Field $2 $1 (EnumField $3) }
+field : lowerId maybeMaybe fieldType fieldOptions fieldFlags { Field $2 (FieldInternal `elem` $5) $1 (NormalField $3 (reverse $4)) } 
+      | lowerId maybeMaybe entityId fieldFlags { Field $2 (FieldInternal `elem` $4) $1 (EntityField $3) }
+      | lowerId maybeMaybe upperId fieldFlags { Field $2 (FieldInternal `elem` $4) $1 (EnumField $3) }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }
@@ -324,6 +326,12 @@ fieldOptionsList : fieldOption { [$1] }
 fieldOption : check lowerId { FieldCheck $2 }
             | default value { FieldDefault $2 }
 
+fieldFlags : { [] }
+           | fieldFlagList { $1 }
+fieldFlagList : fieldFlag { [$1] }
+              | fieldFlagList fieldFlag { $2 : $1 }
+fieldFlag : internal { FieldInternal }              
+            
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }
       | floatval { FloatValue $1 }
@@ -363,12 +371,14 @@ maybeMaybe : { False }
               | maybe { True }
 
 {
+
 data ModDef = EntityDef Entity
            | ClassDef Class
            | EnumDef EnumType
            | RouteDef Route
            deriving (Show)
 
+data FieldFlag = FieldInternal deriving (Eq)
 getEntities :: [ModDef] -> [Entity]
 getEntities defs = mapMaybe (\d -> case d of (EntityDef e) -> Just e ; _ -> Nothing) defs
 

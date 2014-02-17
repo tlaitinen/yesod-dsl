@@ -22,7 +22,7 @@ fieldErrors m = (concatMap fieldError $ [ (entityName e, entityLoc e, f)
                                          func <- fieldChecks f])
     
         isClass en = (not . null) [ c | c <- modClasses m, className c == en]
-        fieldError (i, l, (Field False n (EntityField en)) )
+        fieldError (i, l, (Field False _ n (EntityField en)) )
             | isClass en = "Non-maybe reference to class " ++ en
                          ++ " is not allowed in " ++ i ++ "." ++ n
                          ++ " in " ++ show l ++ "\n"

@@ -3,6 +3,7 @@ module Validation.State (validate) where
 
 import AST
 import Control.Monad.State
+import Data.Maybe (isNothing)
 import qualified Data.Map as Map
 import qualified Data.List as L
 type Info = String
@@ -248,9 +249,9 @@ vHandlerParam (Insert en mfs mbv) = do
             case mfs of
                 Just ifs -> do
                     forM_ [ ifr | (_,ifr) <- ifs] $ vInputFieldRef
-                    case [ fieldName f | f <- entityFields e ] L.\\ 
+                    case [ fieldName f | f <- entityFields e, (not . fieldOptional) f, isNothing (fieldDefault f) ] L.\\ 
                             [ fn | (fn,_) <- ifs ] of
-                        fs@(_:_) -> vError $ "Missing required fields : " ++ (show fs)
+                        fs@(_:_) -> vError $ "Missing required fields without default value: " ++ (show fs)
                         _ -> return ()    
                     forM_ ifs $ \(fn,_) -> do
                         declareLocal fn VReserved
@@ -318,13 +319,16 @@ vExpr (BinOpExpr ve1 op ve2) = do
      
     return ()
 
-ensureField :: String -> String -> Entity -> Validation
-ensureField vn fn e = do
+ensureFieldWith :: (Field -> Validation) -> String -> String -> Entity -> Validation
+ensureFieldWith vFunc vn fn e = do
     case L.find (\f -> fieldName f == fn) $ entityFields e of
-        Just f -> return ()
+        Just f -> vFunc f
         Nothing -> vError $ "Entity " ++ entityName e ++ " referenced by "
                            ++ vn ++ "." ++ fn 
                            ++ " does not have the field " ++ fn
+ensureField :: String -> String -> Entity -> Validation
+ensureField = ensureFieldWith (\_ -> return ())
+                           
 
 ensureEnumValue :: String -> EnumType -> Validation
 ensureEnumValue vn e = do
@@ -336,7 +340,7 @@ ensureEnumValue vn e = do
                            
 vFieldRef :: FieldRef -> Validation
 vFieldRef (FieldRefId vn) = vEntityRef vn 
-vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn
+vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn 
 vFieldRef (FieldRefSubQuery sq) = do
     withScope "sub-select" $ do
         let (en,vn) = sqFrom sq
@@ -367,7 +371,11 @@ vSelectField (SelectField vn fn man) = do
     case man of
         Just an -> declareLocal ("select result field : " ++ an) VReserved 
         _ -> declareLocal ("select result field : " ++ fn) VReserved
-    withLookupEntity vn $ ensureField vn fn
+    withLookupEntity vn $ ensureFieldWith notInternal vn fn
+        where notInternal f = if fieldInternal f 
+                then vError $ "Select cannot return the internal field '" ++ vn ++ "." ++ fn ++ "'"
+                else return ()
+                
 vSelectField (SelectIdField vn man) = do
    case man of
         Just an -> declareLocal ("select result field : " ++ an) VReserved 

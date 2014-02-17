@@ -88,9 +88,13 @@ fieldRefMaybeLevel :: Context -> FieldRef -> Int
 fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
 fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn) + boolToInt (fromMaybe False optional)
     where optional = ctxLookupField ctx vn fn >>= Just . fieldOptional
-fieldRefMaybeLevel ctx (FieldRefSubQuery sq) = fromMaybe 0 $ listToMaybe $ map (fieldRefMaybeLevel ctx) fields
-    where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
+fieldRefMaybeLevel ctx (FieldRefSubQuery sq) = fromMaybe 0 $ listToMaybe $ map (fieldRefMaybeLevel ctx') fields
+    where fields = concatMap (selectFieldRefs m ctx') (sqFields sq)
           m = ctxModule ctx
+          ctx' = ctx {
+               ctxNames = sqAliases sq
+          } 
+
  
 fieldRefMaybeLevel ctx _ = 0
 
@@ -118,7 +122,8 @@ mapJoinExpr m _ _ = ""
 
 selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
 selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
-                                                f <- entityFields e ]
+                                                f <- entityFields e,
+                                                fieldInternal f == False ]
     where  
            en = fromJust $ ctxLookupEntity ctx vn
            e = fromJust $ lookupEntity m en    

@@ -17,12 +17,13 @@ classLookup classes name =  find (\i -> name == className i) classes
 
 
 expandClassField :: Module -> Entity ->  Field -> [Field]
-expandClassField m e f@(Field _ _ (EntityField iName)) 
+expandClassField m e f@(Field _ internal _ (EntityField iName)) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to class not allowed"
     | otherwise = [ mkField re | re <- modEntities m,  
                                  iName `elem` (entityInstances re) ]
     where mkField re = Field {
             fieldOptional = True,
+            fieldInternal = internal,
             fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
             fieldContent = EntityField (entityName re)
         } 

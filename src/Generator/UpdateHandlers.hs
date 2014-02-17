@@ -47,8 +47,15 @@ updateHandlerRunDB m r ps (pId,p) = indent 4 (updateHandlerDecode m r ps (pId,p)
         maybeBindResult (Just vn) = "result_" ++ vn ++ " <- "
         maybeBindResult _ = ""
 
-mapJsonInputField :: [InputField] -> (Entity,Field) -> String
-mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
+defaultFieldValue :: Field -> String
+defaultFieldValue f = case fieldDefault f of
+    Just fv -> fieldValueToHs fv
+    Nothing -> if fieldOptional f
+        then "Nothing"
+        else let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+
+mapJsonInputField :: [InputField] -> Bool -> (Entity,Field) -> String
+mapJsonInputField ifields isNew (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
     where 
         maybeInput = matchInputField ifields (fieldName f)
         notNothing = case maybeInput of
@@ -66,7 +73,8 @@ mapJsonInputField ifields (e,f) = T.unpack $(codegenFile "codegen/map-input-fiel
             Just (InputFieldConst v) -> T.unpack $(codegenFile "codegen/map-input-field-const.cg")
             Just (InputFieldNow) -> T.unpack $(codegenFile "codegen/map-input-field-now.cg")
             Just (InputFieldLocalParam vn) -> T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
-            Nothing -> T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
+            Nothing -> if isNew then defaultFieldValue f
+                                else T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
 matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef
 matchInputField ifields fn =  listToMaybe [ inp | (pn,inp) <- ifields, pn == fn ]
 prepareJsonInputField :: FieldName -> String
@@ -78,17 +86,15 @@ updateHandlerDecode m r ps (pId,p) = case p of
     Update en fr io -> readInputObject (fromJust $ lookupEntity m en) io (Just fr)
     Insert en io _ -> readInputObject (fromJust $ lookupEntity m en) io Nothing
     _ -> ""
-    where readInputObject e (Just fields) fr = T.unpack $(codegenFile "codegen/read-input-object-fields.cg")
-          
-
+    where readInputObject e (Just fields) fr =  T.unpack $(codegenFile "codegen/read-input-object-fields.cg")           
           readInputObject e Nothing _ = T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
 
           maybeSelectExisting e fields (Just fr)
               | Nothing `elem` [ matchInputField fields (fieldName f) 
                                  | f <- entityFields e ] = let ctx = Context { ctxNames = [], ctxModule = m, ctxHandlerParams = ps }  in T.unpack $(codegenFile "codegen/select-existing.cg")
               | otherwise = ""
-          maybeSelectExisting _ _ _ = ""    
-          mapFields e fields = intercalate ",\n" $ map (mapJsonInputField fields) 
+          maybeSelectExisting e _ _ = ""
+          mapFields e fields isNew = intercalate ",\n" $ map (mapJsonInputField fields isNew) 
                                       [ (e,f) | f <- entityFields e ]
 fieldRefToJsonAttr :: FieldRef -> Maybe FieldName
 fieldRefToJsonAttr (FieldRefRequest fn) = Just fn
@@ -114,20 +120,25 @@ exprToJsonAttrs (NotExpr e) = exprToJsonAttrs e
 exprToJsonAttrs (ListOpExpr fr1 _ fr2) = mapMaybe fieldRefToJsonAttr [fr1,fr2]
 exprToJsonAttrs (BinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 
-getJsonAttrs :: HandlerParam -> [FieldName]
-getJsonAttrs (Update _ fr io) = maybeToList (inputFieldRefToJsonAttr fr)
-                            ++ (mapMaybe inputFieldToJsonAttr (fromMaybe [] io))
-getJsonAttrs (Insert _ io _) = mapMaybe inputFieldToJsonAttr (fromMaybe [] io)
-getJsonAttrs (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
-getJsonAttrs (Require sq) = let
+getJsonAttrs :: Module -> HandlerParam -> [FieldName]
+getJsonAttrs _ (Update _ fr (Just fields)) = maybeToList (inputFieldRefToJsonAttr fr) ++ (mapMaybe inputFieldToJsonAttr fields)
+getJsonAttrs m (Update en fr Nothing) = maybeToList (inputFieldRefToJsonAttr fr) ++ case lookupEntity m en of
+    Just e -> [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+    _ -> []
+getJsonAttrs _ (Insert _ (Just fields) _) = mapMaybe inputFieldToJsonAttr fields
+getJsonAttrs m (Insert en Nothing _) =  case lookupEntity m en of
+    Just e -> [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+    _ -> []
+getJsonAttrs _ (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
+getJsonAttrs _ (Require sq) = let
     exprs = catMaybes $ [sqWhere sq] ++ [joinExpr j| j <- sqJoins sq]
     in concatMap exprToJsonAttrs exprs
-getJsonAttrs _ = []
+getJsonAttrs _ _ = []
 
 updateHandlerReadJsonFields :: Module -> Route -> [HandlerParam] -> String
 updateHandlerReadJsonFields m r ps = concatMap prepareJsonInputField jsonAttrs
     where
-        jsonAttrs = nub $ concatMap getJsonAttrs ps
+        jsonAttrs = nub $ concatMap (getJsonAttrs m) ps
 
 handlerParamToInputFieldRefs :: HandlerParam -> [InputFieldRef]
 handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr') <- fromMaybe [] io]

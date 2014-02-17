@@ -105,6 +105,7 @@ tokens :-
     "deriving" { mkT TDeriving }
     "$request" { mkT TRequest }
     "require" { mkT TRequire }
+    "internal" { mkT TInternal }
      "return" { mkT TReturn }
     "$auth"  { mkT TAuth }
     $digit+ 		{ mkTvar (TInt . read) }
@@ -221,6 +222,7 @@ data TokenType = TSemicolon
            | TNow
            | TAuth
            | TReturn
+           | TInternal
            | TRequire
            | TUnderScore
     deriving (Show)

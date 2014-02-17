@@ -5,11 +5,7 @@ import System.Console.GetOpt
 import ModuleMerger
 import Validation
 import ClassImplementer
-import AST
-import Data.List
-import Data.Maybe
 import Generator
-import System.Directory
 import Control.Monad
 import System.IO
 import Obfuscate
@@ -22,7 +18,10 @@ options = [
     Option ['f']     ["fay"] (ReqArg FayPath "FILE") "translate DSL definition to Fay compatible code and store it in FILE"
   ]
 
+header :: String
+
 header = "Usage: yesod-dsl FILE"
+main :: IO ()
 main = do
     args <- getArgs
     case getOpt RequireOrder options args of

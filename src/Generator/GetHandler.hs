@@ -129,9 +129,10 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
     where 
           ctx = Context { ctxNames = sqAliases sq, ctxModule = m, ctxHandlerParams = [] }
           fieldNames = zip (concatMap expand (sqFields sq)) ([1..]:: [Int])
-          expand (SelectAllFields vn) = map fieldName $ entityFields e
+          expand (SelectAllFields vn) = map fieldName $ publicFields
                 where en = fromJust $ ctxLookupEntity ctx vn
                       e = fromJust $ lookupEntity m en    
+                      publicFields = [ f | f <- entityFields e, (not . fieldInternal) f ]
           expand (SelectField _ fn an') = [ maybe fn id an' ]
           expand (SelectIdField _ an') = [ maybe "id" id an' ]
           resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
