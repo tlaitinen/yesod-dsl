@@ -18,6 +18,7 @@ import Control.Monad
 import Data.Char
 
 import Generator.Models
+import Generator.EntityFactories
 import Generator.Classes
 import Generator.Routes
 import Generator.Validation
@@ -48,6 +49,7 @@ generate path m = do
     syncFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
         T.unpack $(codegenFile "codegen/header.cg")
             ++ models m
+            ++ entityFactories m
             ++ classes m
             ++ validation m
             ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))      

@@ -7,6 +7,7 @@ import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
+import Generator.Common
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
 
@@ -22,8 +23,6 @@ persistFieldType f = baseFieldType f
 
 
 
-entityFieldName :: Entity -> Field -> String
-entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 entityFieldTypeName :: Entity -> Field -> String
 entityFieldTypeName e f = upperFirst $ entityFieldName e f
 enum :: EnumType -> String

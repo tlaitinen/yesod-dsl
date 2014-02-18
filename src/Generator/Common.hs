@@ -1,4 +1,5 @@
 module Generator.Common where
+import AST
 maybeHsJust :: Bool -> String -> String
 maybeHsJust True v = "(Just " ++ v ++ ")"
 maybeHsJust False v = v
@@ -11,4 +12,6 @@ makeJust n t
 indent :: Int -> String -> String
 indent x = unlines . (map ((replicate x ' ')++)) . lines
 
+entityFieldName :: Entity -> Field -> String
+entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 

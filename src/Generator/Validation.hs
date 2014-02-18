@@ -9,6 +9,7 @@ import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
 import Generator.Models
+import Generator.Common
 
 validationFieldCheck :: Entity -> Field -> FunctionName -> String
 validationFieldCheck e f func = rstrip $ T.unpack $(codegenFile "codegen/validation-field.cg")

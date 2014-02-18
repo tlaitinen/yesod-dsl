@@ -1,0 +1,3 @@
+new~{entityName e} :: ~{intercalate " -> " ((map baseFieldType requiredFields) ++ [entityName e])}
+new~{entityName e} ~{intercalate " " (map fieldParamName requiredFields)} = ~{entityName e} {
+~{indent 4 $ intercalate ",\n" $ map fieldSetter (entityFields e)}}    

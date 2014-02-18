@@ -10,6 +10,7 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Generator.Models
+import Generator.Common
 
 classFieldName :: Class -> Field -> String
 classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
