@@ -106,6 +106,7 @@ tokens :-
     "$request" { mkT TRequest }
     "require" { mkT TRequire }
     "internal" { mkT TInternal }
+    "define" { mkT TDefine }
      "return" { mkT TReturn }
     "$auth"  { mkT TAuth }
     $digit+ 		{ mkTvar (TInt . read) }
@@ -194,6 +195,7 @@ data TokenType = TSemicolon
            | TDelete
            | TPublic
            | TSelect
+           | TDefine
            | TFrom
            | TAnd
            | TOr

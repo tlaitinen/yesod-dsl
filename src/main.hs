@@ -9,6 +9,7 @@ import Generator
 import Control.Monad
 import System.IO
 import Obfuscate
+import ExpandMacros
 
 data Flag = Obfuscate 
           | FayPath String deriving Eq
@@ -34,7 +35,8 @@ main = do
         main' o path = do
             dbs' <- parse path
             let dbs = if Obfuscate `elem` o then obfuscate dbs' else dbs'
-            let ast  = implementClasses . mergeModules $ dbs
+            let ast  = expandMacros . implementClasses . mergeModules $ dbs
+
             let errors = validate ast
             if null errors 
                 then do

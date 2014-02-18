@@ -118,14 +118,15 @@ import System.Exit
     require { Tk _ TRequire }
     internal { Tk _ TInternal }
     underscore { Tk _ TUnderScore }
+    define { Tk _ TDefine }
 %%
 
 dbModule : maybeModuleName 
            imports defs { Module $1 (reverse $2) ((reverse . getEntities) $3) 
                                     ((reverse . getClasses) $3)
                                     ((reverse . getEnums) $3)
-                                    ((reverse . getRoutes) $3)}
-
+                                    ((reverse . getRoutes) $3)
+                                    ((reverse . getDefines) $3) }
 
 maybeModuleName : { Nothing }
                 | module upperId semicolon { Just $2 }
@@ -139,7 +140,19 @@ def : routeDef     { RouteDef $1 }
       | entityDef      { EntityDef $1 } 
       | classDef      { ClassDef $1 }
       | enumDef       { EnumDef $1 }
+      | defineDef     { DefineDef $1 }
 
+defineDef : define lowerId lparen maybeEmptyLowerIdList rparen equals defineContent semicolon { Define $2 (mkLoc $1) $4 $7 } 
+
+maybeEmptyLowerIdList : { [] }
+        | lowerIdList { (reverse $1) }
+lowerIdList : lowerId { [$1] }
+            | lowerIdList comma lowerId { $3 : $1 }
+
+defineContent : select selectField from upperId as lowerId 
+               joins maybeWhere rparen  
+               { DefineSubQuery (SelectQuery [$2] ($4,$6) (reverse $7) $8 [] (0,0)) }
+      
 enumDef : enum upperId equals enumValues semicolon 
          { EnumType (mkLoc $1) $2 $4 }
 
@@ -178,12 +191,13 @@ fieldRef : lowerId dot idField { FieldRefId $1 }
           | auth dot lowerId { FieldRefAuth $3 }
           | localParam { FieldRefLocalParam }
           | request dot lowerId { FieldRefRequest $3 }
+          | lowerId lparen maybeEmptyLowerIdList rparen { FieldRefFunc $1 $3 }
           | lparen select selectField from upperId as lowerId 
                joins maybeWhere rparen  
                    { FieldRefSubQuery (SelectQuery [$3] ($5,$7) (reverse $8) $9 
                                       [] (0,0)) }
  
-    
+
 handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 
 handlerParams : { [] }
@@ -217,6 +231,8 @@ moreSelectFields: { [] }
 selectField: lowerId dot asterisk { SelectAllFields $1 }                    
            | lowerId dot idField maybeSelectAlias { SelectIdField $1 $4 }
            | lowerId dot lowerId maybeSelectAlias { SelectField $1 $3 $4 }
+           | lowerId dot lbrace lowerId rbrace maybeSelectAlias { SelectParamField $1 $4 $6 }
+           
        
 maybeSelectAlias: { Nothing }
                 | as lowerId { Just $2 }
@@ -376,6 +392,7 @@ data ModDef = EntityDef Entity
            | ClassDef Class
            | EnumDef EnumType
            | RouteDef Route
+           | DefineDef Define
            deriving (Show)
 
 data FieldFlag = FieldInternal deriving (Eq)
@@ -391,6 +408,8 @@ getEnums defs = mapMaybe (\d -> case d of (EnumDef e) -> Just e; _ -> Nothing) d
 getRoutes :: [ModDef] -> [Route]
 getRoutes defs = mapMaybe (\d -> case d of (RouteDef e) -> Just e; _ -> Nothing) defs
 
+getDefines :: [ModDef] -> [Define]
+getDefines defs = mapMaybe (\d -> case d of (DefineDef e) -> Just e; _ -> Nothing) defs
 
 
 data ParseError = ParseError String deriving (Show, Typeable)

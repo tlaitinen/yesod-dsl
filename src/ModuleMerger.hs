@@ -14,7 +14,8 @@ merge m1 m2 = Module {
         modEntities = modEntities m1 ++ modEntities m2,
         modClasses = modClasses m1 ++ modClasses m2,
         modEnums = modEnums m1 ++ modEnums m2,
-        modRoutes = modRoutes m1 ++ modRoutes m2
+        modRoutes = modRoutes m1 ++ modRoutes m2,
+        modDefines = modDefines m1 ++ modDefines m2
     }
 
 updateLocation :: (FilePath,Module) -> Module
@@ -22,7 +23,8 @@ updateLocation (path,m) = m {
         modEntities = map updateEntityLoc (modEntities m),
         modClasses  = map updateClassLoc  (modClasses m),
         modEnums    = map updateEnumLoc  (modEnums m),
-        modRoutes   = map updateRouteLoc  (modRoutes m)
+        modRoutes   = map updateRouteLoc  (modRoutes m),
+        modDefines  = map updateDefineLoc (modDefines m)
     } 
     where 
         updateEntityLoc e = e { entityLoc = updateLoc path (entityLoc e) }
@@ -34,6 +36,9 @@ updateLocation (path,m) = m {
         }
         updateHandlerLoc h = h {
             handlerLoc = updateLoc path (handlerLoc h)
+        }
+        updateDefineLoc d = d {
+            defineLoc = updateLoc path (defineLoc d)
         }
  
 updateLoc :: FilePath -> Location -> Location

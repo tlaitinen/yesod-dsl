@@ -12,7 +12,8 @@ data Module = Module {
     modEntities  :: [Entity],
     modClasses :: [Class],
     modEnums :: [EnumType],
-    modRoutes :: [Route]
+    modRoutes :: [Route],
+    modDefines :: [Define]
 } deriving (Show)
 
 moduleName :: Module -> String
@@ -24,7 +25,8 @@ emptyModule = Module {
     modEntities = [],
     modClasses = [],
     modEnums = [],
-    modRoutes = []
+    modRoutes = [],
+    modDefines = []
 }
 
 type ClassName = String
@@ -53,13 +55,22 @@ fieldTypeToHsType ft = case ft of
 type FieldName = String 
 type PathName = String
 type UniqueName = String
-
+type QueryName = String
 data Location = Loc FilePath Int Int deriving (Eq)
 
 instance Show Location where
     show (Loc path row col) = path ++ ":" ++ show row ++ ":" ++ show col
 
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
+
+data Define = Define {
+    defineName :: String,
+    defineLoc :: Location,
+    defineParams :: [ParamName],
+    defineContent :: DefineContent
+} deriving (Show)
+
+data DefineContent = DefineSubQuery SelectQuery deriving (Show)
 
 data Unique = Unique {
     uniqueName :: UniqueName,
@@ -135,6 +146,7 @@ sqAliases sq = (en,vn,False) : [ (joinEntity j, joinAlias j,
 data SelectField = SelectAllFields VariableName
                  | SelectField VariableName FieldName (Maybe VariableName)
                  | SelectIdField VariableName (Maybe VariableName)
+                 | SelectParamField VariableName ParamName (Maybe VariableName)
                  deriving (Show, Eq)
 
     
@@ -212,6 +224,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefEnum EnumName FieldName
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName
+              | FieldRefFunc FunctionName [ParamName]
               | FieldRefSubQuery SelectQuery deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field
