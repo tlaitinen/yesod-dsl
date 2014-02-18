@@ -180,7 +180,7 @@ value and the asterisk * means that the element can be repeated:
 entity EntityName {
     [instance of ClassName [, ClassName]*;]
 
-    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]*;]*
+    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]* [internal];]*
     
     [unique UniqueName fieldName [, fieldName]*;]*
 
@@ -211,6 +211,9 @@ Defining a field check-function adds a function to the type class
 the generated subsite. Field check function is executed before modifying
 entities in the database. If the check function returns False, the transaction
 is aborted and an error message is sent to the callee.
+
+Fields can be marked as internal by adding the keyword "internal" in the end of
+a field definition. Internal fields cannot be returned in SQL SELECT queries defined in route handlers.
 
 Unique-statement names are prefixed with "Unique" in the resulting Persistent
 models-definition and !force-flag is added to allow using Maybe fields in
@@ -282,7 +285,7 @@ optional value and []* means that the element can be repeated.
 
 ```
 class ClassName {
-    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]*;]*
+    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]* [internal];]*
     
     [unique UniqueName fieldName [, fieldName]*]*;
 }
