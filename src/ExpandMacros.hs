@@ -15,6 +15,7 @@ expandMacros m = m {
         }
 
         fHandlerParam (Select sq) = Select (fSelectQuery sq)
+        fHandlerParam (Require sq) = Require (fSelectQuery sq)
         fHandlerParam hp = hp
 
         fSelectQuery sq = sq {
