@@ -166,7 +166,7 @@ vUnique prefix u = do
 vDefine :: Define -> Validation
 vDefine d = do
     declareGlobal (defineName d) (VDefine d)
-    withScope ("define " ++ defineName d) $ do
+    withScope ("define " ++ defineName d ++ " in "++(show $ defineLoc d))  $ do
         forM_ (defineParams d) $ \dp -> declareLocal dp (VParam dp)
         case defineContent d of
             (DefineSubQuery sq) -> vSelectQuery sq
