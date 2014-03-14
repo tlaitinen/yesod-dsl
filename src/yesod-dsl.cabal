@@ -1,5 +1,5 @@
 name:           yesod-dsl
-version:        0.1.1.13
+version:        0.1.1.14
 license:        BSD3
 license-file:   LICENSE
 author:         Tero Laitinen 
@@ -43,6 +43,7 @@ executable  yesod-dsl
                    Generator.Require
                    Generator.Cabal
                    Generator.EsqueletoInstances
+                   Generator.Fay
                    Obfuscate
                    SyncFile
                    ExpandMacros
