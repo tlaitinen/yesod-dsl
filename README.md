@@ -483,8 +483,6 @@ route /usergroups {
 }
 ```
 
-Note: define-statements are not validated properly yet, so the code generator
-may crash on erroneous input.
 
 ## Using the generated subsite
 

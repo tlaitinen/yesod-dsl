@@ -68,9 +68,9 @@ data Define = Define {
     defineLoc :: Location,
     defineParams :: [ParamName],
     defineContent :: DefineContent
-} deriving (Show)
+} deriving (Show, Eq)
 
-data DefineContent = DefineSubQuery SelectQuery deriving (Show)
+data DefineContent = DefineSubQuery SelectQuery deriving (Show, Eq)
 
 data Unique = Unique {
     uniqueName :: UniqueName,

@@ -24,10 +24,12 @@ data VId = VId Int VIdType deriving(Eq)
 data VIdType = VEnum EnumType
          | VClass  Class
          | VEntity Entity
+         | VDefine Define
          | VField Field
          | VUnique Unique
          | VRoute Route
          | VHandler Handler
+         | VParam ParamName
          | VReserved
          deriving (Eq,Show)
 
@@ -111,6 +113,7 @@ withLookupEntity name f =do
         _ -> vError $ "Reference to an incompatible type " ++ show idt 
                      ++ " (expected entity)"
 
+    
 withLookupEnum :: String -> (EnumType -> Validation) -> Validation
 withLookupEnum name f = do
     withLookup name $ \idt -> case idt of
@@ -129,6 +132,7 @@ validate' m = do
     forM_ (modEntities m) $ \e -> declareGlobal (entityName e) (VEntity e)
     forM_ (modClasses m) vClass
     forM_ (modEntities m) vEntity
+    forM_ (modDefines m) vDefine
     forM_ (modRoutes m) vRoute
     return ()
 
@@ -159,6 +163,14 @@ vUnique prefix u = do
     withScope ("unique " ++ uniqueName u) $
         forM_ (uniqueFields u) $ \fn -> withLookupField fn $ \f -> return ()
 
+vDefine :: Define -> Validation
+vDefine d = do
+    declareGlobal (defineName d) (VDefine d)
+    withScope ("define " ++ defineName d) $ do
+        forM_ (defineParams d) $ \dp -> declareLocal dp (VParam dp)
+        case defineContent d of
+            (DefineSubQuery sq) -> vSelectQuery sq
+    
 vRoute :: Route -> Validation
 vRoute r = do
     declareGlobal (show $ routePath r) (VRoute r)
@@ -185,15 +197,7 @@ vHandlerParam Public = declareLocal "public;" VReserved
 vHandlerParam DefaultFilterSort = declareLocal "default-filter-sort;" VReserved
 vHandlerParam (Select sq) = do
     declareLocal "select;" VReserved
-    let (en,vn) = sqFrom sq
-    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
-    forM_ (sqJoins sq) vJoin
-    case sqWhere sq of 
-        Just e -> do    
-            withScope  "where expression" $ vExpr e
-        Nothing -> return ()    
-    forM_ (sqFields sq) vSelectField
-    forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
+    vSelectQuery sq
 vHandlerParam (Require sq) = do
     let (en,vn) = sqFrom sq
     withLookupEntity en $ \e -> declareLocal vn (VEntity e)
@@ -261,6 +265,18 @@ vHandlerParam (Insert en mfs mbv) = do
                                                ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
 
+vSelectQuery :: SelectQuery -> Validation
+vSelectQuery sq = do
+    let (en,vn) = sqFrom sq
+    withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+    forM_ (sqJoins sq) vJoin
+    case sqWhere sq of 
+        Just e -> do    
+            withScope  "where expression" $ vExpr e
+        Nothing -> return ()    
+    forM_ (sqFields sq) vSelectField
+    forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
+
 vOutputField :: (ParamName, OutputFieldRef) -> Validation
 vOutputField (pn,ofr) = do
     declareLocal ("return field " ++ pn) VReserved
@@ -289,6 +305,13 @@ vJoin j = do
      
 vEntityRef :: EntityName -> Validation
 vEntityRef en = withLookupEntity en $ \e -> return ()
+
+vParamRef :: ParamName -> Validation
+vParamRef pn = withLookup pn $ \idt -> case idt of
+    (VParam t) -> return ()
+    _ -> vError $ "Reference to an incompatible type " ++ show idt 
+             ++ " (expected parameter)"
+
 
 vEnumRef :: EnumName -> Validation
 vEnumRef en = withLookupEnum en $ \e -> return ()
@@ -381,7 +404,13 @@ vSelectField (SelectIdField vn man) = do
         Just an -> declareLocal ("select result field : " ++ an) VReserved 
         _ -> declareLocal ("select result field : id") VReserved
    vEntityRef vn     
-    
+vSelectField (SelectParamField vn pn man) = do
+    case man of
+        Just an -> declareLocal ("select result field : " ++ an) VReserved
+        _ -> declareLocal ("select result field : " ++ pn) VReserved
+    vEntityRef vn
+    vParamRef pn
+
 vValExpr :: ValExpr -> Validation
 vValExpr ve = case ve of
     FieldExpr fr -> vFieldRef fr
