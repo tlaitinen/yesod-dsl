@@ -36,8 +36,8 @@ import System.Exit
     equals { Tk _ TEquals }
     concat { Tk _ TConcat }
     ne { Tk _ TNe }
-    lt { Tk _ TLt }
-    gt { Tk _ TGt }
+    lt { Tk _ TLt }
+    gt { Tk _ TGt }
     le { Tk _ TLe }
     ge { Tk _ TGe }
     and { Tk _ TAnd }
@@ -92,7 +92,7 @@ import System.Exit
     as { Tk _ TAs }
     is { Tk _ TIs }
     insert { Tk _ TInsert }
-    update { Tk _ TUpdate }
+    update {Tk _ TUpdate }
     defaultfiltersort { Tk _ TDefaultFilterSort }
     identified { Tk _ TIdentified }
     with { Tk _ TWith }
@@ -103,7 +103,7 @@ import System.Exit
     where { Tk _ TWhere }
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
-    pathParam { Tk _ (TPathParam $$) }
+    pathParam {Tk _ (TPathParam $$) }
     idField { Tk _ TId }
     entityId { Tk _ (TEntityId $$) }
     localParam { Tk _ TLocalParam }
@@ -203,7 +203,7 @@ handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
-             | select selectFields from upperId as lowerId 
+             |select selectFields from upperId as lowerId 
                joins maybeWhere maybeOrder maybeLimitOffset 
               { Select (SelectQuery $2 ($4,$6) (reverse $7) $8 $9 $10) }
              | update upperId identified by inputRef with inputJson { Update $2 $5 (Just $7) } 
@@ -255,7 +255,7 @@ orderByList : orderByListitem { [$1] }
 orderByListitem : fieldRef orderByDir { ($1, $2) }
 
 orderByDir : asc { SortAsc }
-        | desc  { SortDesc }
+        |desc  { SortDesc }
  
 inputJson:  lbrace inputJsonFields rbrace { $2 }
 inputJsonField : lowerId equals inputRef { ($1, $3) }
@@ -287,10 +287,10 @@ binop : equals { Eq }
       | ne { Ne }
       | lt { Lt }
       | gt { Gt }
-      | le { Le }
+      | le { Le }
       | ge { Ge }
       | like { Like }
-      | ilike { Ilike }
+      | ilike {Ilike }
       | is { Is }
       
 
@@ -298,7 +298,7 @@ expr : expr and expr { AndExpr $1 $3 }
      | expr or expr { OrExpr $1 $3 }
      | not expr { NotExpr $2 }
      | lparen expr rparen { $2 } 
-     | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
+     |valexpr binop valexpr { BinOpExpr $1 $2 $3 }
      | fieldRef listOp fieldRef { ListOpExpr $1 $2 $3 }
 listOp: in { In }
       | not in { NotIn }
@@ -384,7 +384,7 @@ fieldType : word32 { FTWord32 }
           | zonedtime{ FTZonedTime }
 
 maybeMaybe : { False }
-              | maybe { True }
+              | maybe {True }
 
 {
 
