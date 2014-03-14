@@ -370,6 +370,7 @@ valExpr: "string-constant"
        | valExpr || valExpr
        | inputValue
        | enumName.enumValue
+       | defineName([param[, param]*])
 
 inputValue: $i
           | $auth.id
@@ -411,6 +412,79 @@ and WHERE are added based on query string parameters.
 
 Additional joins and where expressions can be conditionally added based on the
 query string parameters by using *if param "paramName" = $$ then* statements.
+
+## Define-statement (Commonly used sub-queries)
+
+Commonly used sub-queries, e.g. filtering the result set according to a user/user group-specific access control list, may be factored out using *define* statement.
+
+The example below illustrates the use of *define* statement. The syntax is
+identical to inline sub-queries used in route handlers with the exception of
+allowing field name parameters in curly braces { }.
+```
+define hasReadPerm(field) =
+    select ugc.{field} from UserGroupContent as ugc
+    where ugc.userGroupId in
+        (select ug.id from UserGroup as ug
+         inner join UserGroupItem as ugi
+         on ug.id = ugi.userGroupId
+         where ugi.userId = $auth.id
+         and ugi.deletedVersionId is Nothing));
+
+class Restricted {
+}
+class Deletable {
+    deletedVersionId Maybe VersionId;
+}
+entity UserGroup {
+    instance of Named, Versioned, Deletable, Restricted;
+    unique Group name;
+}
+entity UserGroupContent {
+    instance of Deletable;
+
+    userGroupId UserGroupId;
+    contentId Maybe RestrictedId;
+}
+```
+
+The example below illustrates how the defined sub-query can be used in
+route handlers:
+```
+route /usergroups {
+        get {
+            -- returns UserGroup entities which the user is allowed to read
+            select ug.id, ug.* from UserGroup as ug
+                where ug.id in hasReadPerm(userGroupContentId)
+                order by ug.name asc;
+            default-filter-sort;
+        }
+}
+```
+
+After substituting *hasReadPerm(userGroupContentId)* the route handler
+definition above is following:
+
+```
+route /usergroups {
+        get {
+            -- returns UserGroup entities which the user is allowed to read
+            select ug.id, ug.* from UserGroup as ug
+                where ug.id in 
+                    (select ugc.userGroupContentId from UserGroupContent as ugc
+                     where ugc.userGroupId in
+                        (select ug.id from UserGroup as ug
+                            inner join UserGroupItem as ugi
+                            on ug.id = ugi.userGroupId
+                            where ugi.userId = $auth.id
+                            and ugi.deletedVersionId is Nothing));
+                order by ug.name asc;
+            default-filter-sort;
+        }
+}
+```
+
+Note: define-statements are not validated properly yet, so the code generator
+may crash on erroneous input.
 
 ## Using the generated subsite
 
