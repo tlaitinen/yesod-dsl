@@ -14,11 +14,12 @@ data VState = VState {
     stEnv :: Map.Map String [VId],
     stScopePath :: [String],
     stErrors :: [String],
-    stHandlerType :: Maybe HandlerType
+    stHandlerType :: Maybe HandlerType,
+    stInsideFor :: Bool
 }
 
 initialState :: VState
-initialState = VState Map.empty [] [] Nothing
+initialState = VState Map.empty [] [] Nothing False
 
 data VId = VId Int VIdType deriving(Eq)
 data VIdType = VEnum EnumType
@@ -29,7 +30,8 @@ data VIdType = VEnum EnumType
          | VUnique Unique
          | VRoute Route
          | VHandler Handler
-         | VParam ParamName
+         | VParam 
+         | VForParam InputFieldRef
          | VReserved
          deriving (Eq,Show)
 
@@ -94,6 +96,7 @@ withLookup name f = do
         Nothing -> err path
     where err path = vError $ "Reference to an undeclared identifier '" 
                           ++ name ++ "'" 
+
 ensureReserved :: String -> Validation
 ensureReserved name = withLookup name $ \idt -> case idt of 
     VReserved -> return ()
@@ -167,7 +170,7 @@ vDefine :: Define -> Validation
 vDefine d = do
     declareGlobal (defineName d) (VDefine d)
     withScope ("define " ++ defineName d ++ " in "++(show $ defineLoc d))  $ do
-        forM_ (defineParams d) $ \dp -> declareLocal dp (VParam dp)
+        forM_ (defineParams d) $ \dp -> declareLocal dp VParam
         case defineContent d of
             (DefineSubQuery sq) -> vSelectQuery sq
     
@@ -239,14 +242,14 @@ vHandlerParam (Return ofrs) = do
 
 vHandlerParam (GetById en ifr vn) = do
     withLookupEntity en $ \e -> do
-        declareLocal ("bound result " ++ vn) (VEntity e)
+        declareLocal ("local variable " ++ vn) (VEntity e)
         withScope "get" $ do
             vInputFieldRef ifr
             return ()
 
 vHandlerParam (Insert en mfs mbv) = do
     case mbv of
-        Just vn -> declareLocal ("bound result " ++ vn) VReserved
+        Just vn -> declareLocal ("local variable " ++ vn) VReserved
         Nothing -> return ()
     withScope "insert" $ do
         withLookupEntity en $ \e -> do
@@ -264,6 +267,12 @@ vHandlerParam (Insert en mfs mbv) = do
                             Nothing -> vError $ "Reference to undeclared field '"
                                                ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
+vHandlerParam (For vn ifr ps) = do
+    declareLocal ("local variable " ++ vn) (VForParam ifr) 
+    oldForState <- gets stInsideFor
+    modify $ \st -> st { stInsideFor = True }
+    forM_ ps vHandlerParam
+    modify $ \st -> st { stInsideFor = oldForState }
 
 vSelectQuery :: SelectQuery -> Validation
 vSelectQuery sq = do
@@ -277,18 +286,19 @@ vSelectQuery sq = do
     forM_ (sqFields sq) vSelectField
     forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
 
+
 vOutputField :: (ParamName, OutputFieldRef) -> Validation
 vOutputField (pn,ofr) = do
     declareLocal ("return field " ++ pn) VReserved
     case ofr of
-        OutputFieldLocalParam vn -> ensureReserved ("bound result " ++ vn)
+        OutputFieldLocalParam vn -> ensureReserved ("local variable " ++ vn)
         _ -> return ()
 
 vInputFieldRef :: InputFieldRef -> Validation
 vInputFieldRef ifr = case ifr of
     InputFieldPathParam n -> withLookup ("$" ++ show n) $ \_ -> return ()
-    InputFieldLocalParam vn -> withLookup ("bound result " ++ vn) $ \ _ -> return()
-    InputFieldLocalParamField vn fn -> withLookupEntity ("bound result " ++ vn) $ ensureField vn fn
+    InputFieldLocalParam vn -> withLookup ("local variable " ++ vn) $ \ _ -> return()
+    InputFieldLocalParamField vn fn -> withLookupEntity ("local variable " ++ vn) $ ensureField vn fn
     _ -> return ()
 
 vJoin :: Join -> Validation
@@ -308,7 +318,7 @@ vEntityRef en = withLookupEntity en $ \e -> return ()
 
 vParamRef :: ParamName -> Validation
 vParamRef pn = withLookup pn $ \idt -> case idt of
-    (VParam t) -> return ()
+    VParam -> return ()
     _ -> vError $ "Reference to an incompatible type " ++ show idt 
              ++ " (expected parameter)"
 

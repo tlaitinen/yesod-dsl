@@ -119,6 +119,7 @@ import System.Exit
     internal { Tk _ TInternal }
     underscore { Tk _ TUnderScore }
     define { Tk _ TDefine }
+    for { Tk _ TFor }
 %%
 
 dbModule : maybeModuleName 
@@ -218,6 +219,8 @@ handlerParam : public { Public }
              | if param stringval equals underscore then joins where expr { IfFilter ($3, (reverse $7), $9, False) }
              | return outputJson { Return $2 }
              | require upperId as lowerId joins where expr { Require (SelectQuery [] ($2,$4) (reverse $5) (Just $7) [] (0,0)) }
+             | for lowerId in inputRef lbrace handlerParams rbrace { For $2 $4 $6 }
+
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
 

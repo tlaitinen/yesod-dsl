@@ -109,6 +109,7 @@ tokens :-
     "define" { mkT TDefine }
      "return" { mkT TReturn }
     "$auth"  { mkT TAuth }
+    "for" { mkT TFor }
     $digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
      "id" { mkT TId }
@@ -227,6 +228,7 @@ data TokenType = TSemicolon
            | TInternal
            | TRequire
            | TUnderScore
+           | TFor
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

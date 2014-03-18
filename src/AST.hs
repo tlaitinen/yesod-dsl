@@ -123,6 +123,7 @@ data HandlerParam = Public
                   | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
                   | Return [OutputField]
                   | Require SelectQuery
+                  | For VariableName InputFieldRef [HandlerParam]
                   deriving (Show, Eq) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],Expr,UseParamFlag)

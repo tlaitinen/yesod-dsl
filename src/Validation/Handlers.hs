@@ -18,16 +18,19 @@ handlerErrors m = (concatMap notAllowedError $
         allowed PostHandler (Update _ _ _) = True
         allowed PostHandler (DeleteFrom _ _ _) = True
         allowed PostHandler (Require _) = True
+        allowed PostHandler (For _ _ _) = True
         allowed ht (GetById _ _ _) = ht /= GetHandler
         allowed ht (Return _) = ht /= GetHandler
         allowed PutHandler (Insert _ _ _) = True
         allowed PutHandler (Update _ _ _) = True
         allowed PutHandler (DeleteFrom _ _ _) = True
         allowed PutHandler (Require _) = True
+        allowed PutHandler (For _ _ _) = True
         allowed DeleteHandler (Insert _ _ _) = True
         allowed DeleteHandler (Update _ _ _) = True
         allowed DeleteHandler (DeleteFrom _ _ _) =True
         allowed DeleteHandler (Require _) = True
+        allowed DeleteHandler (For _ _ _) = True
         allowed GetHandler DefaultFilterSort = True
         allowed GetHandler (Select _) = True
         allowed GetHandler (IfFilter (_, joins, _,_)) = onlyInnerJoins joins
@@ -40,7 +43,7 @@ handlerErrors m = (concatMap notAllowedError $
             | ht == GetHandler = mapMaybe (requireMatch ps) [
            (\p -> case p of (Select _) -> True; _ -> False, "select from")]
             | ht == PutHandler || ht == PostHandler = mapMaybe (requireMatch ps) [   
-           (\p -> case p of (Insert _ _ _) -> True ; (Update _ _ _ ) -> True ; _ -> False, "insert or update")]
+           (\p -> case p of (Insert _ _ _) -> True ; (Update _ _ _ ) -> True ; (For _ _ _) -> True; _ -> False, "insert or update or for")]
             | otherwise = []
         requireMatch ps (f,err) = case listToMaybe (filter f ps) of
             Just _ -> Nothing

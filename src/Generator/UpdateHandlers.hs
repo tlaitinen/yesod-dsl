@@ -133,6 +133,7 @@ getJsonAttrs _ (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
 getJsonAttrs _ (Require sq) = let
     exprs = catMaybes $ [sqWhere sq] ++ [joinExpr j| j <- sqJoins sq]
     in concatMap exprToJsonAttrs exprs
+getJsonAttrs m (For vn fr ps) = maybeToList (inputFieldRefToJsonAttr fr ) ++ concatMap (getJsonAttrs m) ps
 getJsonAttrs _ _ = []
 
 updateHandlerReadJsonFields :: Module -> Route -> [HandlerParam] -> String
