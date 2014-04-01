@@ -106,9 +106,11 @@ exprMaybeLevel ctx ve = case ve of
     ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLevel ctx e2)
 
 hsListFieldRef :: Context -> FieldRef -> Int -> String
-hsListFieldRef ctx (FieldRefId vn) mkJust = makeJust mkJust $ vn ++ " ^. " 
+hsListFieldRef ctx (FieldRefId vn) mkJust = makeJust mkJust $ vn 
+                 ++ projectField (ctxIsMaybe ctx vn)
                  ++  (fromJust $ ctxLookupEntity ctx vn) ++ "Id"
-hsListFieldRef ctx  (FieldRefNormal vn fn) mkJust = makeJust mkJust $ vn ++ " ^. " 
+hsListFieldRef ctx  (FieldRefNormal vn fn) mkJust = makeJust mkJust $ vn 
+                 ++ projectField (ctxIsMaybe ctx vn)
                  ++ (fromJust $ ctxLookupEntity ctx vn) 
                  ++ (upperFirst fn)
 hsListFieldRef _ FieldRefAuthId mkJust = makeJust mkJust $ "(valList authId)"
