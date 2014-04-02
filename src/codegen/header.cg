@@ -100,7 +100,7 @@ defaultFilterOp _ = (==.)
 ilike = unsafeSqlBinOp " ILIKE "
 is = unsafeSqlBinOp " IS "
 
-extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value PersistValue)
+extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value Double)
 extractSubField = unsafeSqlExtractSubField
 
 safeRead :: forall a. Read a => Text -> Maybe a

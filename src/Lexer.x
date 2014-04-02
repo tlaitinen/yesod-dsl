@@ -40,6 +40,8 @@ tokens :-
     \/ { mkT TSlash }
     \# { mkT THash }
     \* { mkT TAsterisk }
+    \+ { mkT TPlus }
+    \- { mkT TMinus }
     "get" { mkT TGet }
     "put" { mkT TPut }
     "post" { mkT TPost }
@@ -209,6 +211,8 @@ data TokenType = TSemicolon
            | TIf
            | TThen
            | TAsterisk
+           | TPlus
+           | TMinus
            | TParam
            | TWhere
            | TAs

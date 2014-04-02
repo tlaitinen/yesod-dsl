@@ -70,6 +70,8 @@ import System.Exit
     if {  Tk _ TIf }
     then { Tk _ TThen }
     asterisk { Tk _ TAsterisk }
+    plus { Tk _ TPlus }
+    minus { Tk _ TMinus }
     put { Tk _ TPut }
     post { Tk _ TPost }
     delete { Tk _ TDelete }
@@ -299,8 +301,6 @@ binop : equals { Eq }
       | like { Like }
       | ilike {Ilike }
       | is { Is }
-      
-
 expr : expr and expr { AndExpr $1 $3 }
      | expr or expr { OrExpr $1 $3 }
      | not expr { NotExpr $2 }
@@ -310,9 +310,18 @@ expr : expr and expr { AndExpr $1 $3 }
 listOp: in { In }
       | not in { NotIn }
 
-valexpr : value { ConstExpr $1 }
+valbinop :      
+      slash { Div }
+      | asterisk { Mul } 
+      | plus { Add }
+      | minus { Sub }
+
+
+valexpr : lparen valexpr rparen { $2 }
+        | value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }
         | valexpr concat valexpr { ConcatExpr $1 $3 }
+        | valexpr valbinop valexpr { ValBinOpExpr $1 $2 $3 }
 
 maybeJoinOn : { Nothing }
             | on expr { Just $2 }
