@@ -17,7 +17,7 @@ import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto
 import Prelude
 import Database.Esqueleto
-import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)
+import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlExtractSubField, UnsafeSqlFunctionArgument)
 import qualified Database.Persist as P
 import Database.Persist.TH
 import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
@@ -51,7 +51,7 @@ import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
 import qualified Data.HashMap.Strict as HMS
-
+import qualified Data.Text.Lazy.Builder as TLB
 data ~{moduleName m} = ~{moduleName m}
 
 data FilterJsonMsg = FilterJsonMsg {
@@ -99,6 +99,10 @@ defaultFilterOp _ = (==.)
 
 ilike = unsafeSqlBinOp " ILIKE "
 is = unsafeSqlBinOp " IS "
+
+extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value PersistValue)
+extractSubField = unsafeSqlExtractSubField
+
 safeRead :: forall a. Read a => Text -> Maybe a
 safeRead s = case (reads $ T.unpack s) of
    [(v,_)] -> Just v

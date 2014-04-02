@@ -107,6 +107,7 @@ tokens :-
     "require" { mkT TRequire }
     "internal" { mkT TInternal }
     "define" { mkT TDefine }
+    "extract" { mkT TExtract }
      "return" { mkT TReturn }
     "$auth"  { mkT TAuth }
     "for" { mkT TFor }
@@ -229,6 +230,7 @@ data TokenType = TSemicolon
            | TRequire
            | TUnderScore
            | TFor
+           | TExtract
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

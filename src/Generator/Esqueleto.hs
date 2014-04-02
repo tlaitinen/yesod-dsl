@@ -57,12 +57,36 @@ projectField :: MaybeFlag -> String
 projectField True = " ?. "
 projectField False = " ^. "
 
+extractSubField :: FieldName -> String
+extractSubField fn = case fn of
+    "century" -> "CENTURY"
+    "day"     -> "DAY"
+    "decade"  -> "DECADE"
+    "dow"     -> "DOW"
+    "doy"     -> "DOY"
+    "epoch"   -> "EPOCH"
+    "hour"    -> "HOUR"
+    "isodow"  -> "ISODOW"
+    "microseconds" -> "MICROSECONDS"
+    "millennium" -> "MILLENNIUM"
+    "millseconds" -> "MILLISECONDS"
+    "minute"    -> "MINUTE"
+    "month"     -> "MONTH"
+    "quarter"   -> "QUARTER"
+    "second"    -> "SECOND"
+    "timezone"  -> "TIMEZONE"
+    "timezone_hour" -> "TIMEZONE_HOUR"
+    "timezone_minute" -> "TIMEZONE_MINUTE"
+    "week"      -> "WEEK"
+    "year"      -> "YEAR"
+    fn' -> error $ "Unknown subfield : " ++ fn'
 hsFieldRef :: Context -> Maybe BinOp -> FieldRef -> String
 hsFieldRef ctx _ (FieldRefId vn) = vn ++ projectField (ctxIsMaybe ctx vn)
                  ++  (fromJust $ ctxLookupEntity ctx vn) ++ "Id"
 hsFieldRef ctx _  (FieldRefNormal vn fn) = vn ++ projectField (ctxIsMaybe ctx vn)
                  ++ (fromJust $ ctxLookupEntity ctx vn) 
                  ++ (upperFirst fn)
+hsFieldRef ctx _ (FieldRefExtract efn vn fn) = "(extractSubField " ++ (quote $ extractSubField efn) ++ " $ " ++ (hsFieldRef ctx Nothing (FieldRefNormal vn fn)) ++ ")"
 hsFieldRef _ _ FieldRefAuthId = "(val authId)"
 hsFieldRef _ op  (FieldRefPathParam p) = "(val " ++ coerceType op ("p" ++ show p) ++ ")"
 hsFieldRef _ op FieldRefLocalParam = "(val " ++ coerceType op "localParam" ++ ")"
@@ -73,9 +97,9 @@ hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing f ++ ")"
     where dir SortAsc = "asc "
           dir SortDesc = "desc "
 
-hsValExpr :: Context -> BinOp -> ValExpr -> String
+hsValExpr :: Context -> Maybe BinOp -> ValExpr -> String
 hsValExpr ctx op ve =  case ve of
-    FieldExpr fr -> hsFieldRef ctx (Just op) fr
+    FieldExpr fr -> hsFieldRef ctx op fr
     ConstExpr (fv@(NothingValue)) -> fieldValueToEsqueleto fv
     ConstExpr fv ->  "(val " ++ fieldValueToEsqueleto fv ++  ")" 
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
@@ -88,8 +112,8 @@ fieldRefMaybeLevel :: Context -> FieldRef -> Int
 fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
 fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn) + boolToInt (fromMaybe False optional)
     where optional = ctxLookupField ctx vn fn >>= Just . fieldOptional
-fieldRefMaybeLevel ctx (FieldRefSubQuery sq) = fromMaybe 0 $ listToMaybe $ map (fieldRefMaybeLevel ctx') fields
-    where fields = concatMap (selectFieldRefs m ctx') (sqFields sq)
+fieldRefMaybeLevel ctx (FieldRefSubQuery sq) = fromMaybe 0 $ listToMaybe $ map (exprMaybeLevel ctx') fieldExprs
+    where fieldExprs = concatMap (selectFieldExprs m ctx') (sqFields sq)
           m = ctxModule ctx
           ctx' = ctx {
                ctxNames = sqAliases sq
@@ -122,21 +146,20 @@ mapJoinExpr :: Module -> Context -> Join -> String
 mapJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/join-expr.cg")
 mapJoinExpr m _ _ = ""
 
-selectFieldRefs :: Module -> Context -> SelectField -> [FieldRef]
-selectFieldRefs m ctx (SelectAllFields vn) =  [ FieldRefNormal vn (fieldName f) | 
+selectFieldExprs :: Module -> Context -> SelectField -> [ValExpr]
+selectFieldExprs m ctx (SelectAllFields vn) =  [ FieldExpr $ FieldRefNormal vn (fieldName f) | 
                                                 f <- entityFields e,
                                                 fieldInternal f == False ]
     where  
            en = fromJust $ ctxLookupEntity ctx vn
            e = fromJust $ lookupEntity m en    
-selectFieldRefs m ctx (SelectField vn fn _) = [FieldRefNormal vn fn]
-selectFieldRefs m ctx (SelectIdField vn _) = [FieldRefId vn ]
-
-
+selectFieldExprs m ctx (SelectField vn fn _) = [ FieldExpr $ FieldRefNormal vn fn]
+selectFieldExprs m ctx (SelectIdField vn _) = [ FieldExpr $ FieldRefId vn ]
+selectFieldExprs m ctx (SelectValExpr ve _) = [ ve ]
 
 selectReturnFields :: Module -> Context -> SelectQuery -> Int -> String
 selectReturnFields m ctx sq mkJust = T.unpack $(codegenFile "codegen/select-return-fields.cg")
-    where fields = concatMap (selectFieldRefs m ctx) (sqFields sq)
+    where fieldExprs = concatMap (selectFieldExprs m ctx) (sqFields sq)
         
 joinDef :: Join-> String
 joinDef (Join jt _ vn _) = rstrip $ T.unpack $(codegenFile "codegen/join-def.cg")
@@ -176,7 +199,7 @@ hsExpr ctx expr = case expr of
         justLevel2 fr1 fr2 = max (fieldRefMaybeLevel ctx fr2
                                   - fieldRefMaybeLevel ctx fr1) 0
     
-        binOpExpr e1 op e2 = promoteJust e1 e2 ("(" ++ (hsValExpr ctx op e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust e2 e1 ("(" ++ (hsValExpr ctx op e2) ++ ")"))
+        binOpExpr e1 op e2 = promoteJust e1 e2 ("(" ++ (hsValExpr ctx (Just op) e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust e2 e1 ("(" ++ (hsValExpr ctx (Just op) e2) ++ ")"))
         promoteJust :: ValExpr -> ValExpr -> String -> String
         promoteJust e1 e2 content = let
             lvl1 = exprMaybeLevel ctx e1

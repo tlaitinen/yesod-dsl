@@ -120,6 +120,7 @@ import System.Exit
     underscore { Tk _ TUnderScore }
     define { Tk _ TDefine }
     for { Tk _ TFor }
+    extract { Tk _ TExtract }
 %%
 
 dbModule : maybeModuleName 
@@ -186,6 +187,8 @@ handlerdef : get handlerParamsBlock { Handler (mkLoc $1) GetHandler $2 }
 
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
+          | extract lparen lowerId from lowerId dot lowerId rparen { 
+                FieldRefExtract $3 $5 $7 }
           | upperId dot upperId { FieldRefEnum $1 $3 }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
@@ -235,6 +238,7 @@ selectField: lowerId dot asterisk { SelectAllFields $1 }
            | lowerId dot idField maybeSelectAlias { SelectIdField $1 $4 }
            | lowerId dot lowerId maybeSelectAlias { SelectField $1 $3 $4 }
            | lowerId dot lbrace lowerId rbrace maybeSelectAlias { SelectParamField $1 $4 $6 }
+           | valexpr as lowerId { SelectValExpr $1 $3 }
            
        
 maybeSelectAlias: { Nothing }
@@ -301,7 +305,7 @@ expr : expr and expr { AndExpr $1 $3 }
      | expr or expr { OrExpr $1 $3 }
      | not expr { NotExpr $2 }
      | lparen expr rparen { $2 } 
-     |valexpr binop valexpr { BinOpExpr $1 $2 $3 }
+     | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
      | fieldRef listOp fieldRef { ListOpExpr $1 $2 $3 }
 listOp: in { In }
       | not in { NotIn }

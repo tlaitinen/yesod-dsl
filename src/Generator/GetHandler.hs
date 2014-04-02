@@ -56,6 +56,7 @@ defaultSortFields m ctx sq  = T.unpack $(codegenFile "codegen/default-sort-field
                    f <- entityFields e,
                    fieldName f == fn ]
           fromSelectField (SelectIdField en an) = [] -- TODO
+          fromSelectField _ = []         
 
 
 
@@ -135,6 +136,7 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
                       publicFields = [ f | f <- entityFields e, (not . fieldInternal) f ]
           expand (SelectField _ fn an') = [ maybe fn id an' ]
           expand (SelectIdField _ an') = [ maybe "id" id an' ]
+          expand (SelectValExpr ve an) = [ an ]
           resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
           mappedResultFields = concatMap mapResultField fieldNames
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")

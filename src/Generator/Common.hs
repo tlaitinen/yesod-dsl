@@ -8,7 +8,8 @@ makeJust n t
     | n > 0 = "(just (" ++ makeJust (n - 1) t ++ "))"
     | otherwise = t
 
-
+quote :: String -> String
+quote s = "\"" ++ s ++ "\""
 indent :: Int -> String -> String
 indent x = unlines . (map ((replicate x ' ')++)) . lines
 

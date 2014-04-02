@@ -148,6 +148,7 @@ data SelectField = SelectAllFields VariableName
                  | SelectField VariableName FieldName (Maybe VariableName)
                  | SelectIdField VariableName (Maybe VariableName)
                  | SelectParamField VariableName ParamName (Maybe VariableName)
+                 | SelectValExpr ValExpr VariableName
                  deriving (Show, Eq)
 
     
@@ -219,6 +220,7 @@ instance Show PathPiece where
     
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
+              | FieldRefExtract FieldName VariableName FieldName
               | FieldRefAuthId
               | FieldRefAuth FieldName
               | FieldRefLocalParam
