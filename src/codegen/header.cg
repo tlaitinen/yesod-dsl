@@ -78,7 +78,9 @@ instance FromJSON FilterJsonMsg where
     parseJSON _ = mzero
 
 instance IsString (Maybe Text) where
-    fromString a = Just $ T.pack a
+    fromString "" = Nothing
+    fromString a  = Just $ T.pack a
+
 parseStringOrInt :: HMS.HashMap Text A.Value -> AT.Parser Text
 parseStringOrInt hm = case HMS.lookup "value" hm of
     Just (A.Number n) -> return $ T.pack $ show n
