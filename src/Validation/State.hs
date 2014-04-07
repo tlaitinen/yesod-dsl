@@ -444,6 +444,7 @@ vValExpr ve = case ve of
     ConcatExpr ve1 ve2 -> do
         vValExpr ve1
         vValExpr ve2
+    ConcatManyExpr ves -> forM_ ves vValExpr    
     ValBinOpExpr ve1 _ ve2 -> do
         vValExpr ve1
         vValExpr ve2

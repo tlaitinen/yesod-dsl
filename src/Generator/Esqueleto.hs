@@ -110,6 +110,7 @@ hsValExpr ctx op ve =  case ve of
     ConstExpr (fv@(NothingValue)) -> fieldValueToEsqueleto fv
     ConstExpr fv ->  "(val " ++ fieldValueToEsqueleto fv ++  ")" 
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
+    ConcatManyExpr ves -> "(concat_ [" ++ (intercalate ", " $ map (hsValExpr ctx op) ves) ++ "])"
     ValBinOpExpr e1 vop e2 -> "(" ++ hsValExpr ctx op e1 ++ ") " ++ hsValBinOp vop ++ " (" ++ hsValExpr ctx op e2 ++ ")"
 
 

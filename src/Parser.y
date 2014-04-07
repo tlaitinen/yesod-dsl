@@ -34,7 +34,7 @@ import System.Exit
     semicolon  { Tk _ TSemicolon }
     hash        { Tk _ THash }
     equals { Tk _ TEquals }
-    concat { Tk _ TConcat }
+    concatop { Tk _ TConcatOp }
     ne { Tk _ TNe }
     lt { Tk _ TLt }
     gt { Tk _ TGt }
@@ -123,6 +123,11 @@ import System.Exit
     define { Tk _ TDefine }
     for { Tk _ TFor }
     extract { Tk _ TExtract }
+    concat { Tk _ TConcat }
+
+%right listOp
+%left plus minus
+%left asterisk slash
 %%
 
 dbModule : maybeModuleName 
@@ -320,8 +325,12 @@ valbinop :
 valexpr : lparen valexpr rparen { $2 }
         | value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }
-        | valexpr concat valexpr { ConcatExpr $1 $3 }
+        | valexpr concatop valexpr { ConcatExpr $1 $3 }
         | valexpr valbinop valexpr { ValBinOpExpr $1 $2 $3 }
+        | concat lparen valexprlist rparen { ConcatManyExpr (reverse $3) }
+       
+valexprlist: valexpr { [$1] }        
+           | valexprlist comma valexpr { $3 : $1 }
 
 maybeJoinOn : { Nothing }
             | on expr { Just $2 }

@@ -35,7 +35,7 @@ tokens :-
     \<\- { mkT TLArrow }
     "like" { mkT TLike }
     "ilike" { mkT TIlike }
-    "||" { mkT TConcat }
+    "||" { mkT TConcatOp }
     \| { mkT TPipe }
     \/ { mkT TSlash }
     \# { mkT THash }
@@ -110,6 +110,7 @@ tokens :-
     "internal" { mkT TInternal }
     "define" { mkT TDefine }
     "extract" { mkT TExtract }
+    "concat" { mkT TConcat }
      "return" { mkT TReturn }
     "$auth"  { mkT TAuth }
     "for" { mkT TFor }
@@ -160,7 +161,7 @@ data TokenType = TSemicolon
            | TUpperId String
            | TInt     Int
            | TFloat   Double
-           | TConcat
+           | TConcatOp
            | TSlash
            | TOrder
            | TIdentified 
@@ -235,6 +236,7 @@ data TokenType = TSemicolon
            | TUnderScore
            | TFor
            | TExtract
+           | TConcat
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

@@ -113,6 +113,7 @@ data Expr = AndExpr Expr Expr
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
            | ConcatExpr ValExpr ValExpr  
+           | ConcatManyExpr [ValExpr]
            | ValBinOpExpr ValExpr ValBinOp ValExpr 
            deriving (Show, Eq)
 data HandlerParam = Public 

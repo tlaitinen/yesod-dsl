@@ -145,6 +145,7 @@ valExprRefs :: ValExpr -> [FieldRef]
 valExprRefs (FieldExpr fr) = [fr]
 valExprRefs (ConstExpr _) = []
 valExprRefs (ConcatExpr ve1 ve2) = concatMap valExprRefs [ve1,ve2]
+valExprRefs (ConcatManyExpr ves) = concatMap valExprRefs ves
 
 exprFieldRefs :: Expr -> [FieldRef]
 exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
