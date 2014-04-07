@@ -23,8 +23,9 @@ inputFieldRef ctx (InputFieldLocalParamField vn fn) = rstrip $ T.unpack $(codege
           f (GetById en _ vn') = if vn' == vn then [en] else []
           f _ = []
             
-inputFieldRef ps (InputFieldPathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
-inputFieldRef _ _ = undefined
+inputFieldRef ctx (InputFieldPathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
+inputFieldRef ctx (InputFieldNormal pn) = rstrip $ T.unpack $(codegenFile "codegen/input-field-normal.cg")
+inputFieldRef _ ifr  = error $ "Cannot use " ++ show ifr 
 
 
 
@@ -41,6 +42,9 @@ updateHandlerRunDB m r ps (pId,p) = indent 4 (updateHandlerDecode m r ps (pId,p)
         let maybeExpr = hsExpr ctx e 
             ctx = Context { ctxNames=  [(en,vn, False)], ctxModule = m, ctxHandlerParams = ps }
         in T.unpack $(codegenFile "codegen/delete.cg")
+    For vn ifr hps -> let 
+            content = concatMap (updateHandlerRunDB m r hps) $ zip [1..] hps
+        in T.unpack $(codegenFile "codegen/for.cg")    
     _ -> ""
     where 
         ctx = Context { ctxNames = [], ctxModule = m, ctxHandlerParams = ps }

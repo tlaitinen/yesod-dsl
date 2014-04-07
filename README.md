@@ -347,6 +347,9 @@ route /pathPiece[/pathPiece]* {
                [, fieldName = inputValue]* 
            }];]*
         [delete from EntityName as entityAlias [where expr];]*
+        [for paramName in inputValue {
+            -- require, get, update, insert, delete, etc.
+         };];
         [return { [fieldName = outputValue]
                   [, fieldName = outputValue]* };]
     }]*
