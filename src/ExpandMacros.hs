@@ -16,6 +16,7 @@ expandMacros m = m {
 
         fHandlerParam (Select sq) = Select (fSelectQuery sq)
         fHandlerParam (Require sq) = Require (fSelectQuery sq)
+        fHandlerParam (DeleteFrom en vn (Just e)) = DeleteFrom en vn (Just $ fExpr e)
         fHandlerParam hp = hp
 
         fSelectQuery sq = sq {

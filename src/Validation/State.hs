@@ -345,6 +345,7 @@ vExpr loe@(ListOpExpr fr1 op fr2) = do
     case (fr2) of
         FieldRefLocalParam -> return ()
         FieldRefSubQuery _ -> return ()
+        FieldRefRequest _ -> return ()
         _ -> vError $ "Unsupported right hand side operand in list expression : " ++ show loe
 vExpr (BinOpExpr ve1 op ve2) = do
     vValExpr ve1
