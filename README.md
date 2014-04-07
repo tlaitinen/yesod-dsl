@@ -313,7 +313,7 @@ route /pathPiece[/pathPiece]* {
                      [on entityAlias.field binOp entityAlias.field]]*
                    [where expr];]*
         
-        select [entityAlias.[fieldName | *] [as outputName]]*
+        select [[entityAlias.[fieldName | *] | (expr)] [as outputName]]*
                from EntityName as entityAlias
                [[inner join | left outer join] 
                  EntityName as entityAlias 
@@ -360,7 +360,8 @@ expr: (expr) and (expr)
     | not (expr)
     | valExpr (= | <> | < | > | <= | >= | like | ilike) valExpr
     | entityAlias.field (in | not in) ($i | $$ | sub_select)
-
+    | extract (subField from entityAlias.field)
+     
 valExpr: "string-constant"
        | int-constant
        | float-constant
@@ -368,6 +369,10 @@ valExpr: "string-constant"
        | Nothing
        | entityAlias.field
        | valExpr || valExpr
+       | valExpr + valExpr
+       | valExpr - valExpr
+       | valExpr * valExpr
+       | valExpr / valExpr
        | inputValue
        | enumName.enumValue
        | defineName([param[, param]*])
@@ -389,6 +394,11 @@ sub_select: (select entityAlias.fieldName
                EntityName as entityAlias 
                [on entityAlias.field binOp entityAlias.field]]*
              [where expr])
+
+subField: century | day | decade | dow | doy | epoch | hour | isodow
+        | microseconds | millennium | milliseconds | minute | month
+        | quarter | second | timezone | timezone_hour | timezone_minute
+        | week | year
 ```
 where:
  * $i refers to the *i*th parameter in the route path
