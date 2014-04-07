@@ -9,6 +9,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
@@ -37,6 +38,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
 import qualified Data.Text.Read
 import qualified Data.Text as T
+import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.List as DL
 import Control.Monad (mzero)
@@ -75,6 +77,8 @@ instance FromJSON FilterJsonMsg where
         v .:? "comparison" .!= "eq"
     parseJSON _ = mzero
 
+instance IsString (Maybe Text) where
+    fromString a = Just $ T.pack a
 parseStringOrInt :: HMS.HashMap Text A.Value -> AT.Parser Text
 parseStringOrInt hm = case HMS.lookup "value" hm of
     Just (A.Number n) -> return $ T.pack $ show n
