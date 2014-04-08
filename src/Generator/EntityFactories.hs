@@ -7,6 +7,7 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Generator.Common
+import Generator.Models (baseFieldType)
 
 entityFactory :: Entity -> String
 entityFactory e = T.unpack $(codegenFile "codegen/entity-factory.cg")

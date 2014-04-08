@@ -1,6 +1,8 @@
 module Validation.Fields (fieldErrors) where
 import AST
 import Data.List
+import Generator.Models (baseFieldType, boolToMaybe, hsFieldType)
+
 
 fieldErrors :: Module -> String
 fieldErrors m = (concatMap fieldError $ [ (entityName e, entityLoc e, f)

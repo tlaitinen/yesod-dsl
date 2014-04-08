@@ -11,6 +11,36 @@ import Generator.Common
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
 
+boolToMaybe :: Bool -> String
+boolToMaybe True = "Maybe "
+boolToMaybe False = ""
+
+
+hsFieldType :: Field -> String
+hsFieldType f = (boolToMaybe . fieldOptional) f
+              ++ baseFieldType f
+fieldTypeToHsType :: FieldType -> String
+fieldTypeToHsType ft = case ft of
+    FTWord32 -> "Word32"
+    FTWord64 -> "Word64"
+    FTInt32 -> "Int32"
+    FTInt64 -> "Int64"
+    FTText -> "Text"
+    FTBool -> "Bool"
+    FTDouble -> "Double"
+    FTTimeOfDay -> "TimeOfDay"
+    FTDay -> "Day"
+    FTUTCTime -> "UTCTime"
+    FTZonedTime -> "ZonedTime"
+
+
+baseFieldType :: Field -> String
+baseFieldType f = case fieldContent f of
+    (NormalField ft _) -> fieldTypeToHsType ft
+    (EntityField en) -> en ++ "Id"
+    (EnumField en) -> en
+
+
 persistFieldType :: Field -> String
 persistFieldType f = baseFieldType f 
                    ++ " " ++ (boolToMaybe . fieldOptional) f

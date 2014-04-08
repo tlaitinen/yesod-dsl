@@ -149,8 +149,10 @@ hsListFieldRef ctx  (FieldRefNormal vn fn) mkJust = makeJust mkJust $ vn
                  ++ (upperFirst fn)
 hsListFieldRef _ FieldRefAuthId mkJust = "(valList authId)"
 hsListFieldRef _  (FieldRefPathParam p) mkJust =  "(valList p" ++ show p ++ ")"
-hsListFieldRef _ FieldRefLocalParam mkJust = "(valList localParam)"
-hsListFieldRef _ (FieldRefRequest fn) mkJust = "(valList (fromMaybe [] $ attr_" ++ fn ++ "))"
+hsListFieldRef _ FieldRefLocalParam mkJust = if mkJust > 0
+    then "(valList $ map Just localParam)"
+    else "(valList localParam)"
+hsListFieldRef _ (FieldRefRequest fn) mkJust = let content = "(fromMaybe [] $ attr_" ++ fn ++ ")" in if mkJust > 0 then "(valList $ map Just " ++ content ++ ")" else "(valList " ++ content ++ ")"
 hsListFieldRef ctx (FieldRefSubQuery sq) mkJust = "(" ++ subQuery ctx sq mkJust ++ ")"
 
 mapJoinExpr :: Module -> Context -> Join -> String
