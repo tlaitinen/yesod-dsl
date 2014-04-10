@@ -5,12 +5,8 @@ module Generator.Require where
 import AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
-import Data.List
-import Data.Maybe
-import Data.Char
 import Generator.Common
 import Generator.Esqueleto
-import Generator.Models
 requireStmts :: Module -> [HandlerParam] -> String
 requireStmts m ps = concatMap f $ zip [1..] ps
     where f (requireId,(Require sq)) = T.unpack $(codegenFile "codegen/require-select-query.cg")

@@ -375,19 +375,6 @@ ensureEnumValue vn e = do
 vFieldRef :: FieldRef -> Validation
 vFieldRef (FieldRefId vn) = vEntityRef vn 
 vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn 
-vFieldRef (FieldRefExtract efn vn fn) = withLookupEntity vn $ \e -> do
-    ensureField vn fn e
-    if not $ efn `elem` ["century", "day", "decade", "dow", "doy", "epoch",
-                        "hour", "isodow", "microseconds", 
-                        "millennium", "milliseconds", "minute", "month",
-                        "quarter", "second", "timezone", 
-                        "timezone_hour", "timezone_minute",
-                        "week", "year" ]
-        then vError $ "Unknown subfield '" ++ efn ++ "' to extract from " 
-                 ++ vn ++ "." ++ fn
-        else return ()
-
-
 vFieldRef (FieldRefSubQuery sq) = do
     withScope "sub-select" $ do
         let (en,vn) = sqFrom sq
@@ -449,4 +436,16 @@ vValExpr ve = case ve of
     ValBinOpExpr ve1 _ ve2 -> do
         vValExpr ve1
         vValExpr ve2
-        
+    RandomExpr -> return ()
+    FloorExpr ve -> vValExpr ve
+    CeilingExpr ve -> vValExpr ve
+    ExtractExpr fn ve -> do
+        if not $ fn `elem` ["century", "day", "decade", "dow", "doy", "epoch",
+                            "hour", "isodow", "microseconds", 
+                            "millennium", "milliseconds", "minute", "month",
+                            "quarter", "second", "timezone", 
+                            "timezone_hour", "timezone_minute",
+                            "week", "year" ]
+            then vError $ "Unknown subfield '" ++ fn ++ "' to extract" 
+            else return ()
+        vValExpr ve

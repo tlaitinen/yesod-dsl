@@ -86,7 +86,6 @@ hsFieldRef ctx _ (FieldRefId vn) = vn ++ projectField (ctxIsMaybe ctx vn)
 hsFieldRef ctx _  (FieldRefNormal vn fn) = vn ++ projectField (ctxIsMaybe ctx vn)
                  ++ (fromJust $ ctxLookupEntity ctx vn) 
                  ++ (upperFirst fn)
-hsFieldRef ctx _ (FieldRefExtract efn vn fn) = "(extractSubField " ++ (quote $ extractSubField efn) ++ " $ " ++ (hsFieldRef ctx Nothing (FieldRefNormal vn fn)) ++ ")"
 hsFieldRef _ _ FieldRefAuthId = "(val authId)"
 hsFieldRef _ op  (FieldRefPathParam p) = "(val " ++ coerceType op ("p" ++ show p) ++ ")"
 hsFieldRef _ op FieldRefLocalParam = "(val " ++ coerceType op "localParam" ++ ")"
@@ -112,7 +111,10 @@ hsValExpr ctx op ve =  case ve of
     ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
     ConcatManyExpr ves -> "(concat_ [" ++ (intercalate ", " $ map (hsValExpr ctx op) ves) ++ "])"
     ValBinOpExpr e1 vop e2 -> "(" ++ hsValExpr ctx op e1 ++ ") " ++ hsValBinOp vop ++ " (" ++ hsValExpr ctx op e2 ++ ")"
-
+    RandomExpr -> "random_"
+    FloorExpr ve -> "(floor_ " ++ hsValExpr ctx Nothing ve ++ ")"
+    CeilingExpr ve -> "(ceiling_" ++ hsValExpr ctx Nothing ve ++ ")"
+    ExtractExpr fn ve -> "(extractSubField " ++ (quote $ extractSubField fn) ++ " " ++ (hsValExpr ctx Nothing ve) ++ ")"
 
 boolToInt :: Bool -> Int
 boolToInt True = 1

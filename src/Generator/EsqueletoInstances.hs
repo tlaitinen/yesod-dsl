@@ -24,6 +24,7 @@ maxInstances m = maximum $ map sqFieldNumber
                   ctxHandlerParams = []
               }
               in length $ concatMap (selectFieldExprs m ctx) (sqFields sq)
+          sqFieldNumber _ = 0
 
 genInstance :: Int -> String
 genInstance fnum = T.unpack $(codegenFile "codegen/sqlselect-instance.cg")

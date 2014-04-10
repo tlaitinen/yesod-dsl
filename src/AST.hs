@@ -50,6 +50,8 @@ instance Show Location where
 
 mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
 
+-- | macro definition, currently used only to define parametrized 
+-- sub-select-queries
 data Define = Define {
     defineName :: String,
     defineLoc :: Location,
@@ -102,6 +104,10 @@ data ValExpr = FieldExpr FieldRef
            | ConcatExpr ValExpr ValExpr  
            | ConcatManyExpr [ValExpr]
            | ValBinOpExpr ValExpr ValBinOp ValExpr 
+           | RandomExpr
+           | FloorExpr ValExpr
+           | CeilingExpr ValExpr
+           | ExtractExpr FieldName ValExpr
            deriving (Show, Eq)
 data HandlerParam = Public 
                   | DefaultFilterSort
@@ -210,7 +216,6 @@ instance Show PathPiece where
     
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName
-              | FieldRefExtract FieldName VariableName FieldName
               | FieldRefAuthId
               | FieldRefAuth FieldName
               | FieldRefLocalParam

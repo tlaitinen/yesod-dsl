@@ -124,6 +124,9 @@ import System.Exit
     for { Tk _ TFor }
     extract { Tk _ TExtract }
     concat { Tk _ TConcat }
+    random { Tk _ TRandom }
+    floor { Tk _ TFloor }
+    ceiling { Tk _ TCeiling }
 
 %right listOp
 %left plus minus
@@ -194,8 +197,6 @@ handlerdef : get handlerParamsBlock { Handler (mkLoc $1) GetHandler $2 }
 
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
-          | extract lparen lowerId from lowerId dot lowerId rparen { 
-                FieldRefExtract $3 $5 $7 }
           | upperId dot upperId { FieldRefEnum $1 $3 }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
@@ -281,7 +282,7 @@ inputRef: request dot lowerId { InputFieldNormal $3 }
         | auth dot idField { InputFieldAuthId }
         | auth dot lowerId { InputFieldAuth $3 }
         | value { InputFieldConst $1 }
-        | now { InputFieldNow }
+        | now lparen rparen { InputFieldNow }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }
@@ -312,6 +313,7 @@ expr : expr and expr { AndExpr $1 $3 }
      | lparen expr rparen { $2 } 
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
      | fieldRef listOp fieldRef { ListOpExpr $1 $2 $3 }
+
 listOp: in { In }
       | not in { NotIn }
 
@@ -328,7 +330,11 @@ valexpr : lparen valexpr rparen { $2 }
         | valexpr concatop valexpr { ConcatExpr $1 $3 }
         | valexpr valbinop valexpr { ValBinOpExpr $1 $2 $3 }
         | concat lparen valexprlist rparen { ConcatManyExpr (reverse $3) }
-       
+        | random lparen rparen { RandomExpr }
+        | floor lparen valexpr rparen { FloorExpr $3 }
+        | ceiling lparen valexpr rparen { CeilingExpr $3 }
+        | extract lparen lowerId from valexpr rparen { 
+                ExtractExpr $3 $5  }
 valexprlist: valexpr { [$1] }        
            | valexprlist comma valexpr { $3 : $1 }
 

@@ -117,6 +117,10 @@ tokens :-
     $digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
      "id" { mkT TId }
+     "now" { mkT TNow }
+     "random" { mkT TRandom }
+     "ceiling" { mkT TCeiling }
+     "floor" { mkT TFloor }
     $lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
     @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
@@ -124,8 +128,6 @@ tokens :-
     @pathParam { mkTvar (TPathParam . (read . (drop 1))) }
      "$$"  { mkT TLocalParam }
      "_" { mkT TUnderScore }
-     "now()" { mkT TNow }
-
 {
 
 data Token = Tk AlexPosn TokenType deriving (Show)
@@ -237,6 +239,9 @@ data TokenType = TSemicolon
            | TFor
            | TExtract
            | TConcat
+           | TRandom
+           | TFloor
+           | TCeiling
     deriving (Show)
 
 stripQuotes s = take ((length s) -2) (tail s)

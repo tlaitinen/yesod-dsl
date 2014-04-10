@@ -58,8 +58,8 @@ defaultFieldValue f = case fieldDefault f of
         then "Nothing"
         else let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
 
-mapJsonInputField :: [InputField] -> Bool -> (Entity,Field) -> String
-mapJsonInputField ifields isNew (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
+mapJsonInputField :: Context -> [InputField] -> Bool -> (Entity,Field) -> String
+mapJsonInputField ctx ifields isNew (e,f) = T.unpack $(codegenFile "codegen/map-input-field.cg")
     where 
         maybeInput = matchInputField ifields (fieldName f)
         notNothing = case maybeInput of
@@ -77,6 +77,11 @@ mapJsonInputField ifields isNew (e,f) = T.unpack $(codegenFile "codegen/map-inpu
             Just (InputFieldConst v) -> T.unpack $(codegenFile "codegen/map-input-field-const.cg")
             Just (InputFieldNow) -> T.unpack $(codegenFile "codegen/map-input-field-now.cg")
             Just (InputFieldLocalParam vn) -> T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+            Just (InputFieldLocalParamField vn fn) -> T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
+                where en = fromJust $ listToMaybe $ concatMap f (ctxHandlerParams ctx)
+                      f (GetById en _ vn') = if vn' == vn then [en] else []
+                      f _ = []
+                     
             Nothing -> if isNew then defaultFieldValue f
                                 else T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
 matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef
@@ -93,12 +98,13 @@ updateHandlerDecode m r ps (pId,p) = case p of
     where readInputObject e (Just fields) fr =  T.unpack $(codegenFile "codegen/read-input-object-fields.cg")           
           readInputObject e Nothing _ = T.unpack $(codegenFile "codegen/read-input-object-whole.cg")
 
+          ctx = Context { ctxNames = [], ctxModule = m, ctxHandlerParams = ps }
           maybeSelectExisting e fields (Just fr)
               | Nothing `elem` [ matchInputField fields (fieldName f) 
-                                 | f <- entityFields e ] = let ctx = Context { ctxNames = [], ctxModule = m, ctxHandlerParams = ps }  in T.unpack $(codegenFile "codegen/select-existing.cg")
+                                 | f <- entityFields e ] = T.unpack $(codegenFile "codegen/select-existing.cg")
               | otherwise = ""
           maybeSelectExisting e _ _ = ""
-          mapFields e fields isNew = intercalate ",\n" $ map (mapJsonInputField fields isNew) 
+          mapFields e fields isNew = intercalate ",\n" $ map (mapJsonInputField ctx fields isNew) 
                                       [ (e,f) | f <- entityFields e ]
 fieldRefToJsonAttrs :: FieldRef -> [FieldName]
 fieldRefToJsonAttrs (FieldRefRequest fn) = [fn]
@@ -118,6 +124,10 @@ inputFieldToJsonAttr _ = Nothing
 valExprToJsonAttr :: ValExpr -> [FieldName]
 valExprToJsonAttr (FieldExpr fr) = fieldRefToJsonAttrs fr
 valExprToJsonAttr (ConcatExpr ve1 ve2) = concatMap valExprToJsonAttr [ve1,ve2]
+valExprToJsonAttr (ConcatManyExpr ves) = concatMap valExprToJsonAttr ves
+valExprToJsonAttr (ValBinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
+valExprToJsonAttr (FloorExpr ve) = valExprToJsonAttr ve
+valExprToJsonAttr (CeilingExpr ve) = valExprToJsonAttr ve
 valExprToJsonAttr _ = []
 
 exprToJsonAttrs :: Expr -> [FieldName]

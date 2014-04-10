@@ -137,6 +137,7 @@ getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
           expand (SelectField _ fn an') = [ maybe fn id an' ]
           expand (SelectIdField _ an') = [ maybe "id" id an' ]
           expand (SelectValExpr ve an) = [ an ]
+          expand (SelectParamField _ _ _) = []
           resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
           mappedResultFields = concatMap mapResultField fieldNames
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
@@ -146,6 +147,10 @@ valExprRefs (FieldExpr fr) = [fr]
 valExprRefs (ConstExpr _) = []
 valExprRefs (ConcatExpr ve1 ve2) = concatMap valExprRefs [ve1,ve2]
 valExprRefs (ConcatManyExpr ves) = concatMap valExprRefs ves
+valExprRefs (ValBinOpExpr ve1 _ ve2) = concatMap valExprRefs [ve1,ve2]
+valExprRefs RandomExpr = []
+valExprRefs (FloorExpr ve) = valExprRefs ve
+valExprRefs (CeilingExpr ve) = valExprRefs ve
 
 exprFieldRefs :: Expr -> [FieldRef]
 exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
