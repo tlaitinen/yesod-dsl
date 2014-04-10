@@ -108,9 +108,6 @@ updateHandlerDecode m r ps (pId,p) = case p of
                                       [ (e,f) | f <- entityFields e ]
 fieldRefToJsonAttrs :: FieldRef -> [FieldName]
 fieldRefToJsonAttrs (FieldRefRequest fn) = [fn]
-fieldRefToJsonAttrs (FieldRefSubQuery sq) = fromMaybe [] $ do
-    expr <- sqWhere sq
-    return $ exprToJsonAttrs expr
 fieldRefToJsonAttrs _ = []
                          
 inputFieldRefToJsonAttr :: InputFieldRef -> Maybe FieldName
@@ -128,13 +125,15 @@ valExprToJsonAttr (ConcatManyExpr ves) = concatMap valExprToJsonAttr ves
 valExprToJsonAttr (ValBinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 valExprToJsonAttr (FloorExpr ve) = valExprToJsonAttr ve
 valExprToJsonAttr (CeilingExpr ve) = valExprToJsonAttr ve
+valExprToJsonAttr (SubQueryExpr sq) = fromMaybe [] $ do
+    expr <- sqWhere sq
+    return $ exprToJsonAttrs expr
 valExprToJsonAttr _ = []
 
 exprToJsonAttrs :: Expr -> [FieldName]
 exprToJsonAttrs (AndExpr e1 e2) = concatMap exprToJsonAttrs [e1,e2]
 exprToJsonAttrs (OrExpr e1 e2) = concatMap exprToJsonAttrs [e1,e2]
 exprToJsonAttrs (NotExpr e) = exprToJsonAttrs e
-exprToJsonAttrs (ListOpExpr fr1 _ fr2) = concatMap fieldRefToJsonAttrs [fr1,fr2]
 exprToJsonAttrs (BinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 
 getJsonAttrs :: Module -> HandlerParam -> [FieldName]

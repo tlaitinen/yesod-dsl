@@ -29,23 +29,23 @@ expandMacros m = m {
         fExpr (AndExpr e1 e2) = AndExpr (fExpr e1) (fExpr e2)
         fExpr (OrExpr e1 e2) = OrExpr (fExpr e1) (fExpr e2)
         fExpr (NotExpr e) = NotExpr (fExpr e)
-        fExpr (ListOpExpr fr1 lo fr2) = ListOpExpr (fFieldRef fr1) lo
-                                                   (fFieldRef fr2)
         fExpr (BinOpExpr ve1 bo ve2) = BinOpExpr (fValExpr ve1) bo
                                                  (fValExpr ve2)
-        fValExpr (FieldExpr fr) = FieldExpr $ fFieldRef fr    
         fValExpr (ConcatExpr ve1 ve2) = ConcatExpr (fValExpr ve1) (fValExpr ve2)
+        fValExpr (ConcatManyExpr ves) = ConcatManyExpr $ map fValExpr ves
+        fValExpr (ValBinOpExpr ve1 op ve2) = ValBinOpExpr (fValExpr ve1) op (fValExpr ve2)
+        fValExpr (FloorExpr ve) = FloorExpr (fValExpr ve)
+        fValExpr (CeilingExpr ve) = CeilingExpr (fValExpr ve)
+        fValExpr (ExtractExpr fn ve) = ExtractExpr fn (fValExpr ve)
+        fValExpr (SubQueryExpr sq) = SubQueryExpr $ fSelectQuery sq
+        fValExpr (ApplyExpr fn ps) = expandApplyExpr fn ps
         fValExpr ve = ve
 
-        fFieldRef fr = case fr of
-            FieldRefSubQuery sq -> FieldRefSubQuery $ fSelectQuery sq
-            FieldRefFunc fn ps -> expandFieldRef fn ps
-            fr' -> fr'
 
-        expandFieldRef fn ps = case find (\d -> defineName d == fn) (modDefines m) of
+        expandApplyExpr fn ps = case find (\d -> defineName d == fn) (modDefines m) of
             Just d -> if length (defineParams d) == length ps
                 then case defineContent d of
-                    (DefineSubQuery sq) -> FieldRefSubQuery (expandSubQuery sq $ zip (defineParams d) ps)
+                    (DefineSubQuery sq) -> SubQueryExpr (expandSubQuery sq $ zip (defineParams d) ps)
                 else error $ "Expected " ++ show (length $ defineParams d)
                              ++ " parameters for macro " ++ fn ++ " got " ++
                              show (length ps)

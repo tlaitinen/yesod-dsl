@@ -21,8 +21,6 @@ hsBinOp op = case op of
     Like -> "`like`"
     Ilike -> "`ilike`"
     Is -> "`is`"
-
-hsListOp op = case op of
     In -> "`in_`"
     NotIn -> "`notIn`"
 
@@ -80,19 +78,25 @@ extractSubField fn = case fn of
     "week"      -> "WEEK"
     "year"      -> "YEAR"
     fn' -> error $ "Unknown subfield : " ++ fn'
-hsFieldRef :: Context -> Maybe BinOp -> FieldRef -> String
-hsFieldRef ctx _ (FieldRefId vn) = vn ++ projectField (ctxIsMaybe ctx vn)
+
+valueOrValueList :: Maybe BinOp -> Int -> String
+valueOrValueList op justLvl = if op `elem` [Just In, Just NotIn] 
+        then "valList" ++ if justLvl > 0 then " $ map Just" else ""
+        else "val" ++ if justLvl > 0 then " $ just" else ""
+    
+hsFieldRef :: Context -> Maybe BinOp -> Int -> FieldRef -> String
+hsFieldRef ctx _ justLvl (FieldRefId vn) = makeJust justLvl $ vn ++ projectField (ctxIsMaybe ctx vn)
                  ++  (fromJust $ ctxLookupEntity ctx vn) ++ "Id"
-hsFieldRef ctx _  (FieldRefNormal vn fn) = vn ++ projectField (ctxIsMaybe ctx vn)
+hsFieldRef ctx _  justLvl (FieldRefNormal vn fn) = makeJust justLvl $ vn ++ projectField (ctxIsMaybe ctx vn)
                  ++ (fromJust $ ctxLookupEntity ctx vn) 
                  ++ (upperFirst fn)
-hsFieldRef _ _ FieldRefAuthId = "(val authId)"
-hsFieldRef _ op  (FieldRefPathParam p) = "(val " ++ coerceType op ("p" ++ show p) ++ ")"
-hsFieldRef _ op FieldRefLocalParam = "(val " ++ coerceType op "localParam" ++ ")"
-hsFieldRef _ _ (FieldRefRequest fn) = "(val attr_" ++ fn ++ ")"
-hsFieldRef _ _ (FieldRefEnum en vn) = "(val " ++ en ++ vn ++ ")"
+hsFieldRef _ op justLvl FieldRefAuthId = "(" ++ valueOrValueList op justLvl++ " authId)"
+hsFieldRef _ op justLvl (FieldRefPathParam p) = "(" ++ valueOrValueList op justLvl  ++" " ++ coerceType op ("p" ++ show p) ++ ")"
+hsFieldRef _ op justLvl FieldRefLocalParam = "(" ++ valueOrValueList op justLvl ++ " " ++ coerceType op "localParam" ++ ")"
+hsFieldRef _ op justLvl (FieldRefRequest fn) = "(" ++ valueOrValueList op justLvl ++ " attr_" ++ fn ++ ")"
+hsFieldRef _ op justLvl (FieldRefEnum en vn) = "(" ++ valueOrValueList op justLvl ++ " " ++ en ++ vn ++ ")"
 hsOrderBy :: Context -> (FieldRef, SortDir) -> String
-hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing f ++ ")"
+hsOrderBy ctx (f,d) = dir d ++ "(" ++ hsFieldRef ctx Nothing 0 f ++ ")"
     where dir SortAsc = "asc "
           dir SortDesc = "desc "
 
@@ -103,18 +107,25 @@ hsValBinOp vo = case vo of
     Add -> "+."
     Sub -> "-."
           
-hsValExpr :: Context -> Maybe BinOp -> ValExpr -> String
-hsValExpr ctx op ve =  case ve of
-    FieldExpr fr -> hsFieldRef ctx op fr
-    ConstExpr (fv@(NothingValue)) -> fieldValueToEsqueleto fv
-    ConstExpr fv ->  "(val " ++ fieldValueToEsqueleto fv ++  ")" 
-    ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op e1 ++ ") ++. (" ++ hsValExpr ctx op e2 ++ ")"
-    ConcatManyExpr ves -> "(concat_ [" ++ (intercalate ", " $ map (hsValExpr ctx op) ves) ++ "])"
-    ValBinOpExpr e1 vop e2 -> "(" ++ hsValExpr ctx op e1 ++ ") " ++ hsValBinOp vop ++ " (" ++ hsValExpr ctx op e2 ++ ")"
-    RandomExpr -> "random_"
-    FloorExpr ve -> "(floor_ " ++ hsValExpr ctx Nothing ve ++ ")"
-    CeilingExpr ve -> "(ceiling_" ++ hsValExpr ctx Nothing ve ++ ")"
-    ExtractExpr fn ve -> "(extractSubField " ++ (quote $ extractSubField fn) ++ " " ++ (hsValExpr ctx Nothing ve) ++ ")"
+hsValExpr :: Context -> Maybe BinOp -> Int -> ValExpr -> String
+hsValExpr ctx op justLvl ve = maybePromoteJust $ content
+    where 
+        maybePromoteJust content = case ve of
+            SubQueryExpr _ -> content
+            FieldExpr _ -> content
+            _ -> makeJust justLvl content
+        content = case ve of
+            FieldExpr fr -> "(" ++ hsFieldRef ctx op justLvl fr ++ ")"
+            ConstExpr (fv@(NothingValue)) -> fieldValueToEsqueleto fv
+            ConstExpr fv ->  "(val " ++ fieldValueToEsqueleto fv ++  ")" 
+            ConcatExpr e1 e2 -> "(" ++ hsValExpr ctx op 0 e1 ++ ") ++. (" ++ hsValExpr ctx op 0 e2 ++ ")"
+            ConcatManyExpr ves -> "(concat_ [" ++ (intercalate ", " $ map (hsValExpr ctx op 0) ves) ++ "])"
+            ValBinOpExpr e1 vop e2 -> "(" ++ hsValExpr ctx op 0 e1 ++ ") " ++ hsValBinOp vop ++ " (" ++ hsValExpr ctx op 0 e2 ++ ")"
+            RandomExpr -> "random_"
+            FloorExpr ve -> "(floor_ " ++ hsValExpr ctx Nothing 0 ve  ++ ")"
+            CeilingExpr ve -> "(ceiling_" ++ hsValExpr ctx Nothing 0 ve  ++ ")"
+            ExtractExpr fn ve -> "(extractSubField " ++ (quote $ extractSubField fn) ++ " " ++ (hsValExpr ctx Nothing 0 ve ) ++ ")"
+            SubQueryExpr sq -> subQuery ctx sq justLvl
 
 boolToInt :: Bool -> Int
 boolToInt True = 1
@@ -124,13 +135,6 @@ fieldRefMaybeLevel :: Context -> FieldRef -> Int
 fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
 fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn) + boolToInt (fromMaybe False optional)
     where optional = ctxLookupField ctx vn fn >>= Just . fieldOptional
-fieldRefMaybeLevel ctx (FieldRefSubQuery sq) = fromMaybe 0 $ listToMaybe $ map (exprMaybeLevel ctx') fieldExprs
-    where fieldExprs = concatMap (selectFieldExprs m ctx') (sqFields sq)
-          m = ctxModule ctx
-          ctx' = ctx {
-               ctxNames = sqAliases sq
-          } 
-
  
 fieldRefMaybeLevel ctx _ = 0
 
@@ -140,22 +144,17 @@ exprMaybeLevel ctx ve = case ve of
     ConstExpr NothingValue -> 1
     ConstExpr _ -> 0
     ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLevel ctx e2)
-
-hsListFieldRef :: Context -> FieldRef -> Int -> String
-hsListFieldRef ctx (FieldRefId vn) mkJust = makeJust mkJust $ vn 
-                 ++ projectField (ctxIsMaybe ctx vn)
-                 ++  (fromJust $ ctxLookupEntity ctx vn) ++ "Id"
-hsListFieldRef ctx  (FieldRefNormal vn fn) mkJust = makeJust mkJust $ vn 
-                 ++ projectField (ctxIsMaybe ctx vn)
-                 ++ (fromJust $ ctxLookupEntity ctx vn) 
-                 ++ (upperFirst fn)
-hsListFieldRef _ FieldRefAuthId mkJust = "(valList authId)"
-hsListFieldRef _  (FieldRefPathParam p) mkJust =  "(valList p" ++ show p ++ ")"
-hsListFieldRef _ FieldRefLocalParam mkJust = if mkJust > 0
-    then "(valList $ map Just localParam)"
-    else "(valList localParam)"
-hsListFieldRef _ (FieldRefRequest fn) mkJust = let content = "(fromMaybe [] $ attr_" ++ fn ++ ")" in if mkJust > 0 then "(valList $ map Just " ++ content ++ ")" else "(valList " ++ content ++ ")"
-hsListFieldRef ctx (FieldRefSubQuery sq) mkJust = "(" ++ subQuery ctx sq mkJust ++ ")"
+    ConcatManyExpr ves -> maximum $ map (exprMaybeLevel ctx) ves
+    ValBinOpExpr ve1 _ ve2 -> max (exprMaybeLevel ctx ve1) (exprMaybeLevel ctx ve2)
+    FloorExpr ve -> exprMaybeLevel ctx ve
+    CeilingExpr ve -> exprMaybeLevel ctx ve
+    ExtractExpr _ ve -> exprMaybeLevel ctx ve
+    SubQueryExpr sq -> fromMaybe 0 $ listToMaybe $ map (exprMaybeLevel ctx') fieldExprs
+        where fieldExprs = concatMap (selectFieldExprs m ctx') (sqFields sq)
+              m = ctxModule ctx
+              ctx' = ctx {
+                   ctxNames = sqAliases sq
+              } 
 
 mapJoinExpr :: Module -> Context -> Join -> String
 mapJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/join-expr.cg")
@@ -207,18 +206,10 @@ hsExpr ctx expr = case expr of
     OrExpr e1 e2 ->"(" ++ hsExpr ctx e1 ++ ") ||. (" ++ hsExpr ctx e2 ++ ")"
     NotExpr e -> "not_ (" ++ hsExpr ctx e ++ ")"
     BinOpExpr e1 op e2 -> binOpExpr e1 op e2 
-    ListOpExpr fr1 op fr2 -> listOpExpr fr1 op fr2 
     where
-        listOpExpr fr1 op fr2 = ("(" ++ hsListFieldRef ctx fr1 (justLevel2 fr1 fr2) ++ ")") ++ " " ++ hsListOp op ++ " " ++ ("(" ++ hsListFieldRef ctx fr2 (justLevel2 fr2 fr1) ++ ")")
-        justLevel2 :: FieldRef -> FieldRef -> Int
-        justLevel2 fr1 fr2 = max (fieldRefMaybeLevel ctx fr2
-                                  - fieldRefMaybeLevel ctx fr1) 0
-    
-        binOpExpr e1 op e2 = promoteJust e1 e2 ("(" ++ (hsValExpr ctx (Just op) e1) ++ ")") ++ " " ++ hsBinOp op ++ " " ++ (promoteJust e2 e1 ("(" ++ (hsValExpr ctx (Just op) e2) ++ ")"))
-        promoteJust :: ValExpr -> ValExpr -> String -> String
-        promoteJust e1 e2 content = let
-            lvl1 = exprMaybeLevel ctx e1
-            lvl2 = exprMaybeLevel ctx e2
-            count = max (lvl2 - lvl1) 0
-            in makeJust count content
+        binOpExpr e1 op e2 =  "(" ++ hsValExpr ctx Nothing (maybeLevel e1 e2) e1 ++ ")" ++ " " ++ hsBinOp op ++ " " ++ "(" ++ hsValExpr ctx (Just op) (maybeLevel e2 e1) e2 ++ ")"
+        maybeLevel e1 e2 = let
+                lvl1 = exprMaybeLevel ctx e1
+                lvl2 = exprMaybeLevel ctx e2
+            in  max (lvl2 - lvl1) 0
 

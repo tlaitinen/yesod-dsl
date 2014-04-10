@@ -151,13 +151,13 @@ valExprRefs (ValBinOpExpr ve1 _ ve2) = concatMap valExprRefs [ve1,ve2]
 valExprRefs RandomExpr = []
 valExprRefs (FloorExpr ve) = valExprRefs ve
 valExprRefs (CeilingExpr ve) = valExprRefs ve
-
+valExprRefs (ExtractExpr _ ve) = valExprRefs ve
+valExprRefs (SubQueryExpr sq) = sqFieldRefs sq
 exprFieldRefs :: Expr -> [FieldRef]
 exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (OrExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (NotExpr e) = exprFieldRefs e
 exprFieldRefs (BinOpExpr ve1 _ ve2) = valExprRefs ve1 ++ (valExprRefs ve2)
-exprFieldRefs (ListOpExpr fr1 _ fr2) = [fr1,fr2]
           
 joinFieldRefs :: Join -> [FieldRef]
 joinFieldRefs j = maybe [] exprFieldRefs (joinExpr j)

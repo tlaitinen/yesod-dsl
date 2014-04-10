@@ -127,8 +127,7 @@ import System.Exit
     random { Tk _ TRandom }
     floor { Tk _ TFloor }
     ceiling { Tk _ TCeiling }
-
-%right listOp
+%left in 
 %left plus minus
 %left asterisk slash
 %%
@@ -203,13 +202,7 @@ fieldRef : lowerId dot idField { FieldRefId $1 }
           | auth dot lowerId { FieldRefAuth $3 }
           | localParam { FieldRefLocalParam }
           | request dot lowerId { FieldRefRequest $3 }
-          | lowerId lparen maybeEmptyLowerIdList rparen { FieldRefFunc $1 $3 }
-          | lparen select selectField from upperId as lowerId 
-               joins maybeWhere rparen  
-                   { FieldRefSubQuery (SelectQuery [$3] ($5,$7) (reverse $8) $9 
-                                      [] (0,0)) }
- 
-
+  
 handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 
 handlerParams : { [] }
@@ -307,15 +300,13 @@ binop : equals { Eq }
       | like { Like }
       | ilike {Ilike }
       | is { Is }
+      | in { In }
+      | not in { NotIn }
 expr : expr and expr { AndExpr $1 $3 }
      | expr or expr { OrExpr $1 $3 }
      | not expr { NotExpr $2 }
      | lparen expr rparen { $2 } 
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
-     | fieldRef listOp fieldRef { ListOpExpr $1 $2 $3 }
-
-listOp: in { In }
-      | not in { NotIn }
 
 valbinop :      
       slash { Div }
@@ -335,6 +326,12 @@ valexpr : lparen valexpr rparen { $2 }
         | ceiling lparen valexpr rparen { CeilingExpr $3 }
         | extract lparen lowerId from valexpr rparen { 
                 ExtractExpr $3 $5  }
+        | lparen select selectField from upperId as lowerId 
+               joins maybeWhere rparen  
+                   { SubQueryExpr (SelectQuery [$3] ($5,$7) (reverse $8) $9 
+                                      [] (0,0)) }
+        | lowerId lparen maybeEmptyLowerIdList rparen { ApplyExpr $1 $3 }
+
 valexprlist: valexpr { [$1] }        
            | valexprlist comma valexpr { $3 : $1 }
 

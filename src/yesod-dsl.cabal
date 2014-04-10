@@ -45,7 +45,6 @@ executable  yesod-dsl
                    Generator.EsqueletoInstances
                    Generator.Fay
                    Generator.EntityFactories
-                   Obfuscate
                    SyncFile
                    ExpandMacros
                    Validation.Fields

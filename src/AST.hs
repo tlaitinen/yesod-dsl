@@ -90,14 +90,12 @@ isOuterJoin RightOuterJoin = True
 isOuterJoin FullOuterJoin = True
 isOuterJoin _ = False
 
-data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is  deriving (Show,Eq)     
+data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq)     
 data ValBinOp = Add | Sub | Div | Mul deriving (Show,Eq)    
-data ListOp = In | NotIn deriving (Show,Eq)
 
 data Expr = AndExpr Expr Expr
           | OrExpr Expr Expr
           | NotExpr Expr
-          | ListOpExpr FieldRef ListOp FieldRef 
           | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
@@ -108,6 +106,8 @@ data ValExpr = FieldExpr FieldRef
            | FloorExpr ValExpr
            | CeilingExpr ValExpr
            | ExtractExpr FieldName ValExpr
+           | SubQueryExpr SelectQuery 
+           | ApplyExpr FunctionName [ParamName]
            deriving (Show, Eq)
 data HandlerParam = Public 
                   | DefaultFilterSort
@@ -222,8 +222,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefEnum EnumName FieldName
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName
-              | FieldRefFunc FunctionName [ParamName]
-              | FieldRefSubQuery SelectQuery deriving (Show, Eq) 
+              deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id

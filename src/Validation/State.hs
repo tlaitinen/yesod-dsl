@@ -335,18 +335,6 @@ vExpr (OrExpr e1 e2) = do
     vExpr e2
 vExpr (NotExpr e) = do
     vExpr e
-vExpr loe@(ListOpExpr fr1 op fr2) = do
-    vFieldRef fr1
-    vFieldRef fr2
-    case (fr1) of   
-        FieldRefId _ -> return ()
-        FieldRefNormal _ _ -> return ()
-        _ -> vError $ "Unsupported left hand side operand in list expression : " ++ show  loe
-    case (fr2) of
-        FieldRefLocalParam -> return ()
-        FieldRefSubQuery _ -> return ()
-        FieldRefRequest _ -> return ()
-        _ -> vError $ "Unsupported right hand side operand in list expression : " ++ show loe
 vExpr (BinOpExpr ve1 op ve2) = do
     vValExpr ve1
     vValExpr ve2
@@ -375,18 +363,6 @@ ensureEnumValue vn e = do
 vFieldRef :: FieldRef -> Validation
 vFieldRef (FieldRefId vn) = vEntityRef vn 
 vFieldRef (FieldRefNormal vn fn) = withLookupEntity vn $ ensureField vn fn 
-vFieldRef (FieldRefSubQuery sq) = do
-    withScope "sub-select" $ do
-        let (en,vn) = sqFrom sq
-        withLookupEntity en $ \e -> declareLocal vn (VEntity e)
-        forM_ (sqJoins sq) vJoin 
-        case sqFields sq of
-            [sf] -> vSelectField sf
-            _ -> vError $ "Sub-select must return exactly one field"
-     
-        case sqWhere sq of 
-            Just e -> withScope "where expression" $ vExpr e
-            Nothing -> return ()
 vFieldRef (FieldRefRequest fn) = do
     ht <- gets stHandlerType
     case ht of
@@ -449,3 +425,16 @@ vValExpr ve = case ve of
             then vError $ "Unknown subfield '" ++ fn ++ "' to extract" 
             else return ()
         vValExpr ve
+    SubQueryExpr sq -> do
+        withScope "sub-select" $ do
+            let (en,vn) = sqFrom sq
+            withLookupEntity en $ \e -> declareLocal vn (VEntity e)
+            forM_ (sqJoins sq) vJoin 
+            case sqFields sq of
+                [sf] -> vSelectField sf
+                _ -> vError $ "Sub-select must return exactly one field"
+         
+            case sqWhere sq of 
+                Just e -> withScope "where expression" $ vExpr e
+                Nothing -> return ()
+

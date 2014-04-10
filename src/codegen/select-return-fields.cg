@@ -1,1 +1,1 @@
-        return (~{makeJust mkJust (intercalate ", " (map (hsValExpr ctx Nothing) fieldExprs))})
+        return (~{intercalate ", " (map (hsValExpr ctx Nothing mkJust) fieldExprs)})

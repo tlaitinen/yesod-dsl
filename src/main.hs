@@ -8,14 +8,12 @@ import ClassImplementer
 import Generator
 import Control.Monad
 import System.IO
-import Obfuscate
 import ExpandMacros
 
-data Flag = Obfuscate 
-          | FayPath String deriving Eq
+data Flag = 
+          FayPath String deriving Eq
 options :: [OptDescr Flag]
 options = [
-    Option ['o']     ["obfuscate"] (NoArg Obfuscate)        "obfuscated output",
     Option ['f']     ["fay"] (ReqArg FayPath "FILE") "translate DSL definition to Fay compatible code and store it in FILE"
   ]
 
@@ -33,8 +31,7 @@ main = do
     where
                          
         main' o path = do
-            dbs' <- parse path
-            let dbs = if Obfuscate `elem` o then obfuscate dbs' else dbs'
+            dbs <- parse path
             let ast  = expandMacros . implementClasses . mergeModules $ dbs
 
             let errors = validate ast
