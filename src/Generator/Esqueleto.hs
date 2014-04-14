@@ -72,9 +72,9 @@ ctxMaybeLevel vn = do
     names <- gets ctxNames
     return $ boolToInt $ maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') names
 
-annotateType :: Maybe String -> String -> String
-annotateType (Just exprType)  s = "(" ++ s ++ " :: " ++ exprType ++ ")"
-annotateType Nothing s = s 
+annotateType :: Bool -> Maybe String -> String -> String
+annotateType listValue (Just exprType)  s = "(" ++ s ++ " :: " ++ (if listValue then "[" ++ exprType ++ "]" else exprType) ++ ")"
+annotateType _ Nothing s = s 
 
 projectField :: MaybeFlag -> String
 projectField True = " ?. "
@@ -114,7 +114,7 @@ normalFieldRef content = do
     lv <- gets ctxExprListValue
     et <- gets ctxExprType
     
-    return $ brackets (isJust et) $ valueOrValueList lv j ++" " ++ annotateType et content
+    return $ brackets (isJust et) $ valueOrValueList lv j ++" " ++ annotateType  lv et content
 
 hsFieldRef :: FieldRef -> State Context String
 hsFieldRef (FieldRefId vn) = do
@@ -188,7 +188,7 @@ hsValExpr ve = do
                 return $ "(ceiling_" ++ r ++ ")"
             ExtractExpr fn ve -> resetMaybe $ do
                 r <- hsValExpr ve
-                return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " " ++ r++ ")"
+                return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " $ " ++ r++ ")"
             SubQueryExpr sq -> subQuery sq
 
 fieldRefMaybeLevel :: FieldRef -> State Context Int
@@ -221,7 +221,14 @@ exprMaybeLevel ve = case ve of
         mls <- mapM exprMaybeLevel fs
         put ctx
         return $ fromMaybe 0 $ listToMaybe mls
-     
+
+exprReturnType :: ValExpr -> State Context (Maybe String)
+exprReturnType e = return $ case e of
+    FloorExpr _ -> Just "Double"
+    CeilingExpr _ -> Just "Double"
+    ExtractExpr _ _ -> Just "Double"
+    _ -> Nothing
+
 mapJoinExpr :: Join -> State Context String
 mapJoinExpr (Join _ en vn (Just expr)) = do
     e <- hsBoolExpr expr
@@ -303,13 +310,20 @@ hsBoolExpr expr = case expr of
     BinOpExpr e1 op e2 -> do
         e1m <- exprMaybeLevel e1
         e2m <- exprMaybeLevel e2
-        r1 <- localCtx (\ctx -> ctx { ctxExprMaybeLevel = max 0 $ e2m - e1m } ) (hsValExpr e1)
+        e1rt <- exprReturnType e1
+        e2rt <- exprReturnType e2
+        r1 <- localCtx 
+                (\ctx -> ctx { 
+                    ctxExprMaybeLevel = max 0 $ e2m - e1m ,
+                    ctxExprType = e2rt
+                } )
+                (hsValExpr e1)
         r2 <- localCtx 
                 (\ctx -> ctx { 
                     ctxExprType = case op of
                         Ilike -> Just "Text"
                         Like -> Just "Text"
-                        _ -> Nothing,
+                        _ -> e1rt,
                     ctxExprMaybeLevel = max 0 $ e1m - e2m,
                     ctxExprListValue = op `elem` [In, NotIn]
                 }) 
