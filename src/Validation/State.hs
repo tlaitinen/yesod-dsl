@@ -405,9 +405,6 @@ vValExpr :: ValExpr -> Validation
 vValExpr ve = case ve of
     FieldExpr fr -> vFieldRef fr
     ConstExpr _ -> return ()
-    ConcatExpr ve1 ve2 -> do
-        vValExpr ve1
-        vValExpr ve2
     ConcatManyExpr ves -> forM_ ves vValExpr    
     ValBinOpExpr ve1 _ ve2 -> do
         vValExpr ve1

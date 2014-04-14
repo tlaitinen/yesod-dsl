@@ -37,7 +37,9 @@ ctxFields = do
 
 defaultFilterField :: (Entity, VariableName, Field) -> State Context String
 defaultFilterField (e,vn,f) = do
-    isMaybe <- ctxIsMaybe vn
+    baseMaybeLevel <- ctxMaybeLevel vn
+    let maybeLevel = baseMaybeLevel + boolToInt (fieldOptional f)
+        isMaybe = baseMaybeLevel > 0
     return $ T.unpack $(codegenFile "codegen/default-filter-field.cg")
 
 defaultFilterFields :: State Context String
@@ -48,7 +50,8 @@ defaultFilterFields = do
 
 defaultSortField :: (Entity, VariableName, Field, ParamName) -> State Context String    
 defaultSortField (e,vn,f,pn) = do
-    isMaybe <- ctxIsMaybe vn
+    maybeLevel <- ctxMaybeLevel vn
+    let isMaybe = maybeLevel > 0
     return $ T.unpack $(codegenFile "codegen/default-sort-field.cg")
 
 defaultSortFields :: SelectQuery -> State Context String
@@ -87,7 +90,7 @@ isMaybeFieldRef _  = return False
 implicitJoinExpr :: Join -> State Context String
 implicitJoinExpr (Join _ en vn (Just expr)) = do
     e <- hsBoolExpr expr
-    return $ "where_ (" ++ e ++ ")"
+    return $ "where_ (" ++ e ++ ")\n"
 implicitJoinExpr _ = return ""
 
 
@@ -134,7 +137,7 @@ getHandlerSelect = do
             maybeWhere <- case sqWhere sq of
                 Just expr -> do
                     e <- hsBoolExpr expr
-                    return $ "where_ (" ++ e ++ ")"
+                    return $ "where_ (" ++ e ++ ")\n"
                 Nothing -> return ""
             joinExprs <- liftM concat $ mapM mapJoinExpr $ reverse $ sqJoins sq
             ifFiltersStr <- liftM concat $ mapM (baseIfFilter selectVar) ifFilters
@@ -182,7 +185,6 @@ getHandlerReturn sq = do
 valExprRefs :: ValExpr -> [FieldRef]
 valExprRefs (FieldExpr fr) = [fr]
 valExprRefs (ConstExpr _) = []
-valExprRefs (ConcatExpr ve1 ve2) = concatMap valExprRefs [ve1,ve2]
 valExprRefs (ConcatManyExpr ves) = concatMap valExprRefs ves
 valExprRefs (ValBinOpExpr ve1 _ ve2) = concatMap valExprRefs [ve1,ve2]
 valExprRefs RandomExpr = []

@@ -1,4 +1,5 @@
         if hasDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" 
             then ~{maybeFrom} 
-~{indent 8 joinExprs}                where_ $ ~{expr}
+~{indent 12 joinExprs}                 
+                where_ $ ~{expr}
             else return ()

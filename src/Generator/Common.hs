@@ -1,12 +1,17 @@
 module Generator.Common where
 import AST
+brackets :: Bool -> String -> String
+brackets True s = "(" ++ s ++ ")"
+brackets False s = s
+
 maybeHsJust :: Bool -> String -> String
 maybeHsJust True v = "(Just " ++ v ++ ")"
 maybeHsJust False v = v
 
-makeJust :: Bool -> String -> String
-makeJust True t = "just (" ++ t ++ ")"
-makeJust False t = t
+makeJust :: Int -> String -> String
+makeJust n t 
+    | n > 0 = "just (" ++ makeJust (n - 1) t ++ ")"
+    | otherwise = t
 
 quote :: String -> String
 quote s = "\"" ++ s ++ "\""

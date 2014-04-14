@@ -31,7 +31,6 @@ expandMacros m = m {
         fExpr (NotExpr e) = NotExpr (fExpr e)
         fExpr (BinOpExpr ve1 bo ve2) = BinOpExpr (fValExpr ve1) bo
                                                  (fValExpr ve2)
-        fValExpr (ConcatExpr ve1 ve2) = ConcatExpr (fValExpr ve1) (fValExpr ve2)
         fValExpr (ConcatManyExpr ves) = ConcatManyExpr $ map fValExpr ves
         fValExpr (ValBinOpExpr ve1 op ve2) = ValBinOpExpr (fValExpr ve1) op (fValExpr ve2)
         fValExpr (FloorExpr ve) = FloorExpr (fValExpr ve)

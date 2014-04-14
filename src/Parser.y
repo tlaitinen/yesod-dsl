@@ -313,12 +313,11 @@ valbinop :
       | asterisk { Mul } 
       | plus { Add }
       | minus { Sub }
-
+      | concatop { Concat } 
 
 valexpr : lparen valexpr rparen { $2 }
         | value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }
-        | valexpr concatop valexpr { ConcatExpr $1 $3 }
         | valexpr valbinop valexpr { ValBinOpExpr $1 $2 $3 }
         | concat lparen valexprlist rparen { ConcatManyExpr (reverse $3) }
         | random lparen rparen { RandomExpr }

@@ -91,7 +91,7 @@ isOuterJoin FullOuterJoin = True
 isOuterJoin _ = False
 
 data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq)     
-data ValBinOp = Add | Sub | Div | Mul deriving (Show,Eq)    
+data ValBinOp = Add | Sub | Div | Mul | Concat deriving (Show,Eq)    
 
 data BoolExpr = AndExpr BoolExpr BoolExpr
           | OrExpr BoolExpr BoolExpr
@@ -99,7 +99,6 @@ data BoolExpr = AndExpr BoolExpr BoolExpr
           | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
-           | ConcatExpr ValExpr ValExpr  
            | ConcatManyExpr [ValExpr]
            | ValBinOpExpr ValExpr ValBinOp ValExpr 
            | RandomExpr

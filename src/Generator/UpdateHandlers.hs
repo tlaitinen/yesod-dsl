@@ -118,7 +118,7 @@ updateHandlerDecode (pId,p) = case p of
     where 
         readInputObject e (Just fields) fr = do
             maybeExisting <- maybeSelectExisting e fields fr
-            fieldMappers <- mapFields e fields (isJust fr)
+            fieldMappers <- mapFields e fields (isNothing fr)
             return $ T.unpack $(codegenFile "codegen/read-input-object-fields.cg")           
         readInputObject e Nothing _ = do
             fieldMappers <- mapFields e [] True
@@ -147,7 +147,6 @@ inputFieldToJsonAttr _ = Nothing
 
 valExprToJsonAttr :: ValExpr -> [FieldName]
 valExprToJsonAttr (FieldExpr fr) = fieldRefToJsonAttrs fr
-valExprToJsonAttr (ConcatExpr ve1 ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 valExprToJsonAttr (ConcatManyExpr ves) = concatMap valExprToJsonAttr ves
 valExprToJsonAttr (ValBinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 valExprToJsonAttr (FloorExpr ve) = valExprToJsonAttr ve
@@ -219,6 +218,7 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
 updateHandler :: State Context String
 updateHandler = do
     ps <- gets ctxHandlerParams
+
     liftM concat $ sequence ([
             return $ T.unpack $(codegenFile "codegen/json-body.cg"),
             updateHandlerReadJsonFields,

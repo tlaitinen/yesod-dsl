@@ -32,7 +32,7 @@ data Context = Context {
     ctxRoute :: Maybe Route,
     ctxHandlerParams :: [HandlerParam],
     ctxExprType :: Maybe String,
-    ctxExprJust :: Bool,
+    ctxExprMaybeLevel :: Int,
     ctxExprListValue :: Bool
 }
 
@@ -43,7 +43,7 @@ emptyContext m = Context {
     ctxRoute = Nothing,
     ctxHandlerParams = [],
     ctxExprType = Nothing,
-    ctxExprJust = False,
+    ctxExprMaybeLevel = 0,
     ctxExprListValue = False
 }
 
@@ -63,10 +63,14 @@ ctxLookupField vn fn = do
     men <- ctxLookupEntity vn
     return $ men >>= \en -> lookupField m en fn
 
-ctxIsMaybe :: VariableName -> State Context Bool
-ctxIsMaybe vn = do
+boolToInt :: Bool -> Int
+boolToInt True = 1
+boolToInt False = 0
+
+ctxMaybeLevel :: VariableName -> State Context Int
+ctxMaybeLevel vn = do
     names <- gets ctxNames
-    return $ maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') names
+    return $ boolToInt $ maybe False (\(_,_,f) -> f) $ find (\(_,vn',_) -> vn == vn') names
 
 annotateType :: Maybe String -> String -> String
 annotateType (Just exprType)  s = "(" ++ s ++ " :: " ++ exprType ++ ")"
@@ -100,33 +104,34 @@ extractSubField fn = case fn of
     "year"      -> "YEAR"
     fn' -> error $ "Unknown subfield : " ++ fn'
 
-valueOrValueList :: Bool -> Bool -> String
+valueOrValueList :: Bool -> Int -> String
 valueOrValueList listValue promoteJust = if listValue
-        then "valList" ++ if promoteJust then " $ map Just" else ""
+        then "valList" ++ if promoteJust > 0 then " $ map Just" else ""
         else "val" ++ if listValue then " $ just" else ""
 normalFieldRef :: String -> State Context String
 normalFieldRef content = do
-    j <- gets ctxExprJust
+    j <- gets ctxExprMaybeLevel
     lv <- gets ctxExprListValue
     et <- gets ctxExprType
-    return $ "(" ++ valueOrValueList lv j ++" " ++ annotateType et content ++ ")"
+    
+    return $ brackets (isJust et) $ valueOrValueList lv j ++" " ++ annotateType et content
 
 hsFieldRef :: FieldRef -> State Context String
 hsFieldRef (FieldRefId vn) = do
-    j <- gets ctxExprJust
-    m <- ctxIsMaybe vn
+    j <- gets ctxExprMaybeLevel
+    m <- ctxMaybeLevel vn
     men <- ctxLookupEntity vn 
-    return $ makeJust j $ vn ++ projectField m ++ fromMaybe "(Nothing)" men ++ "Id"
+    return $ makeJust j $ vn ++ projectField (m > 0) ++ fromMaybe "(Nothing)" men ++ "Id"
 hsFieldRef (FieldRefNormal vn fn) = do
-    j <- gets ctxExprJust
-    m <- ctxIsMaybe vn
+    j <- gets ctxExprMaybeLevel
+    m <- ctxMaybeLevel vn
     men <- ctxLookupEntity vn
-    return $ makeJust j $ vn ++ projectField m ++ fromMaybe "(Nothing)" men
+    return $ makeJust j $ vn ++ projectField (m > 0) ++ fromMaybe "(Nothing)" men
                  ++ (upperFirst fn)
 hsFieldRef FieldRefAuthId = do
-    j <- gets ctxExprJust
+    j <- gets ctxExprMaybeLevel
     lv <- gets ctxExprListValue
-    return $ "(" ++ valueOrValueList lv j ++ " authId)"
+    return $ valueOrValueList lv j ++ " authId"
 hsFieldRef (FieldRefPathParam p) = normalFieldRef $ "p" ++ show p
 hsFieldRef FieldRefLocalParam    = normalFieldRef $ "localParam"
 hsFieldRef (FieldRefRequest fn)  = normalFieldRef $ "attr_" ++ fn
@@ -144,7 +149,12 @@ hsValBinOp vo = case vo of
     Mul -> "*."
     Add -> "+."
     Sub -> "-."
-          
+    Concat -> "++."
+
+resetMaybe :: State Context String -> State Context String
+resetMaybe = localCtx $ \ctx -> ctx { ctxExprMaybeLevel = 0 }
+    
+    
 hsValExpr :: ValExpr -> State Context String
 hsValExpr ve = do
     c <- content
@@ -154,69 +164,68 @@ hsValExpr ve = do
             SubQueryExpr _ -> return c
             FieldExpr _ -> return c
             _ -> do
-                j <- gets ctxExprJust
+                j <- gets ctxExprMaybeLevel
                 return $ makeJust j c
         content = case ve of
-            FieldExpr fr -> do
-                r <- hsFieldRef fr
-                return $ "(" ++ r ++ ")"
-            ConstExpr (fv@(NothingValue)) -> return $ fieldValueToEsqueleto fv
-            ConstExpr fv -> return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
-            ConcatExpr e1 e2 -> do
-                r1 <- hsValExpr e1
-                r2 <- hsValExpr e2
-                return $ "(" ++ r1 ++ ") ++. (" ++ r2 ++ ")"
-            ConcatManyExpr ves -> do
+            FieldExpr fr -> hsFieldRef fr
+            ConstExpr (fv@(NothingValue)) -> do
+                return $ fieldValueToEsqueleto fv
+            ConstExpr fv -> do
+                return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
+            ConcatManyExpr ves -> resetMaybe $ do
                 rs <- mapM hsValExpr ves
                 return $ "(concat_ [" ++ intercalate ", " rs ++ "])"
-            ValBinOpExpr e1 vop e2 -> do
+            ValBinOpExpr e1 vop e2 -> resetMaybe $ do
                 r1 <- hsValExpr e1
                 r2 <- hsValExpr e2
                 return $ "(" ++ r1 ++ ") " ++ hsValBinOp vop ++ " (" ++ r2 ++ ")"
             RandomExpr -> return "random_"
-            FloorExpr ve -> do
+            FloorExpr ve -> resetMaybe $ do
                 r <- hsValExpr ve
                 return $ "(floor_ " ++ r ++ ")"
-            CeilingExpr ve -> do
+            CeilingExpr ve -> resetMaybe $ do
                 r <- hsValExpr ve
                 return $ "(ceiling_" ++ r ++ ")"
-            ExtractExpr fn ve -> do
+            ExtractExpr fn ve -> resetMaybe $ do
                 r <- hsValExpr ve
                 return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " " ++ r++ ")"
             SubQueryExpr sq -> subQuery sq
-{-
-fieldRefMaybeLevel :: Context -> FieldRef -> Int
-fieldRefMaybeLevel ctx (FieldRefId vn) = boolToInt (ctxIsMaybe ctx vn)
-fieldRefMaybeLevel ctx (FieldRefNormal vn fn) = boolToInt (ctxIsMaybe ctx vn) + boolToInt (fromMaybe False optional)
-    where optional = ctxLookupField ctx vn fn >>= Just . fieldOptional
- 
-fieldRefMaybeLevel ctx _ = 0
--}
 
-{-
-exprMaybeLevel :: Context -> ValExpr -> Int
-exprMaybeLevel ctx ve = case ve of
-    FieldExpr fr -> fieldRefMaybeLevel ctx fr
-    ConstExpr NothingValue -> 1
-    ConstExpr _ -> 0
-    ConcatExpr e1 e2 -> max (exprMaybeLevel ctx e1) (exprMaybeLevel ctx e2)
-    ConcatManyExpr ves -> maximum $ map (exprMaybeLevel ctx) ves
-    ValBinOpExpr ve1 _ ve2 -> max (exprMaybeLevel ctx ve1) (exprMaybeLevel ctx ve2)
-    FloorExpr ve -> exprMaybeLevel ctx ve
-    CeilingExpr ve -> exprMaybeLevel ctx ve
-    ExtractExpr _ ve -> exprMaybeLevel ctx ve
-    SubQueryExpr sq -> fromMaybe 0 $ listToMaybe $ map (exprMaybeLevel ctx') fieldExprs
-        where fieldExprs = concatMap (selectFieldExprs m ctx') (sqFields sq)
-              m = ctxModule ctx
-              ctx' = ctx {
-                   ctxNames = sqAliases sq
-              } 
--}
+fieldRefMaybeLevel :: FieldRef -> State Context Int
+fieldRefMaybeLevel (FieldRefId vn) = ctxMaybeLevel vn
+fieldRefMaybeLevel (FieldRefNormal vn fn) = do
+    m <- ctxMaybeLevel vn
+    mf <- ctxLookupField vn fn
+    return $ m + (boolToInt $ fromMaybe False $ mf >>= return . fieldOptional)
+fieldRefMaybeLevel _ = return 0
 
+exprMaybeLevel :: ValExpr -> State Context Int
+exprMaybeLevel ve = case ve of
+    FieldExpr fr -> fieldRefMaybeLevel fr
+    ConstExpr NothingValue -> return 1
+    ConstExpr _ -> return 0
+    ConcatManyExpr ves -> do
+        es <- mapM exprMaybeLevel ves
+        return $ maximum es
+    ValBinOpExpr e1 _ e2 -> do
+        e1m <- exprMaybeLevel e1
+        e2m <- exprMaybeLevel e2
+        return $ max e1m e2m
+    FloorExpr e -> exprMaybeLevel e
+    CeilingExpr e -> exprMaybeLevel e
+    ExtractExpr _ e -> exprMaybeLevel e
+    SubQueryExpr sq -> do
+        ctx <- get
+        put $ ctx { ctxNames = sqAliases sq }
+        fs <- liftM concat $ mapM selectFieldExprs $ sqFields sq
+        mls <- mapM exprMaybeLevel fs
+        put ctx
+        return $ fromMaybe 0 $ listToMaybe mls
+     
 mapJoinExpr :: Join -> State Context String
 mapJoinExpr (Join _ en vn (Just expr)) = do
     e <- hsBoolExpr expr
-    return $ "on (" ++ e ++ ")"
+    return $ "on (" ++ e ++ ")\n"
 mapJoinExpr _  = return ""
 
 selectFieldExprs :: SelectField -> State Context [ValExpr]
@@ -250,7 +259,7 @@ subQuery :: SelectQuery -> State Context String
 subQuery sq = do
     ctx <- get
     put $ ctx { ctxNames = sqAliases sq }
-    jes <- liftM concat $ mapM mapJoinExpr (reverse $ sqJoins sq)
+    jes <- liftM (concat . (map makeInline)) $ mapM mapJoinExpr (reverse $ sqJoins sq)
     rfs <- selectReturnFields sq
     maybeWhere <- case sqWhere sq of
         Just expr -> do
@@ -269,6 +278,15 @@ subQuery sq = do
         makeInline = (++" ;") . lstrip . rstrip
         (en, vn) = sqFrom sq
 
+localCtx :: (Context -> Context) -> (State Context a) -> (State Context a)
+localCtx f st = do
+    ctx <- get
+    put $ f ctx
+    r <- st
+    put ctx
+    return r
+
+
 hsBoolExpr :: BoolExpr -> State Context String
 hsBoolExpr expr = case expr of
     AndExpr e1 e2 -> do
@@ -283,6 +301,17 @@ hsBoolExpr expr = case expr of
         r <- hsBoolExpr e
         return $ "not_ (" ++ r ++ ")"
     BinOpExpr e1 op e2 -> do
-        r1 <- hsValExpr e1
-        r2 <- hsValExpr e2
-        return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
+        e1m <- exprMaybeLevel e1
+        e2m <- exprMaybeLevel e2
+        r1 <- localCtx (\ctx -> ctx { ctxExprMaybeLevel = max 0 $ e2m - e1m } ) (hsValExpr e1)
+        r2 <- localCtx 
+                (\ctx -> ctx { 
+                    ctxExprType = case op of
+                        Ilike -> Just "Text"
+                        Like -> Just "Text"
+                        _ -> Nothing,
+                    ctxExprMaybeLevel = max 0 $ e1m - e2m,
+                    ctxExprListValue = op `elem` [In, NotIn]
+                }) 
+               (hsValExpr e2)
+        return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++  r2 ++ ")"

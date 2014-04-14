@@ -20,7 +20,7 @@ requireStmts  = do
             mw <- case sqWhere sq of
                 Just expr -> do
                     e <- hsBoolExpr expr 
-                    return $ "where_ (" ++ e ++ ")"
+                    return $ "where_ (" ++ e ++ ")\n"
                 Nothing -> return ""
             jes <- liftM concat $ mapM mapJoinExpr (reverse $ sqJoins sq)
 
