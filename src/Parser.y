@@ -123,7 +123,7 @@ import System.Exit
     define { Tk _ TDefine }
     for { Tk _ TFor }
     extract { Tk _ TExtract }
-    concat { Tk _ TConcat }
+    concat { Tk _ TConcat }
     random { Tk _ TRandom }
     floor { Tk _ TFloor }
     ceiling { Tk _ TCeiling }
@@ -313,7 +313,7 @@ valbinop :
       | asterisk { Mul } 
       | plus { Add }
       | minus { Sub }
-      | concatop { Concat } 
+      | concatop { Concat }
 
 valexpr : lparen valexpr rparen { $2 }
         | value { ConstExpr $1 }
