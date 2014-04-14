@@ -182,10 +182,10 @@ hsValExpr ve = do
             RandomExpr -> return "random_"
             FloorExpr ve -> resetMaybe $ do
                 r <- hsValExpr ve
-                return $ "(floor_ " ++ r ++ ")"
+                return $ "(floor_ $  " ++ r ++ ")"
             CeilingExpr ve -> resetMaybe $ do
                 r <- hsValExpr ve
-                return $ "(ceiling_" ++ r ++ ")"
+                return $ "(ceiling_ $ " ++ r ++ ")"
             ExtractExpr fn ve -> resetMaybe $ do
                 r <- hsValExpr ve
                 return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " $ " ++ r++ ")"
