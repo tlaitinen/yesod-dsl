@@ -17,129 +17,166 @@ import Generator.Common
 import Generator.Esqueleto
 import Generator.Models
 import Generator.Require
-getHandlerParam :: Module -> Route -> Context -> HandlerParam -> String
-getHandlerParam m r ps DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
+import Control.Monad.State
+getHandlerParam :: HandlerParam -> State Context String
+getHandlerParam DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getHandlerParam m r ps (IfFilter (pn,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
+getHandlerParam (IfFilter (pn,_,_,useFlag)) = return $ T.unpack $(codegenFile "codegen/get-filter-param.cg")
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
-getHandlerParam _ _ _ _ = ""      
+getHandlerParam _ = return ""      
+
+ctxFields :: State Context [(Entity, VariableName, Field)]
+ctxFields = do
+    m <- gets ctxModule
+    names <- gets ctxNames
+    return [ (e,vn,f) | e <- modEntities m,
+                     (en,vn,_) <- names,
+                     entityName e == en,
+                     f <- entityFields e ]
 
 
-ctxFields :: Module -> Context -> [(Entity, VariableName, Field)]
-ctxFields m ctx = [ (e,vn,f) | e <- modEntities m,
-                                  (en,vn,_) <- ctxNames ctx,
-                                  entityName e == en,
-                                  f <- entityFields e ]
+defaultFilterField :: (Entity, VariableName, Field) -> State Context String
+defaultFilterField (e,vn,f) = do
+    isMaybe <- ctxIsMaybe vn
+    return $ T.unpack $(codegenFile "codegen/default-filter-field.cg")
 
-defaultFilterField :: Context -> (Entity, VariableName, Field) -> String
-defaultFilterField ctx (e,vn,f) = T.unpack $(codegenFile "codegen/default-filter-field.cg")
+defaultFilterFields :: State Context String
+defaultFilterFields = do
+    fs <- ctxFields
+    fields <- liftM concat $ mapM defaultFilterField fs
+    return $ T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
 
-defaultFilterFields :: Module -> Context -> String
-defaultFilterFields m ctx = T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
-    where fields = concatMap (defaultFilterField ctx) (ctxFields m ctx)
+defaultSortField :: (Entity, VariableName, Field, ParamName) -> State Context String    
+defaultSortField (e,vn,f,pn) = do
+    isMaybe <- ctxIsMaybe vn
+    return $ T.unpack $(codegenFile "codegen/default-sort-field.cg")
 
-defaultSortField :: Context -> (Entity, VariableName, Field, ParamName) -> String    
-defaultSortField ctx (e,vn,f,pn) = T.unpack $(codegenFile "codegen/default-sort-field.cg")
-defaultSortFields :: Module -> Context -> SelectQuery -> String
-defaultSortFields m ctx sq  = T.unpack $(codegenFile "codegen/default-sort-fields.cg")
-    where fields = concatMap (defaultSortField ctx) sortFields
-          sortFields = concatMap fromSelectField (sqFields sq)
-          fromSelectField (SelectAllFields vn) = 
-                [ (e,vn, f, fieldName f)
+defaultSortFields :: SelectQuery -> State Context String
+defaultSortFields sq = do
+    sortFields <- liftM concat $ mapM fromSelectField (sqFields sq)
+    fields <- liftM concat $ mapM defaultSortField sortFields
+    staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
+    return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
+    where 
+          fromSelectField (SelectAllFields vn) = do
+              m <- gets ctxModule
+              en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
+              return [ (e,vn, f, fieldName f)
                  | e <- modEntities m, 
-                   entityName e == (fromJust $ ctxLookupEntity ctx vn), 
+                   entityName e == en,
                    f <- entityFields e]
-          fromSelectField (SelectField vn fn an) = 
-                [ (e,vn, f, maybe (fieldName f) id an)
+          fromSelectField (SelectField vn fn an) = do
+              m <- gets ctxModule
+              en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
+              return [ (e,vn, f, maybe (fieldName f) id an)
                  | e <- modEntities m, 
-                   entityName e == (fromJust $ ctxLookupEntity ctx vn), 
+                   entityName e == en, 
                    f <- entityFields e,
                    fieldName f == fn ]
-          fromSelectField (SelectIdField en an) = [] -- TODO
-          fromSelectField _ = []         
+          fromSelectField (SelectIdField en an) = return [] -- TODO
+          fromSelectField _ = return []         
 
 
 
-isMaybeFieldRef :: Module -> Context -> FieldRef -> Bool
-isMaybeFieldRef m ctx (FieldRefNormal vn fn) = fieldOptional $ fromJust $ lookupField m (fromJust $ ctxLookupEntity ctx vn) fn
-isMaybeFieldRef _ _  _ = False
+isMaybeFieldRef :: FieldRef -> State Context Bool
+isMaybeFieldRef (FieldRefNormal vn fn) = do
+    mf <- ctxLookupField vn fn 
+    return (fromMaybe False $ mf >>= return . fieldOptional)
+isMaybeFieldRef _  = return False
 
-makeJustField :: Bool -> String -> String    
-makeJustField True f = "(just " ++ f ++ ")"
-makeJustField False f = f
-
-implicitJoinExpr :: Module -> Context -> Join -> String
-implicitJoinExpr m ctx (Join _ en vn (Just expr)) = T.unpack $(codegenFile "codegen/where-expr.cg")
-implicitJoinExpr m _ _ = ""
-
-
+implicitJoinExpr :: Join -> State Context String
+implicitJoinExpr (Join _ en vn (Just expr)) = do
+    e <- hsBoolExpr expr
+    return $ "where_ (" ++ e ++ ")"
+implicitJoinExpr _ = return ""
 
 
-
-    
-baseDefaultFilterSort :: Module -> Context -> String
-baseDefaultFilterSort = defaultFilterFields
-
-baseIfFilter :: Module -> Context -> VariableName -> IfFilterParams -> String
-baseIfFilter m ctx' selectVar (pn,joins,expr,useFlag) = T.unpack $ if useFlag
-    then $(codegenFile "codegen/base-if-filter.cg")
-    else $(codegenFile "codegen/base-if-filter-nouse.cg")
-    where ctx = ctx' { ctxNames = ctxNames ctx' 
-              ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins] }
+baseIfFilter :: VariableName -> IfFilterParams -> State Context String
+baseIfFilter selectVar (pn,joins,bExpr,useFlag) = do
+    ctx <- get
+    put $ ctx { ctxNames = ctxNames ctx ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins] }
+    joinExprs <- liftM concat $ mapM implicitJoinExpr joins
+    expr <- hsBoolExpr bExpr
+    put ctx
+    return $ T.unpack $ if useFlag
+        then $(codegenFile "codegen/base-if-filter.cg")
+        else $(codegenFile "codegen/base-if-filter-nouse.cg")
+    where 
           maybeFrom = if null joins 
                         then "do"
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
+getSelectQuery :: State Context (Maybe SelectQuery)
+getSelectQuery = do
+    ps <- gets ctxHandlerParams
+    return $ ((listToMaybe . (filter isSelect)) ps) >>= \(Select sq) -> return sq
+    where
+        isSelect (Select _) = True
+        isSelect _ = False
 
-   
-    
-getHandlerSelect :: Module -> SelectQuery -> Bool -> [IfFilterParams] -> String
-getHandlerSelect m sq defaultFilterSort ifFilters = 
-    (T.unpack $(codegenFile "codegen/base-select-query.cg"))
-   ++ (if defaultFilterSort 
-        then baseDefaultFilterSort m ctx  
-             ++ (concatMap (baseIfFilter m ctx selectVar) ifFilters)
-        else "")
-   ++ (selectReturnFields m ctx sq 0)
-   ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
-   ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
+getHandlerSelect :: State Context String
+getHandlerSelect = do
+    ctx <- get
+    ps <- gets ctxHandlerParams
+    msq <- getSelectQuery
+    case msq of
+        Just sq -> do
+            let defaultFilterSort = DefaultFilterSort `elem` ps
+                ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
+                isIfFilter (IfFilter _) = True
+                isIfFilter _ = False
+                (limit, offset) = sqLimitOffset sq
+                (selectEntity, selectVar) = sqFrom sq 
+                maybeDefaultLimitOffset = 
+                     if defaultFilterSort 
+                          then T.unpack $(codegenFile "codegen/default-offset-limit.cg")
+                          else ""
+            put $ ctx { ctxNames = sqAliases sq }
+            maybeWhere <- case sqWhere sq of
+                Just expr -> do
+                    e <- hsBoolExpr expr
+                    return $ "where_ (" ++ e ++ ")"
+                Nothing -> return ""
+            joinExprs <- liftM concat $ mapM mapJoinExpr $ reverse $ sqJoins sq
+            ifFiltersStr <- liftM concat $ mapM (baseIfFilter selectVar) ifFilters
+            filterFieldsStr <- defaultFilterFields
+            returnFieldsStr <- selectReturnFields sq
+            maybeDefaultSortFields <- if defaultFilterSort
+                then defaultSortFields sq
+                else return ""
+            ret <- getHandlerReturn sq
+            put ctx
+            return $ (T.unpack $(codegenFile "codegen/base-select-query.cg"))
+                ++ (if defaultFilterSort 
+                    then filterFieldsStr 
+                         ++ ifFiltersStr
+                    else "")
+               ++ (indent 8 returnFieldsStr)
+               ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
+               ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
+               ++ ret 
+        Nothing -> return ""
+
+getHandlerReturn :: SelectQuery -> State Context String
+getHandlerReturn sq = do
+    ctx <- get
+    put $ ctx { ctxNames = sqAliases sq }
+    fieldNames' <- liftM concat $ mapM expand $ sqFields sq
+    put $ ctx 
+    let fieldNames = zip fieldNames' ([1..]::[Int])
+        mappedResultFields = concatMap mapResultField $ fieldNames
+        resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
+    return $ T.unpack $(codegenFile "codegen/get-handler-return.cg")
     where 
-          orderByFields = sq
-          (limit, offset) = sqLimitOffset sq
-          ctx = Context {
-              ctxNames = sqAliases sq,
-              ctxModule = m,
-              ctxHandlerParams = []
-          }
-          (selectEntity, selectVar) = sqFrom sq 
-          maybeWhere = case sqWhere sq of
-             Just expr -> T.unpack $(codegenFile "codegen/where-expr.cg")
-             Nothing -> ""
-          maybeDefaultSortFields = if defaultFilterSort 
-            then    defaultSortFields m ctx sq
-            else ""
-          maybeDefaultLimitOffset = 
-               if defaultFilterSort 
-                    then T.unpack $(codegenFile "codegen/default-offset-limit.cg")
-                    else ""
-
-
-
-
-getHandlerReturn :: Module -> SelectQuery -> String
-getHandlerReturn m sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
-    where 
-          ctx = Context { ctxNames = sqAliases sq, ctxModule = m, ctxHandlerParams = [] }
-          fieldNames = zip (concatMap expand (sqFields sq)) ([1..]:: [Int])
-          expand (SelectAllFields vn) = map fieldName $ publicFields
-                where en = fromJust $ ctxLookupEntity ctx vn
-                      e = fromJust $ lookupEntity m en    
-                      publicFields = [ f | f <- entityFields e, (not . fieldInternal) f ]
-          expand (SelectField _ fn an') = [ maybe fn id an' ]
-          expand (SelectIdField _ an') = [ maybe "id" id an' ]
-          expand (SelectValExpr ve an) = [ an ]
-          expand (SelectParamField _ _ _) = []
-          resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
-          mappedResultFields = concatMap mapResultField fieldNames
+          expand (SelectAllFields vn) = do
+            en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
+            m <- gets ctxModule
+            let e = fromJust $ lookupEntity m en 
+            return $ map fieldName $ [ f | f <- entityFields e, 
+                                           (not . fieldInternal) f ]
+          expand (SelectField _ fn an') = return [ maybe fn id an' ]
+          expand (SelectIdField _ an') = return [ maybe "id" id an' ]
+          expand (SelectValExpr ve an) = return [ an ]
+          expand (SelectParamField _ _ _) = return []
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
 
 valExprRefs :: ValExpr -> [FieldRef]
@@ -153,7 +190,8 @@ valExprRefs (FloorExpr ve) = valExprRefs ve
 valExprRefs (CeilingExpr ve) = valExprRefs ve
 valExprRefs (ExtractExpr _ ve) = valExprRefs ve
 valExprRefs (SubQueryExpr sq) = sqFieldRefs sq
-exprFieldRefs :: Expr -> [FieldRef]
+valExprRefs (ApplyExpr _ _) = [] 
+exprFieldRefs :: BoolExpr -> [FieldRef]
 exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (OrExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (NotExpr e) = exprFieldRefs e
@@ -181,22 +219,13 @@ getHandlerMaybeAuth ps
               isAuthField (FieldRefAuth _) = True
               isAuthField _ =False
     
-getHandler :: Module -> Route -> [HandlerParam] -> String
-getHandler m r ps = 
-    getHandlerMaybeAuth ps ++ 
-    (concatMap (getHandlerParam m r ctx) ps)
-    ++ (requireStmts m ps)
-    ++ (getHandlerSelect m sq defaultFilterSort ifFilters)
-    ++ (getHandlerReturn m sq)
-    where 
-        (Select sq) = (fromJust . listToMaybe . (filter isSelect)) ps
-        ctx = Context { ctxNames = sqAliases sq, ctxModule = m, ctxHandlerParams = [] }
-        isSelect (Select _) = True
-        isSelect _ = False
+getHandler :: State Context String
+getHandler = do
+    ps <- gets ctxHandlerParams
+    liftM concat $ sequence [
+            return $ getHandlerMaybeAuth ps,
+            liftM concat $ mapM getHandlerParam ps,
+            requireStmts,
+            getHandlerSelect
+        ]
     
-        defaultFilterSort = DefaultFilterSort `elem` ps
-
-        ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
-        isIfFilter (IfFilter _) = True
-        isIfFilter _ = False
-

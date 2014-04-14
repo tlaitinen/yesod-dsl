@@ -9,6 +9,7 @@ import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
 import Data.List
 import Generator.Esqueleto
+import Control.Monad.State
 
 maxInstances :: Module -> Int
 maxInstances m = maximum $ map sqFieldNumber
@@ -18,12 +19,11 @@ maxInstances m = maximum $ map sqFieldNumber
     where isSelectQuery (Select _) = True
           isSelectQuery _ = False
           sqFieldNumber (Select sq) = let
-              ctx = Context {
-                  ctxNames = sqAliases sq,
-                  ctxModule = m,
-                  ctxHandlerParams = []
+              ctx = (emptyContext m) {
+                  ctxNames = sqAliases sq
               }
-              in length $ concatMap (selectFieldExprs m ctx) (sqFields sq)
+              in evalState ((liftM concat $ mapM selectFieldExprs (sqFields sq))
+                        >>= \fes -> return $ length fes) ctx
           sqFieldNumber _ = 0
 
 genInstance :: Int -> String

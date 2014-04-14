@@ -207,19 +207,19 @@ vHandlerParam (Require sq) = do
     forM_ (sqJoins sq) vJoin
     case sqWhere sq of 
         Just e -> do    
-            withScope  "where expression" $ vExpr e
+            withScope  "where expression" $ vBoolExpr e
         Nothing -> return ()    
 
 vHandlerParam (IfFilter (vn,joins,e,useFlag)) = do
     withScope "if param" $ do
         declareLocal vn VReserved
         forM_ joins vJoin
-        vExpr e
+        vBoolExpr e
 vHandlerParam (DeleteFrom en vn me) = do
     withScope "delete from" $ do
         withLookupEntity en $ \e -> declareLocal vn (VEntity e)
         case me of
-            Just e -> vExpr e
+            Just e -> vBoolExpr e
             Nothing -> return ()
 vHandlerParam (Update en ifr mifs) = do
     withScope "update" $ do
@@ -281,7 +281,7 @@ vSelectQuery sq = do
     forM_ (sqJoins sq) vJoin
     case sqWhere sq of 
         Just e -> do    
-            withScope  "where expression" $ vExpr e
+            withScope  "where expression" $ vBoolExpr e
         Nothing -> return ()    
     forM_ (sqFields sq) vSelectField
     forM_ (sqOrderBy sq) $ \(fr,_) -> vFieldRef fr
@@ -308,7 +308,7 @@ vJoin j = do
                                                          (VEntity e)
     case joinExpr j of
         Just e -> do
-            withScope "join expression" $ vExpr e
+            withScope "join expression" $ vBoolExpr e
         Nothing -> if joinType j /= CrossJoin
             then vError $ "Missing join expression"
             else return () 
@@ -326,16 +326,16 @@ vParamRef pn = withLookup pn $ \idt -> case idt of
 vEnumRef :: EnumName -> Validation
 vEnumRef en = withLookupEnum en $ \e -> return ()
 
-vExpr :: Expr -> Validation
-vExpr (AndExpr e1 e2) = do
-    vExpr e1
-    vExpr e2
-vExpr (OrExpr e1 e2) = do
-    vExpr e1
-    vExpr e2
-vExpr (NotExpr e) = do
-    vExpr e
-vExpr (BinOpExpr ve1 op ve2) = do
+vBoolExpr :: BoolExpr -> Validation
+vBoolExpr (AndExpr e1 e2) = do
+    vBoolExpr e1
+    vBoolExpr e2
+vBoolExpr (OrExpr e1 e2) = do
+    vBoolExpr e1
+    vBoolExpr e2
+vBoolExpr (NotExpr e) = do
+    vBoolExpr e
+vBoolExpr (BinOpExpr ve1 op ve2) = do
     vValExpr ve1
     vValExpr ve2
      
@@ -435,6 +435,6 @@ vValExpr ve = case ve of
                 _ -> vError $ "Sub-select must return exactly one field"
          
             case sqWhere sq of 
-                Just e -> withScope "where expression" $ vExpr e
+                Just e -> withScope "where expression" $ vBoolExpr e
                 Nothing -> return ()
 

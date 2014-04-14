@@ -1,3 +1,3 @@
     let e~{show pId} = ~{entityName e} {
-~{indent 12 $ mapFields e [] True} 
+~{indent 12 $ fieldMappers}
         }

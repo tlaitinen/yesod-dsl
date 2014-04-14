@@ -4,4 +4,4 @@
                          "message" .= ("Entity validation failed" :: Text),
                          "errors" .= toJSON xs 
                      ])
-             _ -> P.repsert ~{inputFieldRef ctx fr} (e~{show pId} :: ~{en})
+             _ -> P.repsert ~{ifr} (e~{show pId} :: ~{en})

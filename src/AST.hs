@@ -93,9 +93,9 @@ isOuterJoin _ = False
 data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq)     
 data ValBinOp = Add | Sub | Div | Mul deriving (Show,Eq)    
 
-data Expr = AndExpr Expr Expr
-          | OrExpr Expr Expr
-          | NotExpr Expr
+data BoolExpr = AndExpr BoolExpr BoolExpr
+          | OrExpr BoolExpr BoolExpr
+          | NotExpr BoolExpr
           | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
@@ -113,7 +113,7 @@ data HandlerParam = Public
                   | DefaultFilterSort
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
-                  | DeleteFrom EntityName VariableName (Maybe Expr)
+                  | DeleteFrom EntityName VariableName (Maybe BoolExpr)
                   | GetById EntityName InputFieldRef VariableName
                   | Update EntityName InputFieldRef (Maybe [InputField])
                   | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
@@ -122,13 +122,13 @@ data HandlerParam = Public
                   | For VariableName InputFieldRef [HandlerParam]
                   deriving (Show, Eq) 
 type UseParamFlag = Bool    
-type IfFilterParams = (ParamName,[Join],Expr,UseParamFlag)
+type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
 
 data SelectQuery = SelectQuery {
     sqFields       :: [SelectField],
     sqFrom         :: (EntityName, VariableName),
     sqJoins        :: [Join],
-    sqWhere        :: Maybe Expr,
+    sqWhere        :: Maybe BoolExpr,
     sqOrderBy        :: [(FieldRef, SortDir)],
     sqLimitOffset  :: (Int, Int)
 } deriving (Show, Eq)    
@@ -152,7 +152,7 @@ data Join = Join {
     joinType   :: JoinType,
     joinEntity :: EntityName,
     joinAlias  :: VariableName,
-    joinExpr   :: Maybe Expr
+    joinExpr   :: Maybe BoolExpr
 } deriving (Show, Eq)
 
 type InputField = (ParamName, InputFieldRef)

@@ -1,4 +1,4 @@
 "~{pn}" -> case (sortJsonMsg_direction sjm) of 
-    "ASC"  -> orderBy [ asc (~{vn} ~{projectField (ctxIsMaybe ctx vn)} ~{entityFieldTypeName e f}) ] 
-    "DESC" -> orderBy [ desc (~{vn} ~{projectField (ctxIsMaybe ctx vn)} ~{entityFieldTypeName e f}) ] 
+    "ASC"  -> orderBy [ asc (~{vn} ~{projectField isMaybe} ~{entityFieldTypeName e f}) ] 
+    "DESC" -> orderBy [ desc (~{vn} ~{projectField isMaybe} ~{entityFieldTypeName e f}) ] 
     _      -> return ()

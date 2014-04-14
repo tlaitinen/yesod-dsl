@@ -27,12 +27,14 @@ import Generator.EsqueletoInstances
 import Generator.Cabal
 import Generator.Fay
 import SyncFile
+import Control.Monad.State
+import Generator.Esqueleto
 
 writeRoute :: Module -> Route -> IO ()
 writeRoute m r = syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
-    T.unpack $(codegenFile "codegen/route-header.cg")
-        ++ (concatMap (handler m r) (routeHandlers r))
+    T.unpack $(codegenFile "codegen/route-header.cg") ++
+    (evalState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r }))
 
 
     

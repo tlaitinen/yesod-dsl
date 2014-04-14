@@ -1,2 +1,2 @@
-        forM_ (~{inputFieldRef ctx ifr}) $ \result_~{vn} -> do
+        forM_ (~{ifr}) $ \result_~{vn} -> do
 ~{indent 12 $ content}

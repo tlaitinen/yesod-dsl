@@ -13,6 +13,8 @@ import Data.String.Utils (rstrip)
 import Generator.GetHandler
 import Generator.UpdateHandlers
 import Generator.Routes
+import Control.Monad.State
+import Generator.Esqueleto
 hsRouteParams :: [PathPiece] -> String
 hsRouteParams ps = intercalate " " [("p" ++ show x) | 
                                     x <- [1..length (filter hasType ps)]]
@@ -25,15 +27,25 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
-handler :: Module -> Route -> Handler -> String
-handler m r (Handler _ ht ps) = T.unpack $(codegenFile "codegen/handler-header.cg")
-    ++ (if Public `elem` ps 
-            then "" 
-            else (T.unpack $(codegenFile "codegen/handler-requireauth.cg")))
-    ++ (case ht of
-            GetHandler -> getHandler m r ps
-            PutHandler -> updateHandler m r ps
-            PostHandler -> updateHandler m r ps
-            DeleteHandler -> updateHandler m r ps)
+handler :: Handler -> State Context String
+handler (Handler _ ht ps) = do
+    ctx <- get 
+    put $ ctx { ctxHandlerParams = ps }
+    m <- gets ctxModule
+    r <- gets ctxRoute >>= return . fromJust
+ 
+    result <- liftM concat $ sequence [
+            return $ T.unpack $(codegenFile "codegen/handler-header.cg"),
+            return $ (if Public `elem` ps 
+                    then "" 
+                    else (T.unpack $(codegenFile "codegen/handler-requireauth.cg"))),
+            case ht of
+                    GetHandler -> getHandler
+                    PutHandler -> updateHandler
+                    PostHandler -> updateHandler
+                    DeleteHandler -> updateHandler
+        ]
+    put ctx
+    return result 
 
 
