@@ -376,6 +376,9 @@ valExpr: "string-constant"
        | valExpr - valExpr
        | valExpr * valExpr
        | valExpr / valExpr
+       | random
+       | floor(valExpr)
+       | ceiling(valExpr)
        | inputValue
        | enumName.enumValue
        | defineName([param[, param]*])
