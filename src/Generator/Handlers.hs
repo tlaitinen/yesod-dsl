@@ -9,12 +9,14 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
+import qualified Data.Map as Map
 
 import Generator.GetHandler
 import Generator.UpdateHandlers
 import Generator.Routes
 import Control.Monad.State
 import Generator.Esqueleto
+
 hsRouteParams :: [PathPiece] -> String
 hsRouteParams ps = intercalate " " [("p" ++ show x) | 
                                     x <- [1..length (filter hasType ps)]]
@@ -30,7 +32,7 @@ hsHandlerMethod DeleteHandler = "delete"
 handler :: Handler -> State Context String
 handler (Handler _ ht ps) = do
     ctx <- get 
-    put $ ctx { ctxHandlerParams = ps }
+    put $ ctx { ctxHandlerParams = ps, ctxTypes = Map.empty }
     m <- gets ctxModule
     r <- gets ctxRoute >>= return . fromJust
  
@@ -45,7 +47,6 @@ handler (Handler _ ht ps) = do
                     PostHandler -> updateHandler
                     DeleteHandler -> updateHandler
         ]
-    put ctx
     return result 
 
 

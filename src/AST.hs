@@ -90,13 +90,13 @@ isOuterJoin RightOuterJoin = True
 isOuterJoin FullOuterJoin = True
 isOuterJoin _ = False
 
-data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq)     
+data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq)     
 data ValBinOp = Add | Sub | Div | Mul | Concat deriving (Show,Eq)    
 
 data BoolExpr = AndExpr BoolExpr BoolExpr
           | OrExpr BoolExpr BoolExpr
           | NotExpr BoolExpr
-          | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
+          | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
            | ConcatManyExpr [ValExpr]
@@ -111,7 +111,7 @@ data ValExpr = FieldExpr FieldRef
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | Select SelectQuery 
-                  | IfFilter IfFilterParams
+                  | IfFilter IfFilterParams
                   | DeleteFrom EntityName VariableName (Maybe BoolExpr)
                   | GetById EntityName InputFieldRef VariableName
                   | Update EntityName InputFieldRef (Maybe [InputField])
@@ -119,6 +119,7 @@ data HandlerParam = Public
                   | Return [OutputField]
                   | Require SelectQuery
                   | For VariableName InputFieldRef [HandlerParam]
+                  | Call FunctionName [InputFieldRef]
                   deriving (Show, Eq) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
@@ -164,7 +165,7 @@ data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldLocalParamField VariableName FieldName
                    | InputFieldConst FieldValue
                    | InputFieldNow
-                    deriving (Show, Eq)
+                    deriving (Show, Eq, Ord)
                     
 type OutputField = (ParamName, OutputFieldRef)
 data OutputFieldRef = OutputFieldLocalParam VariableName 
@@ -266,7 +267,7 @@ data FieldValue = StringValue String
                 | FloatValue Double
                 | BoolValue Bool
                 | NothingValue
-                deriving (Show, Eq)
+                deriving (Show, Eq, Ord)
 fieldValueToSql :: FieldValue -> String    
 fieldValueToSql fv = case fv of
     (StringValue s) -> "'" ++ s ++ "'"

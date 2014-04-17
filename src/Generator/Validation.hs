@@ -10,6 +10,7 @@ import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
 import Generator.Models
 import Generator.Common
+import Generator.Esqueleto
 
 validationFieldCheck :: Entity -> Field -> FunctionName -> String
 validationFieldCheck e f func = rstrip $ T.unpack $(codegenFile "codegen/validation-field.cg")
@@ -27,7 +28,6 @@ validationEntity e = T.unpack $(codegenFile "codegen/validation-entity-header.cg
                                               func <- entityChecks e ])
                    ++ (T.unpack $(codegenFile "codegen/validation-entity-footer.cg"))
 
-type TypeName = String
 
 validationFieldFunction :: (Field, FunctionName) -> String
 validationFieldFunction (f,func) = T.unpack $(codegenFile "codegen/validation-function-field.cg")
@@ -38,15 +38,20 @@ validationEntityFunction (e, func) = T.unpack $(codegenFile "codegen/validation-
 
 lookupFieldType :: Module -> EntityName -> FieldName -> String
 lookupFieldType m en fn = hsFieldType (fromJust $ lookupField m en fn)
-validation :: Module -> String
-validation m = T.unpack $(codegenFile "codegen/validation-header.cg")
+
+handlerCall :: (FunctionName, [TypeName]) -> String
+handlerCall (fn,ptns) = indent 4 $ fn ++ " :: (YesodPersist master) => " ++ intercalate " -> " ptns ++ " -> HandlerT master IO ()"
+
+validation :: Module -> [Context] -> String
+validation m ctxs= T.unpack $(codegenFile "codegen/validation-header.cg")
              ++ (concatMap validationFieldFunction $ 
                     nubBy (\(_,f1) (_,f2) -> f1 == f2)
-                    [ (f,func) | e <- modEntities m,
+                    [(f,func) | e <- modEntities m,
                              f <- entityFields e,
                              func <- fieldChecks f ])
              ++ (concatMap validationEntityFunction $ 
-                   [ (e, func) | e <- modEntities m,   func <- entityChecks e ])
+                   [ (e, func) |e <- modEntities m,   func <- entityChecks e ])
+             ++ (concatMap handlerCall $ concatMap ctxCalls ctxs)
              ++ (concatMap validationEntity (modEntities m))
 
 

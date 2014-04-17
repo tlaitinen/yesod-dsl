@@ -14,6 +14,7 @@ handlerErrors m = (concatMap notAllowedError $
     where             
         
         allowed _ Public = True
+        allowed ht (Call _ _) = ht /= GetHandler
         allowed PostHandler (Insert _ _ _) = True
         allowed PostHandler (Update _ _ _) = True
         allowed PostHandler (DeleteFrom _ _ _) = True

@@ -350,6 +350,7 @@ route /pathPiece[/pathPiece]* {
         [for paramName in inputValue {
             -- require, get, update, insert, delete, etc.
          };];
+        [externalFunctionName([inputValue[, inputValue]*]);]*
         [return { [fieldName = outputValue]
                   [, fieldName = outputValue]* };]
     }]*

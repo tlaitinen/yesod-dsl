@@ -224,6 +224,7 @@ handlerParam : public { Public }
              | return outputJson { Return $2 }
              | require upperId as lowerId joins where expr { Require (SelectQuery [] ($2,$4) (reverse $5) (Just $7) [] (0,0)) }
              | for lowerId in inputRef lbrace handlerParams rbrace { For $2 $4 $6 }
+             | lowerId  inputRefList  { Call $1 (reverse $2) }
 
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
@@ -267,6 +268,9 @@ orderByDir : asc { SortAsc }
  
 inputJson:  lbrace inputJsonFields rbrace { $2 }
 inputJsonField : lowerId equals inputRef { ($1, $3) }
+
+inputRefList:  { [] }
+            | inputRefList inputRef  { $2 : $1 }
 
 inputRef: request dot lowerId { InputFieldNormal $3 }
         | lowerId { InputFieldLocalParam $1 }

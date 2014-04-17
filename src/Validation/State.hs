@@ -273,7 +273,9 @@ vHandlerParam (For vn ifr ps) = do
     modify $ \st -> st { stInsideFor = True }
     forM_ ps vHandlerParam
     modify $ \st -> st { stInsideFor = oldForState }
-
+vHandlerParam (Call _ ifrs) = do
+    forM_ ifrs vInputFieldRef
+    
 vSelectQuery :: SelectQuery -> Validation
 vSelectQuery sq = do
     let (en,vn) = sqFrom sq

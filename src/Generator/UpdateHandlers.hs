@@ -14,10 +14,57 @@ import Generator.Common
 import Generator.Models
 import Generator.Require
 import Control.Monad.State
+import qualified Data.Map as Map
+inputFieldRefType :: InputFieldRef -> State Context String
+inputFieldRefType InputFieldAuthId = return $ "UserId"
+inputFieldRefType (InputFieldAuth fn) = do
+    m <- gets ctxModule
+    let mf = listToMaybe [ hsFieldType f | e <- modEntities m,
+                                           f <- entityFields e,
+                                           fieldName f == fn ]
+    case mf of
+        Just ft -> return ft
+        Nothing -> return "Unknown"
+inputFieldRefType (InputFieldLocalParam vn) = do
+    ps <- gets ctxHandlerParams
+    let en = fromMaybe "Unknown" $ listToMaybe $ concatMap f ps
+    return $ en ++ "Id"
+
+    where
+        f (Insert en _ (Just vn')) = if vn' == vn then [en] else []
+        f _ = []
+     
+
+inputFieldRefType (InputFieldLocalParamField vn fn) = do
+    ps <- gets ctxHandlerParams
+    let en = fromMaybe "Unknown" $ listToMaybe $ concatMap f ps
+    m <- gets ctxModule
+    let mf = lookupField m en fn
+    return $ case mf of
+        Just f -> hsFieldType f
+        Nothing -> "Unknown"
+    where 
+          f (GetById en _ vn') = if vn' == vn then [en] else []
+          f _ = []
+            
+inputFieldRefType (InputFieldPathParam i) = do
+    mr <- gets ctxRoute
+    case mr of
+        Just r -> do
+            let p = (routePathParams r) !! i
+            case p of
+                PathId en -> return $ en ++ "Id"
+                _ -> return ""
+        Nothing -> return ""
+inputFieldRefType ifr@(InputFieldNormal pn) = do
+    types <- gets ctxTypes
+    return $ Map.findWithDefault "Unknown" ifr types
 
 inputFieldRef :: InputFieldRef -> State Context String
 inputFieldRef InputFieldAuthId = return $ T.unpack $(codegenFile "codegen/input-field-authid.cg")
 inputFieldRef (InputFieldAuth fn) = return $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
+inputFieldRef (InputFieldLocalParam vn) = return $ rstrip $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+ 
 inputFieldRef (InputFieldLocalParamField vn fn) = do
     ps <- gets ctxHandlerParams
     let en = fromJust $ listToMaybe $ concatMap f ps
@@ -28,7 +75,7 @@ inputFieldRef (InputFieldLocalParamField vn fn) = do
             
 inputFieldRef (InputFieldPathParam i) = return $ T.unpack $(codegenFile "codegen/input-field-path-param.cg")
 inputFieldRef (InputFieldNormal pn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-normal.cg")
-
+inputFieldRef ifr = return $ show ifr
 updateHandlerRunDB :: (Int,HandlerParam) -> State Context String
 updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
         updateHandlerDecode (pId,p) >>= return . (indent 4),
@@ -48,16 +95,20 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
                 let maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
                 in T.unpack $(codegenFile "codegen/delete.cg")
             DeleteFrom en vn (Just e) -> do
-                ctx <- get
-                put $ ctx { ctxNames = [(en,vn,False)] }
-                maybeExpr <- hsBoolExpr e
-                put ctx
-                return $ T.unpack $(codegenFile "codegen/delete.cg")
+                withScope [(en,vn,False)] $ do
+                    maybeExpr <- hsBoolExpr e
+                    return $ T.unpack $(codegenFile "codegen/delete.cg")
             For vn fr hps -> do
                 content <- liftM concat $ mapM updateHandlerRunDB $ 
                     zip [1..] hps
                 ifr <- inputFieldRef fr
                 return $ T.unpack $(codegenFile "codegen/for.cg")    
+            Call fn frs -> do
+                ifrs <- mapM inputFieldRef frs
+                types <- mapM inputFieldRefType frs
+                ctx <- get
+                put $ ctx { ctxCalls = (fn,types):ctxCalls ctx}
+                return $ T.unpack $(codegenFile "codegen/call.cg") 
             _ -> return ""
     ] :: [State Context String])
 defaultFieldValue :: Field -> String
@@ -66,6 +117,10 @@ defaultFieldValue f = case fieldDefault f of
     Nothing -> if fieldOptional f
         then "Nothing"
         else let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+addCtxType :: InputFieldRef -> TypeName -> State Context ()
+addCtxType ifr typeName = do
+    ctx <- get
+    put $ ctx { ctxTypes = Map.insert ifr typeName $ ctxTypes ctx }
 
 mapJsonInputField :: [InputField] -> Bool -> (Entity,Field) -> State Context String
 mapJsonInputField ifields isNew (e,f) = do
@@ -84,7 +139,9 @@ mapJsonInputField ifields isNew (e,f) = do
             _ -> True
         promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
         mkContent = case maybeInput of
-            Just (InputFieldNormal fn) -> return $ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+            Just (ifr@(InputFieldNormal fn)) -> do
+                addCtxType ifr (hsFieldType f)
+                return $ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             Just InputFieldAuthId -> return $ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
             Just (InputFieldAuth fn) -> return $ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
             Just (InputFieldPathParam i) -> return $ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")

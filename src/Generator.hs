@@ -30,13 +30,13 @@ import SyncFile
 import Control.Monad.State
 import Generator.Esqueleto
 
-writeRoute :: Module -> Route -> IO ()
-writeRoute m r = syncFile (joinPath ["Handler", moduleName m, 
+writeRoute :: Module -> Route -> IO Context
+writeRoute m r = do
+    let (content, ctx) = runState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r})
+    syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
-    T.unpack $(codegenFile "codegen/route-header.cg") ++
-    (evalState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r }))
-
-
+        T.unpack $(codegenFile "codegen/route-header.cg") ++ content
+    return ctx
     
 generate :: FilePath -> Module -> IO ()
 generate path m = do
@@ -48,14 +48,15 @@ generate path m = do
     syncFile (joinPath ["Handler", moduleName m, "Esqueleto.hs"]) $
         T.unpack $(codegenFile "codegen/esqueleto-header.cg")
         ++ (esqueletoInstances m)        
+
+    ctxs <- forM (modRoutes m) (writeRoute m)
     syncFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
         T.unpack $(codegenFile "codegen/header.cg")
             ++ models m
             ++ entityFactories m
             ++ classes m
-            ++ validation m
+            ++ validation m ctxs
             ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))      
-    forM_ (modRoutes m) (writeRoute m)
     syncFile (joinPath ["Handler", moduleName m, "Routes.hs"]) $
            routes m
     syncFile (joinPath ["Handler", moduleName m ++ ".hs"]) $ 

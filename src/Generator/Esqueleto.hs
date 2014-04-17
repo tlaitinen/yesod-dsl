@@ -11,6 +11,7 @@ import Text.Shakespeare.Text hiding (toText)
 import Generator.Common
 import Data.String.Utils (lstrip, rstrip)
 import Control.Monad.State
+import qualified Data.Map as Map
 
 hsBinOp :: BinOp -> String
 hsBinOp op = case op of
@@ -26,6 +27,8 @@ hsBinOp op = case op of
     In -> "`in_`"
     NotIn -> "`notIn`"
 
+type TypeName = String
+
 data Context = Context {
     ctxNames :: [(EntityName, VariableName, MaybeFlag)],
     ctxModule :: Module,
@@ -33,9 +36,10 @@ data Context = Context {
     ctxHandlerParams :: [HandlerParam],
     ctxExprType :: Maybe String,
     ctxExprMaybeLevel :: Int,
-    ctxExprListValue :: Bool
+    ctxExprListValue :: Bool,
+    ctxCalls :: [ (FunctionName, [TypeName]) ],
+    ctxTypes :: Map.Map InputFieldRef TypeName
 }
-
 emptyContext :: Module -> Context
 emptyContext m = Context {
     ctxNames = [],
@@ -44,7 +48,9 @@ emptyContext m = Context {
     ctxHandlerParams = [],
     ctxExprType = Nothing,
     ctxExprMaybeLevel = 0,
-    ctxExprListValue = False
+    ctxExprListValue = False,
+    ctxCalls = [],
+    ctxTypes = Map.empty
 }
 
 ctxLookupEntity :: VariableName -> State Context (Maybe EntityName)
@@ -216,11 +222,10 @@ exprMaybeLevel ve = case ve of
     ExtractExpr _ e -> exprMaybeLevel e
     SubQueryExpr sq -> do
         ctx <- get
-        put $ ctx { ctxNames = sqAliases sq }
-        fs <- liftM concat $ mapM selectFieldExprs $ sqFields sq
-        mls <- mapM exprMaybeLevel fs
-        put ctx
-        return $ fromMaybe 0 $ listToMaybe mls
+        withScope (sqAliases sq) $ do
+            fs <- liftM concat $ mapM selectFieldExprs $ sqFields sq
+            mls <- mapM exprMaybeLevel fs
+            return $ fromMaybe 0 $ listToMaybe mls
 
 exprReturnType :: ValExpr -> State Context (Maybe String)
 exprReturnType e = return $ case e of
@@ -263,9 +268,7 @@ joinDef :: Join-> String
 joinDef (Join jt _ vn _) = "`" ++ show jt ++ "` " ++ vn
 
 subQuery :: SelectQuery -> State Context String
-subQuery sq = do
-    ctx <- get
-    put $ ctx { ctxNames = sqAliases sq }
+subQuery sq = withScope (sqAliases sq) $ do
     jes <- liftM (concat . (map makeInline)) $ mapM mapJoinExpr (reverse $ sqJoins sq)
     rfs <- selectReturnFields sq
     maybeWhere <- case sqWhere sq of
@@ -273,7 +276,6 @@ subQuery sq = do
             e <- hsBoolExpr expr
             return $ "where_ (" ++ e ++ ")"
         Nothing -> return ""
-    put $ ctx
     return $ "subList_select $ from $ \\(" ++ vn ++ 
         (concatMap joinDef (sqJoins sq)) ++ ") -> do { " ++
         jes
@@ -285,12 +287,17 @@ subQuery sq = do
         makeInline = (++" ;") . lstrip . rstrip
         (en, vn) = sqFrom sq
 
+withScope :: [(EntityName, VariableName, MaybeFlag)] -> State Context a -> State Context a 
+withScope names = localCtx (\ctx -> ctx { ctxNames = ctxNames ctx ++ names })
+
+
 localCtx :: (Context -> Context) -> (State Context a) -> (State Context a)
 localCtx f st = do
     ctx <- get
     put $ f ctx
     r <- st
-    put ctx
+    ctx' <- get
+    put $ ctx { ctxCalls = ctxCalls ctx' }
     return r
 
 

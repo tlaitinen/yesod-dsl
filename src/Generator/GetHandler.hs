@@ -95,15 +95,13 @@ implicitJoinExpr _ = return ""
 
 
 baseIfFilter :: VariableName -> IfFilterParams -> State Context String
-baseIfFilter selectVar (pn,joins,bExpr,useFlag) = do
-    ctx <- get
-    put $ ctx { ctxNames = ctxNames ctx ++ [(joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins] }
-    joinExprs <- liftM concat $ mapM implicitJoinExpr joins
-    expr <- hsBoolExpr bExpr
-    put ctx
-    return $ T.unpack $ if useFlag
-        then $(codegenFile "codegen/base-if-filter.cg")
-        else $(codegenFile "codegen/base-if-filter-nouse.cg")
+baseIfFilter selectVar (pn,joins,bExpr,useFlag) = withScope 
+    [ (joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins ] $ do
+        joinExprs <- liftM concat $ mapM implicitJoinExpr joins
+        expr <- hsBoolExpr bExpr
+        return $ T.unpack $ if useFlag
+            then $(codegenFile "codegen/base-if-filter.cg")
+            else $(codegenFile "codegen/base-if-filter-nouse.cg")
     where 
           maybeFrom = if null joins 
                         then "do"
@@ -122,7 +120,7 @@ getHandlerSelect = do
     ps <- gets ctxHandlerParams
     msq <- getSelectQuery
     case msq of
-        Just sq -> do
+        Just sq -> withScope (sqAliases sq) $ do
             let defaultFilterSort = DefaultFilterSort `elem` ps
                 ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
                 isIfFilter (IfFilter _) = True
@@ -133,7 +131,6 @@ getHandlerSelect = do
                      if defaultFilterSort 
                           then T.unpack $(codegenFile "codegen/default-offset-limit.cg")
                           else ""
-            put $ ctx { ctxNames = sqAliases sq }
             maybeWhere <- case sqWhere sq of
                 Just expr -> do
                     e <- hsBoolExpr expr
@@ -147,7 +144,6 @@ getHandlerSelect = do
                 then defaultSortFields sq
                 else return ""
             ret <- getHandlerReturn sq
-            put ctx
             return $ (T.unpack $(codegenFile "codegen/base-select-query.cg"))
                 ++ (if defaultFilterSort 
                     then filterFieldsStr 
