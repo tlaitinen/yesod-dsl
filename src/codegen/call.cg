@@ -1,1 +1,1 @@
-        lift $ ~{fn} ~{intercalate " " ifrs}
+        ~{fn} ~{intercalate " " ifrs}

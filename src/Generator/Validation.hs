@@ -40,7 +40,8 @@ lookupFieldType :: Module -> EntityName -> FieldName -> String
 lookupFieldType m en fn = hsFieldType (fromJust $ lookupField m en fn)
 
 handlerCall :: (FunctionName, [TypeName]) -> String
-handlerCall (fn,ptns) = indent 4 $ fn ++ " :: (YesodPersist master) => " ++ intercalate " -> " ptns ++ " -> HandlerT master IO ()"
+handlerCall (fn,ptns) = T.unpack $(codegenFile "codegen/call-type-signature.cg")
+    where paramTypes = concatMap (++" -> ") ptns
 
 validation :: Module -> [Context] -> String
 validation m ctxs= T.unpack $(codegenFile "codegen/validation-header.cg")

@@ -1,0 +1,3 @@
+    ~{fn} :: YesodPersist master => 
+        ~{paramTypes}
+        SqlPersistT (HandlerT master IO) ()
