@@ -202,6 +202,7 @@ fieldRef : lowerId dot idField { FieldRefId $1 }
           | auth dot lowerId { FieldRefAuth $3 }
           | localParam { FieldRefLocalParam }
           | request dot lowerId { FieldRefRequest $3 }
+          | lowerId { FieldRefNamedLocalParam $1 }
   
 handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 

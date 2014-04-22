@@ -267,12 +267,12 @@ vHandlerParam (Insert en mfs mbv) = do
                             Nothing -> vError $ "Reference to undeclared field '"
                                                ++ fn ++ "' in entity " ++ en
                 Nothing -> return ()
-vHandlerParam (For vn ifr ps) = do
-    declareLocal ("local variable " ++ vn) (VForParam ifr) 
-    oldForState <- gets stInsideFor
-    modify $ \st -> st { stInsideFor = True }
-    forM_ ps vHandlerParam
-    modify $ \st -> st { stInsideFor = oldForState }
+vHandlerParam (For vn ifr ps) = withScope ("for " ++ vn) $ do
+        declareLocal ("local variable " ++ vn) VReserved
+        oldForState <- gets stInsideFor
+        modify $ \st -> st { stInsideFor = True }
+        forM_ ps vHandlerParam
+        modify $ \st -> st { stInsideFor = oldForState }
 vHandlerParam (Call _ ifrs) = do
     forM_ ifrs vInputFieldRef
     
@@ -371,6 +371,7 @@ vFieldRef (FieldRefRequest fn) = do
         Just GetHandler -> vError $ "Reference to request param 'request." ++ fn ++ "' not allowed in GET handler"
         _ -> return ()
 vFieldRef (FieldRefEnum en vn) = withLookupEnum en $ ensureEnumValue vn
+vFieldRef (FieldRefNamedLocalParam vn) = ensureReserved ("local variable " ++ vn)
 vFieldRef _ = return ()
 
 vSelectField :: SelectField -> Validation
@@ -436,4 +437,4 @@ vValExpr ve = case ve of
             case sqWhere sq of 
                 Just e -> withScope "where expression" $ vBoolExpr e
                 Nothing -> return ()
-
+    ApplyExpr _ _ -> return ()

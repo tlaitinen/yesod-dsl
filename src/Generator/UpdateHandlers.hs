@@ -56,7 +56,7 @@ inputFieldRefType (InputFieldPathParam i) = do
                 PathId en -> return $ en ++ "Id"
                 _ -> return ""
         Nothing -> return ""
-inputFieldRefType ifr@(InputFieldNormal pn) = do
+inputFieldRefType ifr = do
     types <- gets ctxTypes
     return $ Map.findWithDefault "Unknown" ifr types
 

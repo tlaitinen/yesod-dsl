@@ -222,6 +222,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefEnum EnumName FieldName
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName
+              | FieldRefNamedLocalParam VariableName
               deriving (Show, Eq) 
 
 entityFieldByName :: Entity -> FieldName -> Field
