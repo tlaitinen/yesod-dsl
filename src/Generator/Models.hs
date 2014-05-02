@@ -46,7 +46,7 @@ persistFieldType f = baseFieldType f
                    ++ " " ++ (boolToMaybe . fieldOptional) f
                    ++ (maybeDefault . fieldDefault) f
                    ++ (maybeDefaultNull f)
-    where maybeDefault (Just d) = " default=" ++ (fieldValueToSql d) 
+    where maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
           maybeDefaultNull (Field True _ _ (EntityField _)) = " default=NULL"
           maybeDefaultNull _ = ""
