@@ -41,6 +41,7 @@ tokens :-
     \# { mkT THash }
     \* { mkT TAsterisk }
     \+ { mkT TPlus }
+    \- $digit+ { mkTvar (TInt . read) }
     \- { mkT TMinus }
     "get" { mkT TGet }
     "put" { mkT TPut }
