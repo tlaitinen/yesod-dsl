@@ -51,7 +51,7 @@ inputFieldRefType (InputFieldPathParam i) = do
     mr <- gets ctxRoute
     case mr of
         Just r -> do
-            let p = (routePathParams r) !! i
+            let p = (routePathParams r) !! (i-1)
             case p of
                 PathId en -> return $ en ++ "Id"
                 _ -> return ""
