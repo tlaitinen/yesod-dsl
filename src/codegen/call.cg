@@ -1,1 +1,1 @@
-        ~{fn} ~{intercalate " " ifrs}
+        ~{fn} (~{intercalate ") (" ifrs})

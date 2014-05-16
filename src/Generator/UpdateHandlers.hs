@@ -61,8 +61,8 @@ inputFieldRefType ifr = do
     return $ Map.findWithDefault "Unknown" ifr types
 
 inputFieldRef :: InputFieldRef -> State Context String
-inputFieldRef InputFieldAuthId = return $ T.unpack $(codegenFile "codegen/input-field-authid.cg")
-inputFieldRef (InputFieldAuth fn) = return $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
+inputFieldRef InputFieldAuthId = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-authid.cg")
+inputFieldRef (InputFieldAuth fn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
 inputFieldRef (InputFieldLocalParam vn) = return $ rstrip $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
  
 inputFieldRef (InputFieldLocalParamField vn fn) = do
@@ -124,7 +124,8 @@ addCtxType ifr typeName = do
 
 mapJsonInputField :: [InputField] -> Bool -> (Entity,Field) -> State Context String
 mapJsonInputField ifields isNew (e,f) = do
-    content <- mkContent
+    content' <- mkContent
+    let content = rstrip content'
     return $ T.unpack $(codegenFile "codegen/map-input-field.cg")
     where 
         maybeJust :: Bool -> String -> String
