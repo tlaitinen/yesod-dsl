@@ -43,8 +43,6 @@ handlerErrors m = (concatMap notAllowedError $
         missing ht ps  
             | ht == GetHandler = mapMaybe (requireMatch ps) [
            (\p -> case p of (Select _) -> True; _ -> False, "select from")]
-            | ht == PutHandler || ht == PostHandler = mapMaybe (requireMatch ps) [   
-           (\p -> case p of (Insert _ _ _) -> True ; (Update _ _ _ ) -> True ; (For _ _ _) -> True; _ -> False, "insert or update or for")]
             | otherwise = []
         requireMatch ps (f,err) = case listToMaybe (filter f ps) of
             Just _ -> Nothing
