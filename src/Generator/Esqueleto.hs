@@ -112,8 +112,8 @@ extractSubField fn = case fn of
 
 valueOrValueList :: Bool -> Int -> String
 valueOrValueList listValue promoteJust = if listValue
-        then "valList" ++ if promoteJust > 0 then " $ map Just" else ""
-        else "val" ++ if listValue then " $ just" else ""
+        then "valList" ++ (if promoteJust > 0 then " $ map Just" else "")
+        else "val" ++ (if promoteJust > 0 then " $ Just" else "")
 normalFieldRef :: String -> State Context String
 normalFieldRef content = do
     j <- gets ctxExprMaybeLevel
@@ -337,4 +337,4 @@ hsBoolExpr expr = case expr of
                     ctxExprListValue = op `elem` [In, NotIn]
                 }) 
                (hsValExpr e2)
-        return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++  r2 ++ ")"
+        return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
