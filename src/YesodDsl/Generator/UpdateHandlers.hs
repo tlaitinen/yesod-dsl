@@ -15,6 +15,7 @@ import YesodDsl.Generator.Models
 import YesodDsl.Generator.Require
 import Control.Monad.State
 import qualified Data.Map as Map
+
 inputFieldRefType :: InputFieldRef -> State Context String
 inputFieldRefType InputFieldAuthId = return $ "UserId"
 inputFieldRefType (InputFieldAuth fn) = do

@@ -207,7 +207,7 @@ The default value is passed to Persistent as such and taken into account in the
 database server. Examples of valid values are: "string", 1.3, and 4.
 
 Defining a field check-function adds a function to the type class
-*ModuleName*Validation which must be implemented by the Yesod master site using
+*ModuleName*Interface which must be implemented by the Yesod master site using
 the generated subsite. Field check function is executed before modifying
 entities in the database. If the check function returns False, the transaction
 is aborted and an error message is sent to the callee.
@@ -507,7 +507,7 @@ route /usergroups {
 
 In order to use the generated subsite in a scaffolded Yesod site, it suffices to do the following steps:
  * import Handler.MyModule in Application.hs, and
- * define the instance MyModuleValidation App that implements field and entity check functions, and
+ * define the instance MyModuleInterface App that implements field and entity check functions, and
  * add migration code 
 ```haskell
 runLoggingT

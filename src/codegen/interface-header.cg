@@ -12,4 +12,4 @@ class Validatable a where
                  ~{moduleName m}Validation master) 
              => a -> HandlerT master IO [Text]
 
-class Yesod master => ~{moduleName m}Validation master where
+class Yesod master => ~{moduleName m}Interface master where

@@ -21,7 +21,7 @@ import YesodDsl.Generator.Models
 import YesodDsl.Generator.EntityFactories
 import YesodDsl.Generator.Classes
 import YesodDsl.Generator.Routes
-import YesodDsl.Generator.Validation
+import YesodDsl.Generator.Interface
 import YesodDsl.Generator.Handlers
 import YesodDsl.Generator.EsqueletoInstances
 import YesodDsl.Generator.Cabal
@@ -55,7 +55,7 @@ generate path m = do
             ++ models m
             ++ entityFactories m
             ++ classes m
-            ++ validation m ctxs
+            ++ interface m ctxs
             ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))      
     syncFile (joinPath ["Handler", moduleName m, "Routes.hs"]) $
            routes m

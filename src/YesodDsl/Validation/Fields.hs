@@ -20,7 +20,7 @@ fieldErrors m = (concatMap fieldError $ [ (entityName e, entityLoc e, f)
                           | e <- modEntities m, f <- entityFields e,
                                       func <- fieldChecks f ]
                          ++ [ (f,func, classFieldInfo c f) 
-                            | c <- modClasses m, f <- classFields c,
+                            | c <- modClasses m, f <- classFields c,
                                          func <- fieldChecks f])
     
         isClass en = (not . null) [ c | c <- modClasses m, className c == en]

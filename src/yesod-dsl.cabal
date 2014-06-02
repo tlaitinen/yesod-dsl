@@ -39,7 +39,7 @@ library
            YesodDsl.Generator 
            YesodDsl.ClassImplementer 
            YesodDsl.ModuleMerger 
-           YesodDsl.Validation 
+           YesodDsl.Validation
            YesodDsl.Generator.Classes
            YesodDsl.Generator.Common
            YesodDsl.Generator.Esqueleto
@@ -48,7 +48,7 @@ library
            YesodDsl.Generator.Models
            YesodDsl.Generator.Routes
            YesodDsl.Generator.UpdateHandlers
-           YesodDsl.Generator.Validation
+           YesodDsl.Generator.Interface
            YesodDsl.Generator.Require
            YesodDsl.Generator.Cabal
            YesodDsl.Generator.EsqueletoInstances

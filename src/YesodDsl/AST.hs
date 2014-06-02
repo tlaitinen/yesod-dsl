@@ -13,11 +13,11 @@ import Data.Typeable (Typeable)
 data Module = Module {
     modName      :: Maybe String,  -- ^ top-level module must have a name
     modImports   :: [FilePath],    -- ^ modules may import other modules
-    modEntities  :: [Entity],      
-    modClasses   :: [Class],       
-    modEnums     :: [EnumType],
-    modRoutes    :: [Route],
-    modDefines   :: [Define]
+    modEntities  :: [Entity],      -- ^ database entity definitions
+    modClasses   :: [Class],       -- ^ entity classes
+    modEnums     :: [EnumType],    -- ^ enumerated field types 
+    modRoutes    :: [Route],       -- ^ HTTP routes
+    modDefines   :: [Define]       -- ^ common expressions
 } deriving (Show, Data, Typeable)
 
 moduleName :: Module -> String

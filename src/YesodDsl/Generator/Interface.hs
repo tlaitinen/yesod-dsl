@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YesodDsl.Generator.Validation where
+module YesodDsl.Generator.Interface where
 import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
@@ -43,8 +43,8 @@ handlerCall :: (FunctionName, [TypeName]) -> String
 handlerCall (fn,ptns) = T.unpack $(codegenFile "codegen/call-type-signature.cg")
     where paramTypes = concatMap (++" -> ") ptns
 
-validation :: Module -> [Context] -> String
-validation m ctxs= T.unpack $(codegenFile "codegen/validation-header.cg")
+interface :: Module -> [Context] -> String
+interface m ctxs= T.unpack $(codegenFile "codegen/interface-header.cg")
              ++ (concatMap validationFieldFunction $ 
                     nubBy (\(_,f1) (_,f2) -> f1 == f2)
                     [(f,func) | e <- modEntities m,
