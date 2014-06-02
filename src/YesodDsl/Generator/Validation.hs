@@ -1,16 +1,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.Validation where
-import AST
+module YesodDsl.Generator.Validation where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
-import Generator.Models
-import Generator.Common
-import Generator.Esqueleto
+import YesodDsl.Generator.Models
+import YesodDsl.Generator.Common
+import YesodDsl.Generator.Esqueleto
 
 validationFieldCheck :: Entity -> Field -> FunctionName -> String
 validationFieldCheck e f func = rstrip $ T.unpack $(codegenFile "codegen/validation-field.cg")

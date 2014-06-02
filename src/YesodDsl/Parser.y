@@ -1,8 +1,8 @@
 {
-module Parser (parse) where
-import Lexer
-import AST
-import ModuleMerger
+module YesodDsl.Parser (parse) where
+import YesodDsl.Lexer
+import YesodDsl.AST
+import YesodDsl.ModuleMerger
 import System.IO
 import Data.Maybe
 import Data.Typeable

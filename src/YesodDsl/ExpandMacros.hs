@@ -1,5 +1,5 @@
-module ExpandMacros (expandMacros) where
-import AST
+module YesodDsl.ExpandMacros (expandMacros) where
+import YesodDsl.AST
 import Data.List
 expandMacros :: Module -> Module
 expandMacros m = m {

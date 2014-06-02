@@ -1,5 +1,5 @@
-module Validation.Handlers (handlerErrors) where
-import AST
+module YesodDsl.Validation.Handlers (handlerErrors) where
+import YesodDsl.AST
 import Data.Maybe
 handlerErrors :: Module -> String
 handlerErrors m = (concatMap notAllowedError $ 

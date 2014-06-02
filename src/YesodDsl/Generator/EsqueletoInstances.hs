@@ -2,13 +2,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generator.EsqueletoInstances (esqueletoInstances) where
-import AST
-import Generator.Common
+module YesodDsl.Generator.EsqueletoInstances (esqueletoInstances) where
+import YesodDsl.AST
+import YesodDsl.Generator.Common
 import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
 import Data.List
-import Generator.Esqueleto
+import YesodDsl.Generator.Esqueleto
 import Control.Monad.State
 
 maxInstances :: Module -> Int

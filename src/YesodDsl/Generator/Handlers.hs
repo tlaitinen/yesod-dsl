@@ -2,8 +2,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generator.Handlers where
-import AST
+module YesodDsl.Generator.Handlers where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
@@ -11,11 +11,11 @@ import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
 import qualified Data.Map as Map
 
-import Generator.GetHandler
-import Generator.UpdateHandlers
-import Generator.Routes
+import YesodDsl.Generator.GetHandler
+import YesodDsl.Generator.UpdateHandlers
+import YesodDsl.Generator.Routes
 import Control.Monad.State
-import Generator.Esqueleto
+import YesodDsl.Generator.Esqueleto
 
 hsRouteParams :: [PathPiece] -> String
 hsRouteParams ps = intercalate " " [("p" ++ show x) | 

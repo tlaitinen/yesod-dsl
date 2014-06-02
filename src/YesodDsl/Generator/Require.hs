@@ -1,12 +1,12 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.Require where
-import AST
+module YesodDsl.Generator.Require where
+import YesodDsl.AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
-import Generator.Common
-import Generator.Esqueleto
+import YesodDsl.Generator.Common
+import YesodDsl.Generator.Esqueleto
 import Control.Monad.State
 requireStmts :: State Context String
 requireStmts  = do

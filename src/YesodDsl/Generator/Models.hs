@@ -1,13 +1,13 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.Models where
-import AST
+module YesodDsl.Generator.Models where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
-import Generator.Common
+import YesodDsl.Generator.Common
 recName :: String -> String -> String
 recName dt f = lowerFirst dt ++ upperFirst f
 

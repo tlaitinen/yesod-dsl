@@ -1,5 +1,5 @@
-module Generator.Common where
-import AST
+module YesodDsl.Generator.Common where
+import YesodDsl.AST
 brackets :: Bool -> String -> String
 brackets True s = "(" ++ s ++ ")"
 brackets False s = s

@@ -1,5 +1,5 @@
-module ModuleMerger (mergeModules) where
-import AST
+module YesodDsl.ModuleMerger (mergeModules) where
+import YesodDsl.AST
 import Data.List
 import Data.Maybe
     

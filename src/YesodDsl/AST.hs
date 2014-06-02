@@ -1,11 +1,14 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 -- | Abstract Syntax Tree of yesod-dsl definition.
-module AST where
+module YesodDsl.AST where
 
-import Lexer
+import YesodDsl.Lexer
 import Data.Maybe
 import Data.List
 import Data.Char
-
+import Data.Generics.Uniplate.Data
+import Data.Data (Data)
+import Data.Typeable (Typeable)
 -- | definitions in single file form a 'Module'
 data Module = Module {
     modName      :: Maybe String,  -- ^ top-level module must have a name
@@ -15,7 +18,7 @@ data Module = Module {
     modEnums     :: [EnumType],
     modRoutes    :: [Route],
     modDefines   :: [Define]
-} deriving (Show)
+} deriving (Show, Data, Typeable)
 
 moduleName :: Module -> String
 moduleName = fromJust . modName
@@ -37,13 +40,13 @@ type EnumName = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-               | FTZonedTime deriving (Eq,Show)
+               | FTZonedTime deriving (Eq,Show,Data,Typeable)
 
 type FieldName = String 
 type PathName = String
 type UniqueName = String
 type QueryName = String
-data Location = Loc FilePath Int Int deriving (Eq)
+data Location = Loc FilePath Int Int deriving (Eq,Data,Typeable)
 
 instance Show Location where
     show (Loc path row col) = path ++ ":" ++ show row ++ ":" ++ show col
@@ -57,20 +60,21 @@ data Define = Define {
     defineLoc :: Location,
     defineParams :: [ParamName],
     defineContent :: DefineContent
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
 
-data DefineContent = DefineSubQuery SelectQuery deriving (Show, Eq)
+data DefineContent = DefineSubQuery SelectQuery 
+                     deriving (Show, Eq, Data, Typeable)
 
 data Unique = Unique {
     uniqueName :: UniqueName,
     uniqueFields :: [FieldName]
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
 
 data HandlerType = GetHandler 
                  | PutHandler 
                  | PostHandler 
                  | DeleteHandler 
-                 deriving (Eq) 
+                 deriving (Eq, Data, Typeable) 
 
 instance Show HandlerType where
     show GetHandler = "GET"
@@ -83,20 +87,20 @@ data JoinType = InnerJoin
               | LeftOuterJoin
               | RightOuterJoin
               | FullOuterJoin
-              deriving (Show, Eq)
+              deriving (Show, Eq, Data, Typeable)
 isOuterJoin :: JoinType -> Bool
 isOuterJoin LeftOuterJoin = True
 isOuterJoin RightOuterJoin = True
 isOuterJoin FullOuterJoin = True
 isOuterJoin _ = False
 
-data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq)     
-data ValBinOp = Add | Sub | Div | Mul | Concat deriving (Show,Eq)    
+data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq, Data,Typeable)     
+data ValBinOp = Add | Sub | Div | Mul | Concat deriving (Show,Eq, Data,Typeable)    
 
 data BoolExpr = AndExpr BoolExpr BoolExpr
           | OrExpr BoolExpr BoolExpr
           | NotExpr BoolExpr
-          | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq)
+          | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq, Data, Typeable)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
            | ConcatManyExpr [ValExpr]
@@ -107,7 +111,7 @@ data ValExpr = FieldExpr FieldRef
            | ExtractExpr FieldName ValExpr
            | SubQueryExpr SelectQuery 
            | ApplyExpr FunctionName [ParamName]
-           deriving (Show, Eq)
+           deriving (Show, Eq, Data, Typeable)
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | Select SelectQuery 
@@ -120,7 +124,7 @@ data HandlerParam = Public
                   | Require SelectQuery
                   | For VariableName InputFieldRef [HandlerParam]
                   | Call FunctionName [InputFieldRef]
-                  deriving (Show, Eq) 
+                  deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
 
@@ -131,7 +135,7 @@ data SelectQuery = SelectQuery {
     sqWhere        :: Maybe BoolExpr,
     sqOrderBy        :: [(FieldRef, SortDir)],
     sqLimitOffset  :: (Int, Int)
-} deriving (Show, Eq)    
+} deriving (Show, Eq, Data, Typeable)    
 
 type MaybeFlag = Bool
 sqAliases :: SelectQuery -> [(EntityName, VariableName, MaybeFlag)]
@@ -145,7 +149,7 @@ data SelectField = SelectAllFields VariableName
                  | SelectIdField VariableName (Maybe VariableName)
                  | SelectParamField VariableName ParamName (Maybe VariableName)
                  | SelectValExpr ValExpr VariableName
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Data, Typeable)
 
     
 data Join = Join {
@@ -153,7 +157,7 @@ data Join = Join {
     joinEntity :: EntityName,
     joinAlias  :: VariableName,
     joinExpr   :: Maybe BoolExpr
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
 
 type InputField = (ParamName, InputFieldRef)
 
@@ -165,19 +169,20 @@ data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldLocalParamField VariableName FieldName
                    | InputFieldConst FieldValue
                    | InputFieldNow
-                    deriving (Show, Eq, Ord)
+                    deriving (Show, Eq, Ord, Data, Typeable)
                     
 type OutputField = (ParamName, OutputFieldRef)
 data OutputFieldRef = OutputFieldLocalParam VariableName 
-    deriving (Show,Eq)
+    deriving (Show,Eq, Data, Typeable)
 
-data SortDir = SortAsc | SortDesc deriving (Show, Eq)                   
+data SortDir = SortAsc | SortDesc deriving (Show, Eq, Data, Typeable)                   
 
 data Handler = Handler {
     handlerLoc	  :: Location,
     handlerType   :: HandlerType,
     handlerParams :: [HandlerParam] 
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
+
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
@@ -186,14 +191,15 @@ data Entity = Entity {
     entityUniques    :: [Unique],
     entityDeriving   :: [ClassName],
     entityChecks     :: [FunctionName]
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
 
 
 data Route = Route {
     routeLoc :: Location,
     routePath :: [PathPiece],
     routeHandlers :: [Handler]
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
+
 routePathParams :: Route -> [PathPiece]
 routePathParams = (filter isPathParam) . routePath
     where isPathParam (PathId _) = True
@@ -209,7 +215,7 @@ routeName ps = "/" ++ intercalate "/" (map show ps)
 
 data PathPiece = PathText String
                | PathId EntityName
-               deriving (Eq)
+               deriving (Eq, Data, Typeable)
 instance Show PathPiece where
     show (PathText s) = s
     show (PathId en) = "#" ++ en ++ "Id"
@@ -223,7 +229,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName
               | FieldRefNamedLocalParam VariableName
-              deriving (Show, Eq) 
+              deriving (Show, Eq, Data, Typeable) 
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id
@@ -233,21 +239,21 @@ data EnumType = EnumType {
     enumLoc :: Location,
     enumName :: String,
     enumValues :: [String]
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
 
 data Class = Class {
     classLoc     :: Location,
     className    :: String,
     classFields  :: [Field],
     classUniques :: [Unique]
-} deriving (Show, Eq)
+} deriving (Show, Eq, Data, Typeable)
 
 type DefaultValue = String
 type IsListFlag = Bool
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
                     | EnumField EnumName
-                deriving (Show,Eq)
+                deriving (Show,Eq, Data, Typeable)
    
 
 data Field = Field {
@@ -255,20 +261,20 @@ data Field = Field {
     fieldInternal :: Bool,
     fieldName     :: FieldName,
     fieldContent  :: FieldContent
-} deriving (Show,Eq)
+} deriving (Show,Eq, Data, Typeable)
 
 type FunctionName = String
 
 data FieldOption = FieldCheck FunctionName
                  | FieldDefault FieldValue
-                 deriving (Show, Eq)
+                 deriving (Show, Eq, Data, Typeable)
 
 data FieldValue = StringValue String
                 | IntValue Int
                 | FloatValue Double
                 | BoolValue Bool
                 | NothingValue
-                deriving (Show, Eq, Ord)
+                deriving (Show, Eq, Ord, Data, Typeable)
 fieldValueToSql :: FieldValue -> String    
 fieldValueToSql fv = case fv of
     (StringValue s) -> "'" ++ s ++ "'"

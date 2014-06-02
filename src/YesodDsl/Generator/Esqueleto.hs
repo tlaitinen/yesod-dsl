@@ -2,13 +2,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generator.Esqueleto where
-import AST
+module YesodDsl.Generator.Esqueleto where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
-import Generator.Common
+import YesodDsl.Generator.Common
 import Data.String.Utils (lstrip, rstrip)
 import Control.Monad.State
 import qualified Data.Map as Map

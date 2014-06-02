@@ -1,22 +1,22 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.GetHandler where
+module YesodDsl.Generator.GetHandler where
 
 import System.IO (FilePath, writeFile)
 import System.FilePath (joinPath)    
 import System.Directory (createDirectoryIfMissing)
 import Data.String.Utils (rstrip)    
-import AST
+import YesodDsl.AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
 import Data.List
 import Data.Maybe
 import Data.Char
-import Generator.Common
-import Generator.Esqueleto
-import Generator.Models
-import Generator.Require
+import YesodDsl.Generator.Common
+import YesodDsl.Generator.Esqueleto
+import YesodDsl.Generator.Models
+import YesodDsl.Generator.Require
 import Control.Monad.State
 getHandlerParam :: HandlerParam -> State Context String
 getHandlerParam DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")

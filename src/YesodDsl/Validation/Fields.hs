@@ -1,7 +1,7 @@
-module Validation.Fields (fieldErrors) where
-import AST
+module YesodDsl.Validation.Fields (fieldErrors) where
+import YesodDsl.AST
 import Data.List
-import Generator.Models (baseFieldType, boolToMaybe, hsFieldType)
+import YesodDsl.Generator.Models (baseFieldType, boolToMaybe, hsFieldType)
 
 
 fieldErrors :: Module -> String

@@ -1,13 +1,13 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.EntityFactories where
-import AST
+module YesodDsl.Generator.EntityFactories where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
-import Generator.Common
-import Generator.Models (baseFieldType)
+import YesodDsl.Generator.Common
+import YesodDsl.Generator.Models (baseFieldType)
 
 entityFactory :: Entity -> String
 entityFactory e = T.unpack $(codegenFile "codegen/entity-factory.cg")

@@ -1,10 +1,10 @@
-module Validation (validate) where
+module YesodDsl.Validation (validate) where
 
-import AST
+import YesodDsl.AST
 import Data.List
-import Validation.Fields
-import Validation.Handlers
-import qualified Validation.State as V
+import YesodDsl.Validation.Fields
+import YesodDsl.Validation.Handlers
+import qualified YesodDsl.Validation.State as V
 import Data.Maybe
 
 validate :: Module -> String

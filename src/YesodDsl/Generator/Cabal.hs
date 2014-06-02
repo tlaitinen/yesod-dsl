@@ -1,5 +1,5 @@
-module Generator.Cabal (syncCabal) where
-import AST
+module YesodDsl.Generator.Cabal (syncCabal) where
+import YesodDsl.AST
 import Distribution.PackageDescription
 import Distribution.ModuleName
 import Distribution.PackageDescription.Parse
@@ -11,8 +11,8 @@ import System.Directory
 import Distribution.Verbosity
 import System.FilePath.Posix
 import Data.List
-import Generator.Routes
-import SyncFile
+import YesodDsl.Generator.Routes
+import YesodDsl.SyncFile
 stripGenerated :: Module -> [ModuleName] -> [ModuleName]
 stripGenerated m mods = [ mn | mn <- mods, 
           not $("Handler." ++ (fromMaybe "" $ modName m)) `isPrefixOf` (mnToString mn) ]

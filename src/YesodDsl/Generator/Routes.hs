@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.Routes where
-import AST
+module YesodDsl.Generator.Routes where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List

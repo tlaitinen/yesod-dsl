@@ -1,4 +1,4 @@
-module SyncFile where
+module YesodDsl.SyncFile where
 import Prelude hiding (readFile, catch)
 import System.IO (FilePath, writeFile)
 import System.IO.Strict (readFile)

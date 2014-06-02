@@ -1,7 +1,7 @@
 
-module Validation.State (validate) where
+module YesodDsl.Validation.State (validate) where
 
-import AST
+import YesodDsl.AST
 import Control.Monad.State
 import Data.Maybe (isNothing)
 import qualified Data.Map as Map

@@ -2,17 +2,17 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generator.UpdateHandlers where
-import AST
+module YesodDsl.Generator.UpdateHandlers where
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
-import Generator.Esqueleto
-import Generator.Common
-import Generator.Models
-import Generator.Require
+import YesodDsl.Generator.Esqueleto
+import YesodDsl.Generator.Common
+import YesodDsl.Generator.Models
+import YesodDsl.Generator.Require
 import Control.Monad.State
 import qualified Data.Map as Map
 inputFieldRefType :: InputFieldRef -> State Context String

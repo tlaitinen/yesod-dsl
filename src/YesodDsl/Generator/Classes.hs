@@ -2,15 +2,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generator.Classes where
-import AST
-import AST
+module YesodDsl.Generator.Classes where
+import YesodDsl.AST
+import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
-import Generator.Models
-import Generator.Common
+import YesodDsl.Generator.Models
+import YesodDsl.Generator.Common
 
 classFieldName :: Class -> Field -> String
 classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f

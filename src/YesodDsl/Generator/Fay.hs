@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator.Fay (fay) where
-import AST
+module YesodDsl.Generator.Fay (fay) where
+import YesodDsl.AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
 import Data.List
 import Data.Maybe
 import Data.Char
-import Generator.Common
+import YesodDsl.Generator.Common
 
 
 trPathPiece :: PathPiece -> String

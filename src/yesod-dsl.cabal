@@ -1,5 +1,5 @@
 name:           yesod-dsl
-version:        0.1.1.17
+version:        0.1.1.18
 license:        BSD3
 license-file:   LICENSE
 author:         Tero Laitinen 
@@ -8,15 +8,14 @@ synopsis:       DSL for generating Yesod subsite to manage an RDBMS;
 description:    A domain specific language and a code generator desined to create RESTful services for managing an RDBMS with Yesod web framework and Persistent.
 category:       Web, Yesod
 stability:      Experimental
-cabal-version:  >= 1.6
+cabal-version:  >= 1.8
 build-type:     Simple
 homepage:       https://github.com/tlaitinen/yesod-dsl
 
 extra-source-files:
     codegen/*.cg
 
-executable  yesod-dsl
-    main-is: main.hs
+library
     build-depends: base >= 4 && < 5
                  , shakespeare-text >= 1.0  && < 1.1
                  , text >= 0.11
@@ -28,27 +27,55 @@ executable  yesod-dsl
                  , mtl >= 2.1.2
                  , strict
                  , Cabal
-                 
+                 , uniplate
     Build-tools:         alex, happy
-    other-modules: Lexer Parser AST Generator ClassImplementer ModuleMerger Validation 
-                   Generator.Classes
-                   Generator.Common
-                   Generator.Esqueleto
-                   Generator.GetHandler
-                   Generator.Handlers
-                   Generator.Models
-                   Generator.Routes
-                   Generator.UpdateHandlers
-                   Generator.Validation
-                   Generator.Require
-                   Generator.Cabal
-                   Generator.EsqueletoInstances
-                   Generator.Fay
-                   Generator.EntityFactories
-                   SyncFile
-                   ExpandMacros
-                   Validation.Fields
-                   Validation.Handlers
-                   Validation.State
+    ghc-options: -Wall -O0
+    exposed: True
+    buildable: True
+    exposed-modules:
+           YesodDsl.Lexer 
+           YesodDsl.Parser 
+           YesodDsl.AST 
+           YesodDsl.Generator 
+           YesodDsl.ClassImplementer 
+           YesodDsl.ModuleMerger 
+           YesodDsl.Validation 
+           YesodDsl.Generator.Classes
+           YesodDsl.Generator.Common
+           YesodDsl.Generator.Esqueleto
+           YesodDsl.Generator.GetHandler
+           YesodDsl.Generator.Handlers
+           YesodDsl.Generator.Models
+           YesodDsl.Generator.Routes
+           YesodDsl.Generator.UpdateHandlers
+           YesodDsl.Generator.Validation
+           YesodDsl.Generator.Require
+           YesodDsl.Generator.Cabal
+           YesodDsl.Generator.EsqueletoInstances
+           YesodDsl.Generator.Fay
+           YesodDsl.Generator.EntityFactories
+           YesodDsl.SyncFile
+           YesodDsl.ExpandMacros
+           YesodDsl.Validation.Fields
+           YesodDsl.Validation.Handlers
+           YesodDsl.Validation.State
 
-    ghc-options: -Wall
+
+executable  yesod-dsl
+    main-is: main.hs
+    hs-source-dirs: main
+    build-depends: base >= 4 && < 5
+                 , shakespeare-text >= 1.0  && < 1.1
+                 , text >= 0.11
+                 , directory >= 1.1.0.2
+                 , array >= 0.4.0.0
+                 , MissingH >= 1.2.0.0
+                 , filepath >= 1.3.0.0
+                 , containers >= 0.4.2.1
+                 , mtl >= 2.1.2
+                 , strict
+                 , Cabal
+                 , uniplate
+                 , yesod-dsl
+                 
+    ghc-options: -Wall -O0

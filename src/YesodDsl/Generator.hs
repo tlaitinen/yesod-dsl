@@ -2,14 +2,14 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generator (generate, hsRouteName, genFay) where
+module YesodDsl.Generator (generate, hsRouteName, genFay) where
 import Prelude hiding (readFile)
 import System.IO (FilePath, writeFile)
 import System.IO.Strict (readFile)
 import System.FilePath (joinPath)    
 import System.Directory (createDirectoryIfMissing)
 import Data.String.Utils (rstrip)    
-import AST
+import YesodDsl.AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
 import Data.List
@@ -17,18 +17,18 @@ import Data.Maybe
 import Control.Monad
 import Data.Char
 
-import Generator.Models
-import Generator.EntityFactories
-import Generator.Classes
-import Generator.Routes
-import Generator.Validation
-import Generator.Handlers
-import Generator.EsqueletoInstances
-import Generator.Cabal
-import Generator.Fay
-import SyncFile
+import YesodDsl.Generator.Models
+import YesodDsl.Generator.EntityFactories
+import YesodDsl.Generator.Classes
+import YesodDsl.Generator.Routes
+import YesodDsl.Generator.Validation
+import YesodDsl.Generator.Handlers
+import YesodDsl.Generator.EsqueletoInstances
+import YesodDsl.Generator.Cabal
+import YesodDsl.Generator.Fay
+import YesodDsl.SyncFile
 import Control.Monad.State
-import Generator.Esqueleto
+import YesodDsl.Generator.Esqueleto
 
 writeRoute :: Module -> Route -> IO Context
 writeRoute m r = do

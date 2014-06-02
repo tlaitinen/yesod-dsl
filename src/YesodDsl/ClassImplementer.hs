@@ -1,6 +1,6 @@
-module ClassImplementer (implementClasses) where
+module YesodDsl.ClassImplementer (implementClasses) where
 import Data.List
-import AST
+import YesodDsl.AST
 import Data.Maybe
 
 implementClasses :: Module -> Module

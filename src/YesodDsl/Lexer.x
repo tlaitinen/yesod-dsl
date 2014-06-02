@@ -1,5 +1,5 @@
 {
-module Lexer (lexer, tokenType, tokenLineNum, tokenColNum, Token(..), TokenType(..) ) where
+module YesodDsl.Lexer (lexer, tokenType, tokenLineNum, tokenColNum, Token(..), TokenType(..) ) where
 }
 
 %wrapper "posn"
