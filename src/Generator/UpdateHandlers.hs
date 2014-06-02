@@ -240,7 +240,12 @@ updateHandlerReadJsonFields :: State Context String
 updateHandlerReadJsonFields = do
     m <- gets ctxModule
     ps <- gets ctxHandlerParams
-    return $ concatMap prepareJsonInputField (jsonAttrs m ps)
+    let attrs = jsonAttrs m ps
+    if null attrs
+        then return ""
+        else return $
+            (T.unpack $(codegenFile "codegen/json-body.cg")) 
+            ++ concatMap prepareJsonInputField attrs
     where
         jsonAttrs m ps = nub $ concatMap (getJsonAttrs m) ps
 
@@ -279,7 +284,6 @@ updateHandler = do
     ps <- gets ctxHandlerParams
 
     liftM concat $ sequence ([
-            return $ T.unpack $(codegenFile "codegen/json-body.cg"),
             updateHandlerReadJsonFields,
             return $ updateHandlerMaybeCurrentTime ps,
             return $ updateHandlerMaybeAuth ps,
