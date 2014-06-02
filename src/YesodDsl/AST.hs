@@ -9,6 +9,7 @@ import Data.Char
 import Data.Generics.Uniplate.Data
 import Data.Data (Data)
 import Data.Typeable (Typeable)
+
 -- | definitions in single file form a 'Module'
 data Module = Module {
     modName      :: Maybe String,  -- ^ top-level module must have a name
@@ -20,8 +21,9 @@ data Module = Module {
     modDefines   :: [Define]       -- ^ common expressions
 } deriving (Show, Data, Typeable)
 
+-- | safe function to extract 'Module' name
 moduleName :: Module -> String
-moduleName = fromJust . modName
+moduleName m = fromMaybe "" (modName m)
 
 emptyModule = Module {
     modName = Nothing,
@@ -34,18 +36,17 @@ emptyModule = Module {
 }
 
 type ClassName = String
+-- | name of a parameter (for various things)
 type ParamName = String
 type EntityName = String
 type EnumName = String
 
+-- | type of a 'Field' of an 'Entity'
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
-               | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-               | FTZonedTime deriving (Eq,Show,Data,Typeable)
+               | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
+               | FTZonedTime deriving (Eq,Show,Data,Typeable)
 
-type FieldName = String 
-type PathName = String
-type UniqueName = String
-type QueryName = String
+-- | file name, row number, and column
 data Location = Loc FilePath Int Int deriving (Eq,Data,Typeable)
 
 instance Show Location where
@@ -62,11 +63,16 @@ data Define = Define {
     defineContent :: DefineContent
 } deriving (Show, Eq, Data, Typeable)
 
+-- | macro-like definition, currently only for commonly used parametrized 
+-- sub-queries
 data DefineContent = DefineSubQuery SelectQuery 
                      deriving (Show, Eq, Data, Typeable)
 
+-- | name of a 'Field'
+type FieldName = String 
+
 data Unique = Unique {
-    uniqueName :: UniqueName,
+    uniqueName :: String,
     uniqueFields :: [FieldName]
 } deriving (Show, Eq, Data, Typeable)
 
