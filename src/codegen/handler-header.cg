@@ -1,4 +1,4 @@
-~{hsHandlerMethod ht}~{hsRouteName (routePath r)} :: forall master. (~{moduleName m}Validation master, 
+~{hsHandlerMethod ht}~{hsRouteName (routePath r)} :: forall master. (~{moduleName m}Interface master, 
     YesodAuthPersist master,
     KeyEntity (AuthId master) ~ User,
     YesodPersistBackend master ~ SqlPersistT)
