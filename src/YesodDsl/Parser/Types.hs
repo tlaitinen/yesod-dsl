@@ -1,5 +1,7 @@
 module YesodDsl.Parser.Types where
 
+import YesodDsl.AST
+import YesodDsl.Parser.Indent
 
 type SymName = String
 
