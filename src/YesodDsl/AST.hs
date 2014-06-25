@@ -13,7 +13,7 @@ import Data.Typeable (Typeable)
 -- | definitions in single file form a 'Module'
 data Module = Module {
     modName      :: Maybe String,  -- ^ top-level module must have a name
-    modImports   :: [FilePath],    -- ^ modules may import other modules
+    modImports   :: [(FilePath,Module)], -- ^ modules may import other modules
     modEntities  :: [Entity],      -- ^ database entity definitions
     modClasses   :: [Class],       -- ^ entity classes
     modEnums     :: [EnumType],    -- ^ enumerated field types 
@@ -52,7 +52,7 @@ data Location = Loc FilePath Int Int deriving (Eq,Data,Typeable)
 instance Show Location where
     show (Loc path row col) = path ++ ":" ++ show row ++ ":" ++ show col
 
-mkLoc t = Loc "" (tokenLineNum t) (tokenColNum t)
+
 
 -- | macro definition, currently used only to define parametrized 
 -- sub-select-queries

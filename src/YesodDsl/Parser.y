@@ -10,6 +10,7 @@ import Data.Typeable
 import Prelude hiding (catch) 
 import Control.Exception hiding (Handler)
 import System.Exit
+import Control.Monad.IO.Class
 
 }
 
@@ -134,18 +135,33 @@ import System.Exit
 %%
 
 dbModule : maybeModuleName 
-           imports defs { Module $1 (reverse $2) ((reverse . getEntities) $3) 
+           imports defs {%
+           do
+               path <- getPath
+               let m =  Module $1 $2 ((reverse . getEntities) $3) 
                                     ((reverse . getClasses) $3)
                                     ((reverse . getEnums) $3)
                                     ((reverse . getRoutes) $3)
-                                    ((reverse . getDefines) $3) }
+                                    ((reverse . getDefines) $3)
+               return $ mergeModules $ (path,m):$2 
+           }
 
 maybeModuleName : { Nothing }
                 | module upperId semicolon { Just $2 }
 imports : { [] }
-        | imports importStmt { $2 : $1 }
+        | importStmt imports { $1 ++ $2 }
 
-importStmt : import stringval semicolon { $2 }
+importStmt : import stringval semicolon {%  
+            do
+                parsed <- getParsed
+                if not ($2 `elem` parsed)
+                    then do
+                        ps <- getParserState
+                        (m,ps') <- liftIO $ parseModule ps $2
+                        setParserState ps'
+                        return [($2,m)]
+                    else return []
+            }
 defs : { [] }
        | defs def  { $2 : $1 }
 def : routeDef     { RouteDef $1 }
@@ -154,7 +170,7 @@ def : routeDef     { RouteDef $1 }
       | enumDef       { EnumDef $1 }
       | defineDef     { DefineDef $1 }
 
-defineDef : define lowerId lparen maybeEmptyLowerIdList rparen equals defineContent semicolon { Define $2 (mkLoc $1) $4 $7 } 
+defineDef : define lowerId lparen maybeEmptyLowerIdList rparen equals defineContent semicolon {% mkLoc $1 >>= \l -> return $ Define $2 l $4 $7 } 
 
 maybeEmptyLowerIdList : { [] }
         | lowerIdList { (reverse $1) }
@@ -166,7 +182,7 @@ defineContent : select selectField from upperId as lowerId
                { DefineSubQuery (SelectQuery [$2] ($4,$6) (reverse $7) $8 [] (0,0)) }
       
 enumDef : enum upperId equals enumValues semicolon 
-         { EnumType (mkLoc $1) $2 $4 }
+         {% mkLoc $1 >>= \l -> return $ EnumType l $2 $4 }
 
 enumValues : upperId { [$1] }
            | enumValues pipe upperId { $3 : $1 }
@@ -177,10 +193,10 @@ entityDef : entity upperId lbrace
             uniques
             maybeDeriving
             checks
-            rbrace { Entity (mkLoc $1) $2 $4 (reverse $5)
+            rbrace {% mkLoc $1 >>= \l -> return $ Entity l $2 $4 (reverse $5)
                             (reverse $6) $7 (reverse $8) }
 
-routeDef : route pathPieces lbrace handlers rbrace { Route (mkLoc $1) (reverse $2) (reverse $4) }
+routeDef : route pathPieces lbrace handlers rbrace {% mkLoc $1 >>= \l -> return $ Route l (reverse $2) (reverse $4) }
 pathPieces : slash pathPiece { [$2] }
            | pathPieces slash pathPiece { $3 : $1 }
 
@@ -190,10 +206,10 @@ pathPiece : lowerId { PathText $1 }
 handlers : handlerdef  { [$1] }
          | handlers handlerdef { $2 : $1 }
 
-handlerdef : get handlerParamsBlock { Handler (mkLoc $1) GetHandler $2 }
-           | put handlerParamsBlock { Handler (mkLoc $1) PutHandler $2 }
-           | post handlerParamsBlock { Handler (mkLoc $1) PostHandler $2 }
-           | delete handlerParamsBlock { Handler (mkLoc $1) DeleteHandler $2 }
+handlerdef : get handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l GetHandler $2 }
+           | put handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l PutHandler $2 }
+           | post handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l PostHandler $2 }
+           | delete handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l DeleteHandler $2 }
 
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
@@ -361,7 +377,7 @@ classDef : class upperId lbrace
             uniques
             rbrace {% 
             do
-                let l = mkLoc $1
+                l <- mkLoc $1
                 let c = Class l $2 (reverse $4) (reverse $5)  
                 declare l $2 (SClass c)
                 return c
@@ -465,26 +481,17 @@ parseError :: [Token] -> a
 parseError (t:ts) = throw (ParseError $ "Parse error : unexpected " ++ show (tokenType t) ++ " at line " ++ show (tokenLineNum t) ++ " col " ++ show (tokenColNum t))
 parseError _ = throw (ParseError $ "Parse error : unexpected end of file")
 
-parseModule :: FilePath -> IO Module
-parseModule path = catch 
+parseModule :: ParserState -> FilePath -> IO (Module,ParserState)
+parseModule ps path = catch 
         (do
             s <- readFile path
-            m <- runParser (parseModuleDefs $! lexer s)
-
-            return $! m)
+            (m,ps') <- runParser path ps (parseModuleDefs $! lexer s)
+            return $! (m,ps'))
         (\(ParseError msg) -> do 
             hPutStrLn stderr $ path ++ ": " ++ msg
             exitWith (ExitFailure 1))
        
-
-parseModules :: [FilePath] -> [FilePath] -> IO [(FilePath,Module)]
-parseModules handled (path:paths)
-    | path `elem` handled = return []
-    | otherwise = do
-        mod <- parseModule path
-        rest <- parseModules (path:handled) (paths ++ modImports mod)
-        return ((path,mod):rest)
-parseModules _ [] = return []
-
-parse path = parseModules [] [path]
+parse path = do
+    (m,_) <- parseModule initParserState path
+    return m
 }
