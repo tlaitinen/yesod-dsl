@@ -205,24 +205,34 @@ enumDef : enum upperIdTk equals pushScope enumValues popScope semicolon
         return e
     }
 
-enumValue: upperIdTk {%
+uniqueUpperIdTk: upperIdTk {%
     do
         l <- mkLoc $1
         declare l (tkString $1) SReserved
-        return $ tkString $1 
+        return $ $1 
     }
+
+uniqueUpperId: uniqueUpperIdTk { tkString $1 }
           
-enumValues : enumValue { [$1] }
-          | enumValues pipe enumValue { $3 : $1 }
+enumValues : uniqueUpperId { [$1] }
+          | enumValues pipe uniqueUpperId { $3 : $1 }
     
-entityDef : entity upperId lbrace 
+entityDef : entity upperIdTk lbrace 
+            pushScope
             maybeInstances
-            fieldBlock
+            fields
             uniques
             maybeDeriving
             checks
-            rbrace {% mkLoc $1 >>= \l -> return $ Entity l $2 $4 (reverse $5)
-                            (reverse $6) $7 (reverse $8) }
+            popScope
+            rbrace {% 
+    do
+        l <- mkLoc $2
+        let n = tkString $2
+        let e = Entity l n $5 (reverse $6) (reverse $7) $8 (reverse $9) 
+        declare l n (SEntity e)
+        return e
+    }
 
 routeDef : route pathPieces lbrace handlers rbrace {% mkLoc $1 >>= \l -> return $ Route l (reverse $2) (reverse $4) }
 pathPieces : slash pathPiece { [$2] }
@@ -397,22 +407,31 @@ jointype : inner join { InnerJoin }
 maybeInstances : { [] }
                | instance of instances semicolon { (reverse $3) }
 
-instances : upperId { [$1] }
-            | instances comma upperId { $3 : $1 }
+instanceDef: uniqueUpperIdTk {%
+    do
+        l <- mkLoc $1
+        let n = tkString $1
+        withSymbol l n $ requireClass $ \c -> do
+            return ()
+        return n
+    }
+instances : instanceDef { [$1] }
+            | instances comma instanceDef { $3 : $1 }
 
 classDef : class upperIdTk lbrace
-            fieldBlock
+            pushScope
+            fields
             uniques
+            popScope
             rbrace {% 
             do
                 l <- mkLoc $2
                 let n = tkString $2
-                let c = Class l n (reverse $4) (reverse $5)  
+                let c = Class l n (reverse $5) (reverse $6)  
                 declare l n (SClass c)
                 return c
             }
 
-fieldBlock : pushScope fields popScope { $2 }
 
 
 pushScope: {% pushScope }
@@ -469,7 +488,7 @@ value : stringval { StringValue $1 }
       
 uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
-uniqueDef :  unique upperId fieldIdList { Unique $2 (reverse $3) }
+uniqueDef :  unique uniqueUpperId fieldIdList { Unique $2 (reverse $3) }
 
 maybeDeriving : { [] }
              | deriving derives semicolon { (reverse $2) }
@@ -479,8 +498,16 @@ derives : upperId { [$1] }
 checks : { [] }
         | check fieldIdList semicolon { reverse $2 }
 
-fieldIdList : lowerId { [$1] }
-            | fieldIdList comma lowerId { $3 : $1 }
+fieldId: lowerIdTk {%
+    do
+        l <- mkLoc $1
+        let n = tkString $1
+        withSymbol l n $ requireField $ \_ -> return ()
+        return n
+    }
+
+fieldIdList : fieldId { [$1] }
+            | fieldIdList comma fieldId { $3 : $1 }
 
 fieldType : word32 { FTWord32 }
           | word64{ FTWord64 }
