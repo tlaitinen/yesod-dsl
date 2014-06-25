@@ -1,5 +1,6 @@
 {
 module YesodDsl.Parser (parse) where
+import YesodDsl.ParserState
 import YesodDsl.Lexer
 import YesodDsl.AST
 import YesodDsl.ModuleMerger
@@ -9,13 +10,14 @@ import Data.Typeable
 import Prelude hiding (catch) 
 import Control.Exception hiding (Handler)
 import System.Exit
-
+import Control.Monad.State.Lazy
 
 }
 
-%name moduleDefs
+%name parseModuleDefs
 %tokentype { Token }
 %error { parseError }
+%monad { StateT ParserState IO }
 
 %token
     module { Tk _ TModule }
@@ -455,7 +457,9 @@ parseModule :: FilePath -> IO Module
 parseModule path = catch 
         (do
             s <- readFile path
-            return $! moduleDefs $! lexer s)
+            m <- evalStateT (parseModuleDefs $! lexer s) initParserState
+
+            return $! m)
         (\(ParseError msg) -> do 
             hPutStrLn stderr $ path ++ ": " ++ msg
             exitWith (ExitFailure 1))

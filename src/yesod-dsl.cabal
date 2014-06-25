@@ -34,7 +34,8 @@ library
     buildable: True
     exposed-modules:
            YesodDsl.Lexer 
-           YesodDsl.Parser 
+           YesodDsl.Parser
+           YesodDsl.ParserState 
            YesodDsl.AST 
            YesodDsl.Generator 
            YesodDsl.ClassImplementer 
