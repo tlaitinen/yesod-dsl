@@ -11,7 +11,8 @@ import Prelude hiding (catch)
 import Control.Exception hiding (Handler)
 import System.Exit
 import Control.Monad.IO.Class
-
+import Control.Monad
+import Data.List
 }
 
 %name parseModuleDefs
@@ -30,7 +31,7 @@ import Control.Monad.IO.Class
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
     lowerIdTk    { Tk _ (TLowerId _) }
-    upperId    { Tk _ (TUpperId $$)  }
+    upperIdTk    { Tk _ (TUpperId _)  }
     intval        { Tk _ (TInt $$)  }
     floatval      { Tk _ (TFloat $$) }
     semicolon  { Tk _ TSemicolon }
@@ -148,6 +149,8 @@ dbModule : maybeModuleName
            }
 
 lowerId: lowerIdTk { tkString $1 }
+upperId: upperIdTk { tkString $1 }
+
 maybeModuleName : { Nothing }
                 | module upperId semicolon { Just $2 }
 imports : { [] }
@@ -172,10 +175,18 @@ def : routeDef     { RouteDef $1 }
       | enumDef       { EnumDef $1 }
       | defineDef     { DefineDef $1 }
 
-defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals defineContent semicolon {% mkLoc $2 >>= \l -> return $ Define (tkString $2) l $4 $7 } 
+defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals defineContent semicolon {% 
+    do
+        l <- mkLoc $2 
+        let n = tkString $2
+        let d = Define n l $4 $7 
+        declare l n (SDefine d) 
+        return d
+    } 
 
 maybeEmptyLowerIdList : { [] }
         | lowerIdList { (reverse $1) }
+
 lowerIdList : lowerId { [$1] }
             | lowerIdList comma lowerId { $3 : $1 }
 
@@ -183,11 +194,26 @@ defineContent : select selectField from upperId as lowerId
                joins maybeWhere rparen  
                { DefineSubQuery (SelectQuery [$2] ($4,$6) (reverse $7) $8 [] (0,0)) }
       
-enumDef : enum upperId equals enumValues semicolon 
-         {% mkLoc $1 >>= \l -> return $ EnumType l $2 $4 }
+enumDef : enum upperIdTk equals pushScope enumValues popScope semicolon 
+         {% 
+    do
+        l <- mkLoc $2
+        let n = tkString $2
+        let e = EnumType l n $5
+        declare l n (SEnum e)
+        forM_ (nub $ enumValues e) $ \ev -> declare l (n ++ ev) SReserved
+        return e
+    }
 
-enumValues : upperId { [$1] }
-           | enumValues pipe upperId { $3 : $1 }
+enumValue: upperIdTk {%
+    do
+        l <- mkLoc $1
+        declare l (tkString $1) SReserved
+        return $ tkString $1 
+    }
+          
+enumValues : enumValue { [$1] }
+          | enumValues pipe enumValue { $3 : $1 }
     
 entityDef : entity upperId lbrace 
             maybeInstances
@@ -374,14 +400,15 @@ maybeInstances : { [] }
 instances : upperId { [$1] }
             | instances comma upperId { $3 : $1 }
 
-classDef : class upperId lbrace
+classDef : class upperIdTk lbrace
             fieldBlock
             uniques
             rbrace {% 
             do
-                l <- mkLoc $1
-                let c = Class l $2 (reverse $4) (reverse $5)  
-                declare l $2 (SClass c)
+                l <- mkLoc $2
+                let n = tkString $2
+                let c = Class l n (reverse $4) (reverse $5)  
+                declare l n (SClass c)
                 return c
             }
 
