@@ -10,14 +10,13 @@ import Data.Typeable
 import Prelude hiding (catch) 
 import Control.Exception hiding (Handler)
 import System.Exit
-import Control.Monad.State.Lazy
 
 }
 
 %name parseModuleDefs
 %tokentype { Token }
 %error { parseError }
-%monad { StateT ParserState IO }
+%monad { ParserMonad }
 
 %token
     module { Tk _ TModule }
@@ -358,9 +357,22 @@ instances : upperId { [$1] }
             | instances comma upperId { $3 : $1 }
 
 classDef : class upperId lbrace
-             fields
+            fieldBlock
             uniques
-            rbrace { Class (mkLoc $1) $2 (reverse $4) (reverse $5)  }
+            rbrace {% 
+            do
+                let l = mkLoc $1
+                let c = Class l $2 (reverse $4) (reverse $5)  
+                declare l $2 (SClass c)
+                return c
+            }
+
+fieldBlock : pushScope fields popScope { $2 }
+
+
+pushScope: {% pushScope }
+
+popScope: {% popScope }
 
 fields : { [] }
               | fields field semicolon { $2 : $1 }
@@ -457,7 +469,7 @@ parseModule :: FilePath -> IO Module
 parseModule path = catch 
         (do
             s <- readFile path
-            m <- evalStateT (parseModuleDefs $! lexer s) initParserState
+            m <- runParser (parseModuleDefs $! lexer s)
 
             return $! m)
         (\(ParseError msg) -> do 
