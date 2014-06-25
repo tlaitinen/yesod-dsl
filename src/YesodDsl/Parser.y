@@ -29,7 +29,7 @@ import Control.Monad.IO.Class
     route    { Tk _ TRoute }
     unique     { Tk _ TUnique }
     check      { Tk _ TCheck }
-    lowerId    { Tk _ (TLowerId $$) }
+    lowerIdTk    { Tk _ (TLowerId _) }
     upperId    { Tk _ (TUpperId $$)  }
     intval        { Tk _ (TInt $$)  }
     floatval      { Tk _ (TFloat $$) }
@@ -134,6 +134,7 @@ import Control.Monad.IO.Class
 %left asterisk slash
 %%
 
+
 dbModule : maybeModuleName 
            imports defs {%
            do
@@ -146,6 +147,7 @@ dbModule : maybeModuleName
                return $ mergeModules $ (path,m):$2 
            }
 
+lowerId: lowerIdTk { tkString $1 }
 maybeModuleName : { Nothing }
                 | module upperId semicolon { Just $2 }
 imports : { [] }
@@ -170,7 +172,7 @@ def : routeDef     { RouteDef $1 }
       | enumDef       { EnumDef $1 }
       | defineDef     { DefineDef $1 }
 
-defineDef : define lowerId lparen maybeEmptyLowerIdList rparen equals defineContent semicolon {% mkLoc $1 >>= \l -> return $ Define $2 l $4 $7 } 
+defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals defineContent semicolon {% mkLoc $2 >>= \l -> return $ Define (tkString $2) l $4 $7 } 
 
 maybeEmptyLowerIdList : { [] }
         | lowerIdList { (reverse $1) }
@@ -189,7 +191,7 @@ enumValues : upperId { [$1] }
     
 entityDef : entity upperId lbrace 
             maybeInstances
-            fields
+            fieldBlock
             uniques
             maybeDeriving
             checks
@@ -393,9 +395,29 @@ popScope: {% popScope }
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : lowerId maybeMaybe fieldType fieldOptions fieldFlags { Field $2 (FieldInternal `elem` $5) $1 (NormalField $3 (reverse $4)) } 
-      | lowerId maybeMaybe entityId fieldFlags { Field $2 (FieldInternal `elem` $4) $1 (EntityField $3) }
-      | lowerId maybeMaybe upperId fieldFlags { Field $2 (FieldInternal `elem` $4) $1 (EnumField $3) }
+field : lowerIdTk maybeMaybe fieldType fieldOptions fieldFlags {%
+        do
+            l <- mkLoc $1
+            let n = tkString $1
+            let f = Field $2 (FieldInternal `elem` $5) n (NormalField $3 (reverse $4)) 
+            declare l n (SField f)
+            return f
+        } 
+      | lowerIdTk maybeMaybe entityId fieldFlags {% 
+        do
+            l <- mkLoc $1
+            let n = tkString $1
+            let f = Field $2 (FieldInternal `elem` $4) n (EntityField $3) 
+            declare l n (SField f)
+            return f}
+      | lowerIdTk maybeMaybe upperId fieldFlags {%
+        do  
+            l <- mkLoc $1
+            let n = tkString $1
+            let f = Field $2 (FieldInternal `elem` $4) n (EnumField $3) 
+            declare l n (SField f)
+            return f
+            }
 
 fieldOptions : { [] }
              | fieldOptionsList { $1 }

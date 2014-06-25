@@ -1,5 +1,5 @@
 {
-module YesodDsl.Lexer (lexer, tokenType, tokenLineNum, tokenColNum, Token(..), TokenType(..) ) where
+module YesodDsl.Lexer (lexer, tokenType, tokenLineNum, tokenColNum, Token(..), TokenType(..),tkString ) where
 }
 
 %wrapper "posn"
@@ -244,6 +244,12 @@ data TokenType = TSemicolon
            | TFloor
            | TCeiling
     deriving (Show)
+
+tkString :: Token -> String
+tkString (Tk _ (TLowerId s)) = s
+tkString (Tk _ (TUpperId s)) = s
+tkString (Tk _ (TString s)) = s
+tkString _ = ""
 
 stripQuotes s = take ((length s) -2) (tail s)
 
