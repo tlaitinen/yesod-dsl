@@ -261,6 +261,7 @@ data FieldContent = NormalField FieldType [FieldOption]
    
 
 data Field = Field {
+    fieldLoc      :: Location,
     fieldOptional :: Bool,
     fieldInternal :: Bool,
     fieldName     :: FieldName,

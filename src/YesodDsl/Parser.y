@@ -154,7 +154,7 @@ upperId: upperIdTk { tkString $1 }
 maybeModuleName : { Nothing }
                 | module upperId semicolon { Just $2 }
 imports : { [] }
-        | importStmt imports { $1 ++ $2 }
+        | importStmt imports { $1++ $2 }
 
 importStmt : import stringval semicolon {%  
             do
@@ -162,7 +162,7 @@ importStmt : import stringval semicolon {%
                 if not ($2 `elem` parsed)
                     then do
                         ps <- getParserState
-                        (m,ps') <- liftIO $ parseModule ps $2
+                        (m,ps') <- liftIO $parseModule ps $2
                         setParserState ps'
                         return [($2,m)]
                     else return []
@@ -412,7 +412,8 @@ instanceDef: uniqueUpperIdTk {%
         l <- mkLoc $1
         let n = tkString $1
         withSymbol l n $ requireClass $ \c -> do
-            return ()
+            forM_ (classFields c) $ \f -> 
+                declare (fieldLoc f) (fieldName f) (SField f)
         return n
     }
 instances : instanceDef { [$1] }
@@ -445,7 +446,7 @@ field : lowerIdTk maybeMaybe fieldType fieldOptions fieldFlags {%
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field $2 (FieldInternal `elem` $5) n (NormalField $3 (reverse $4)) 
+            let f = Field l $2 (FieldInternal `elem` $5) n (NormalField $3 (reverse $4)) 
             declare l n (SField f)
             return f
         } 
@@ -453,14 +454,14 @@ field : lowerIdTk maybeMaybe fieldType fieldOptions fieldFlags {%
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field $2 (FieldInternal `elem` $4) n (EntityField $3) 
+            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField $3) 
             declare l n (SField f)
             return f}
       | lowerIdTk maybeMaybe upperId fieldFlags {%
         do  
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field $2 (FieldInternal `elem` $4) n (EnumField $3) 
+            let f = Field l $2 (FieldInternal `elem` $4) n (EnumField $3) 
             declare l n (SField f)
             return f
             }
