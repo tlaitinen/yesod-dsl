@@ -13,7 +13,6 @@ import Data.Typeable (Typeable)
 -- | definitions in single file form a 'Module'
 data Module = Module {
     modName      :: Maybe String,  -- ^ top-level module must have a name
-    modImports   :: [(FilePath,Module)], -- ^ modules may import other modules
     modEntities  :: [Entity],      -- ^ database entity definitions
     modClasses   :: [Class],       -- ^ entity classes
     modEnums     :: [EnumType],    -- ^ enumerated field types 
@@ -27,7 +26,6 @@ moduleName m = fromMaybe "" (modName m)
 
 emptyModule = Module {
     modName = Nothing,
-    modImports = [],
     modEntities = [],
     modClasses = [],
     modEnums = [],

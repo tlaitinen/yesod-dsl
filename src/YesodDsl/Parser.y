@@ -138,7 +138,7 @@ dbModule : maybeModuleName
            imports defs {%
            do
                path <- getPath
-               let m =  Module $1 $2 ((reverse . getEntities) $3) 
+               let m =  Module $1  ((reverse . getEntities) $3) 
                                     ((reverse . getClasses) $3)
                                     ((reverse . getEnums) $3)
                                     ((reverse . getRoutes) $3)

@@ -10,7 +10,6 @@ mergeModules ms = foldl merge emptyModule ms'
 merge :: Module -> Module -> Module
 merge m1 m2 = Module {
         modName = listToMaybe $ mapMaybe modName [m1, m2],
-        modImports = [],
         modEntities = modEntities m1 ++ modEntities m2,
         modClasses = modClasses m1 ++ modClasses m2,
         modEnums = modEnums m1 ++ modEnums m2,
