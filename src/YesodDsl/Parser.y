@@ -467,11 +467,21 @@ field : lowerIdTk maybeMaybe fieldType fieldOptions fieldFlags {%
             }
 
 fieldOptions : { [] }
-             | fieldOptionsList { $1 }
+             | pushScope fieldOptionsList popScope { $2 }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
-fieldOption : check lowerId { FieldCheck $2 }
-            | default value { FieldDefault $2 }
+fieldOption : check lowerId {%
+        do
+            l <- mkLoc $1
+            declare l ("check " ++ $2) SReserved
+            return $ FieldCheck $2 
+    }
+            | default value {%
+        do
+            l <- mkLoc $1
+            declare l "default value" SReserved
+            return $ FieldDefault $2 
+    }
 
 fieldFlags : { [] }
            | fieldFlagList { $1 }
