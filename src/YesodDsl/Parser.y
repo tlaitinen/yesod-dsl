@@ -175,11 +175,11 @@ def : routeDef     { RouteDef $1 }
       | enumDef       { EnumDef $1 }
       | defineDef     { DefineDef $1 }
 
-defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals defineContent semicolon {% 
+defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals pushScope defineContent popScope semicolon {% 
     do
         l <- mkLoc $2 
         let n = tkString $2
-        let d = Define n l $4 $7 
+        let d = Define n l $4 $8
         declare l n (SDefine d) 
         return d
     } 
@@ -190,9 +190,8 @@ maybeEmptyLowerIdList : { [] }
 lowerIdList : lowerId { [$1] }
             | lowerIdList comma lowerId { $3 : $1 }
 
-defineContent : select selectField from upperId as lowerId 
-               joins maybeWhere rparen  
-               { DefineSubQuery (SelectQuery [$2] ($4,$6) (reverse $7) $8 [] (0,0)) }
+defineContent : selectQuery
+               { DefineSubQuery $1 }
       
 enumDef : enum upperIdTk equals pushScope enumValues popScope semicolon 
          {% 
@@ -292,14 +291,27 @@ fieldRef : lowerId dot idField { FieldRefId $1 }
           | request dot lowerId { FieldRefRequest $3 }
           | lowerId { FieldRefNamedLocalParam $1 }
   
+selectQuery:
+    select 
+    selectFields 
+    from 
+    upperId as lowerId 
+    joins 
+    maybeWhere 
+    maybeOrder 
+    maybeLimitOffset 
+    {
+        SelectQuery $2 ($4,$6) (reverse $7) $8 $9 $10
+    }
+ 
+
 handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public { Public }
-             |select selectFields from upperId as lowerId 
-               joins maybeWhere maybeOrder maybeLimitOffset 
-              { Select (SelectQuery $2 ($4,$6) (reverse $7) $8 $9 $10) }
+             | selectQuery
+                         { Select $1 }
              | update upperId identified by inputRef with inputJson { Update $2 $5 (Just $7) } 
              | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
              | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
