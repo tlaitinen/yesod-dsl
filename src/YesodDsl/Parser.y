@@ -234,7 +234,17 @@ entityDef : entity upperIdTk lbrace
         return e
     }
 
-routeDef : route pathPieces lbrace handlers rbrace {% mkLoc $1 >>= \l -> return $ Route l (reverse $2) (reverse $4) }
+routeDef : 
+    route 
+    pathPieces 
+    lbrace 
+    pushScope
+    handlers 
+    popScope
+    rbrace {% 
+        mkLoc $1 >>= \l -> return $ Route l (reverse $2) (reverse $5) 
+    }
+
 pathPieces : slash pathPiece { [$2] }
            | pathPieces slash pathPiece { $3 : $1 }
 
@@ -244,10 +254,33 @@ pathPiece : lowerId { PathText $1 }
 handlers : handlerdef  { [$1] }
          | handlers handlerdef { $2 : $1 }
 
-handlerdef : get handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l GetHandler $2 }
-           | put handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l PutHandler $2 }
-           | post handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l PostHandler $2 }
-           | delete handlerParamsBlock {% mkLoc $1 >>= \l -> return $ Handler l DeleteHandler $2 }
+handlerType: 
+    get {% 
+        do
+             l <- mkLoc $1 
+             declare l "get handler" SReserved
+             return $ Handler l GetHandler 
+    } 
+    | put {%
+        do 
+             l <- mkLoc $1
+             declare l "put handler" SReserved
+             return $ Handler l PutHandler
+    } 
+    | post {%
+        do
+            l <- mkLoc $1
+            declare l "post handler" SReserved
+            return $ Handler l PostHandler
+    } 
+    | delete {%
+        do 
+            l <- mkLoc $1
+            declare l "delete handler" SReserved
+            return $ Handler l DeleteHandler
+    }
+
+handlerdef : handlerType pushScope handlerParamsBlock popScope {% return $ $1 $3 }
 
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
