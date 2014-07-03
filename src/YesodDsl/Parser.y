@@ -353,7 +353,16 @@ selectField: lowerId dot asterisk { SelectAllFields $1 }
 maybeSelectAlias: { Nothing }
                 | as lowerId { Just $2 }
 joins : { [] }
-      | joins jointype upperId as lowerId maybeJoinOn { (Join $2 $3 $5 $6):$1 }
+      | joins jointype upperIdTk as lowerIdTk maybeJoinOn 
+        {% 
+            do
+                let (s3,s5) = (tkString $3,tkString $5)
+                l3 <- mkLoc $3
+                l5 <- mkLoc $5
+                withSymbol l3 s3 $ requireEntity $ \e -> do
+                    declare l5 s5 $ SEntity e 
+                return $ (Join $2 s3 s5 $6):$1 
+        }
 
 maybeWhere : { Nothing }
            | where expr { Just $2 }
