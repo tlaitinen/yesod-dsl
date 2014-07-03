@@ -295,13 +295,19 @@ selectQuery:
     select 
     selectFields 
     from 
-    upperId as lowerId 
+    upperIdTk as lowerIdTk
     joins 
     maybeWhere 
     maybeOrder 
     maybeLimitOffset 
-    {
-        SelectQuery $2 ($4,$6) (reverse $7) $8 $9 $10
+    {%
+        do
+            l4 <- mkLoc $4
+            l6 <- mkLoc $6
+            let (s4,s6) = (tkString $4, tkString $6)
+            withSymbol l4 s4 $ requireEntity $ \e -> do
+                declare l6 s6 (SEntity e)
+            return $ SelectQuery $2 (s4,s6) (reverse $7) $8 $9 $10
     }
  
 

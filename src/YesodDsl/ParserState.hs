@@ -1,7 +1,10 @@
 module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
-getPath, getParsed,
-setParserState, runParser, pushScope, popScope, declare, SymType(..),
-ParserState, mkLoc, parseErrorCount, withSymbol, requireClass, requireField) where 
+    getPath, getParsed,
+    setParserState, runParser, pushScope, popScope, declare, SymType(..),
+    ParserState, mkLoc, parseErrorCount, withSymbol, 
+    requireClass, 
+    requireEntity,
+    requireField) where 
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.Class
@@ -51,6 +54,7 @@ initParserState :: ParserState
 initParserState = ParserState {
     psSyms = Map.empty,
     psScopeId = 0,
+    psPath = "",
     psParsed = [],
     psErrors = 0
 }
@@ -127,6 +131,11 @@ requireClass :: (Class -> ParserMonad ()) -> (Location -> Location -> SymType ->
 requireClass f = f'
     where f' _ _ (SClass c) = f c
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected class)"
+
+requireEntity :: (Entity -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
+requireEntity f = f'
+    where f' _ _ (SEntity e) = f e
+          f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
 
 
 requireField:: (Field -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())

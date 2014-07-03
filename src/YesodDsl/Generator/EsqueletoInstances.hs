@@ -12,7 +12,7 @@ import YesodDsl.Generator.Esqueleto
 import Control.Monad.State
 
 maxInstances :: Module -> Int
-maxInstances m = maximum $ map sqFieldNumber
+maxInstances m = safeMaximum $ map sqFieldNumber
                       $ filter isSelectQuery [ hp | r <- modRoutes m, 
                                                h <- routeHandlers r,
                                                hp <- handlerParams h]
@@ -25,6 +25,8 @@ maxInstances m = maximum $ map sqFieldNumber
               in evalState ((liftM concat $ mapM selectFieldExprs (sqFields sq))
                         >>= \fes -> return $ length fes) ctx
           sqFieldNumber _ = 0
+          safeMaximum [] = 0
+          safeMaximum xs = maximum xs
 
 genInstance :: Int -> String
 genInstance fnum = T.unpack $(codegenFile "codegen/sqlselect-instance.cg")
