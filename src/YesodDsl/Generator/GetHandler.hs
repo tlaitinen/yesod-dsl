@@ -42,12 +42,15 @@ defaultFilterField (e,vn,f) = do
         isMaybe = baseMaybeLevel > 0
     return $ T.unpack $(codegenFile "codegen/default-filter-field.cg")
 
-defaultFilterFields :: State Context String
-defaultFilterFields = do
+defaultFilterFields :: SelectQuery -> State Context String
+defaultFilterFields sq = do
     fs <- ctxFields
-    fields <- liftM concat $ mapM defaultFilterField fs
-    return $ T.unpack $(codegenFile "codegen/default-filter-fields.cg") 
+    fields' <- liftM concat $ mapM defaultFilterField fs
 
+    let (en,vn) = sqFrom sq 
+    let fields = (T.unpack $(codegenFile "codegen/default-filter-id-field.cg")
+                 ++ fields')
+    return $ T.unpack $(codegenFile "codegen/default-filter-fields.cg")
 defaultSortField :: (Entity, VariableName, Field, ParamName) -> State Context String    
 defaultSortField (e,vn,f,pn) = do
     maybeLevel <- ctxMaybeLevel vn
@@ -138,7 +141,7 @@ getHandlerSelect = do
                 Nothing -> return ""
             joinExprs <- liftM concat $ mapM mapJoinExpr $ reverse $ sqJoins sq
             ifFiltersStr <- liftM concat $ mapM (baseIfFilter selectVar) ifFilters
-            filterFieldsStr <- defaultFilterFields
+            filterFieldsStr <- defaultFilterFields sq
             returnFieldsStr <- selectReturnFields sq
             maybeDefaultSortFields <- if defaultFilterSort
                 then defaultSortFields sq

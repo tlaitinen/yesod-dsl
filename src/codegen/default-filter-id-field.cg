@@ -1,0 +1,3 @@
+                "id" -> case (fromPathPiece $ filterJsonMsg_value fjm) of 
+                    (Just v) -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (~{vn} ~{projectField False} ~{en}Id) (val v)
+                    _        -> return ()
