@@ -305,9 +305,10 @@ selectQuery:
             l4 <- mkLoc $4
             l6 <- mkLoc $6
             let (s4,s6) = (tkString $4, tkString $6)
+            let sfs = [ sf | (_,sf) <- $2 ]
             withSymbol l4 s4 $ requireEntity $ \e -> do
                 declare l6 s6 (SEntity e)
-            return $ SelectQuery $2 (s4,s6) (reverse $7) $8 $9 $10
+            return $ SelectQuery sfs (s4,s6) (reverse $7) $8 $9 $10
     }
  
 
@@ -343,11 +344,31 @@ selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 moreSelectFields: { [] }
                 | moreSelectFields comma selectField { $3 : $1 }
 
-selectField: lowerId dot asterisk { SelectAllFields $1 }                    
-           | lowerId dot idField maybeSelectAlias { SelectIdField $1 $4 }
-           | lowerId dot lowerId maybeSelectAlias { SelectField $1 $3 $4 }
-           | lowerId dot lbrace lowerId rbrace maybeSelectAlias { SelectParamField $1 $4 $6 }
-           | valexpr as lowerId { SelectValExpr $1 $3 }
+selectField: lowerIdTk dot asterisk {%
+        do
+            l1 <- mkLoc $1
+            return (l1, SelectAllFields $ tkString $1)
+    }
+    | lowerIdTk dot idField maybeSelectAlias {% 
+        do
+            l1 <- mkLoc $1
+            return (l1, SelectIdField (tkString $1) $4) 
+    }
+    | lowerIdTk dot lowerId maybeSelectAlias {%
+        do
+            l1 <- mkLoc $1
+            return (l1, SelectField (tkString $1) $3 $4) 
+    }
+    | lowerIdTk dot lbrace lowerId rbrace maybeSelectAlias {% 
+        do
+            l1 <- mkLoc $1
+            return (l1, SelectParamField (tkString $1) $4 $6)
+    }
+    | valexpr as lowerIdTk {% 
+        do
+            l3 <- mkLoc $3
+            return (l3, SelectValExpr $1 (tkString $3) )
+    }
            
        
 maybeSelectAlias: { Nothing }
@@ -445,10 +466,8 @@ valexpr : lparen valexpr rparen { $2 }
         | ceiling lparen valexpr rparen { CeilingExpr $3 }
         | extract lparen lowerId from valexpr rparen { 
                 ExtractExpr $3 $5  }
-        | lparen select selectField from upperId as lowerId 
-               joins maybeWhere rparen  
-                   { SubQueryExpr (SelectQuery [$3] ($5,$7) (reverse $8) $9 
-                                      [] (0,0)) }
+        | lparen pushScope selectQuery popScope rparen
+                   { SubQueryExpr $3 }
         | lowerId lparen maybeEmptyLowerIdList rparen { ApplyExpr $1 $3 }
 
 valexprlist: valexpr { [$1] }        
