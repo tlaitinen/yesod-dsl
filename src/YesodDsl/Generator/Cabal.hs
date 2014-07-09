@@ -40,7 +40,8 @@ ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) AnyVersion
                                   "old-locale",
                                   "filepath",
                                   "unix",
-                                  "path-pieces" ] ] ++ deps)
+                                  "path-pieces",
+                                  "conduit-extra" ] ] ++ deps)
     where samePackage (Dependency pn1 _) (Dependency pn2 _) = pn1 == pn2
           
 
