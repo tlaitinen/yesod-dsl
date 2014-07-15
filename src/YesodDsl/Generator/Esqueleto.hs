@@ -143,7 +143,7 @@ hsFieldRef FieldRefLocalParam    = normalFieldRef $ "localParam"
 hsFieldRef (FieldRefRequest fn)  = normalFieldRef $ "attr_" ++ fn
 hsFieldRef (FieldRefEnum en vn)  = normalFieldRef $ en ++ vn
 hsFieldRef (FieldRefNamedLocalParam vn) = normalFieldRef $ "result_" ++ vn
-
+hsFieldRef (FieldRefParamField vn pn) = return $ "{- param field " ++ vn ++ " " ++ pn ++ "-}"
 hsOrderBy :: (FieldRef, SortDir) -> State Context String
 hsOrderBy (f,d) = do
     content <- hsFieldRef f

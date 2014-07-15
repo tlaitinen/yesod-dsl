@@ -284,6 +284,7 @@ handlerdef : handlerType pushScope handlerParamsBlock popScope {% return $ $1 $3
 fieldRef : lowerId dot idField { FieldRefId $1 }
           | lowerId dot lowerId { FieldRefNormal $1 $3 } 
           | upperId dot upperId { FieldRefEnum $1 $3 }
+          | lowerId dot lbrace lowerId rbrace { FieldRefParamField $1 $4 }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
           | auth dot lowerId { FieldRefAuth $3 }
