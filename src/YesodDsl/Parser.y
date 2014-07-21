@@ -4,6 +4,8 @@ import YesodDsl.ParserState
 import YesodDsl.Lexer
 import YesodDsl.AST
 import YesodDsl.ModuleMerger
+import YesodDsl.ClassImplementer
+import YesodDsl.ExpandMacros
 import System.IO
 import Data.Maybe
 import Data.Typeable
@@ -13,6 +15,7 @@ import System.Exit
 import Control.Monad.IO.Class
 import Control.Monad
 import Data.List
+
 }
 
 %name parseModuleDefs
@@ -229,7 +232,7 @@ entityDef : entity upperIdTk lbrace
         l <- mkLoc $2
         let n = tkString $2
         let e = Entity l n $5 (reverse $6) (reverse $7) $8 (reverse $9) 
-        declare l n (SEntity e)
+        declare l n (SEntity n)
         return e
     }
 
@@ -318,9 +321,8 @@ declareFromEntity: upperIdTk as lowerIdTk {%
             l1 <- mkLoc $1
             l3 <- mkLoc $3
             let (s1,s3) = (tkString $1, tkString $3)
-            withSymbol l1 s1 $ requireEntity $ \e -> do
-                declare l3 s3 (SEntity e)
-                return ()
+            declare l3 s3 (SEntity s1)
+            withSymbol l1 s1 $ requireEntity $ \_ -> return ()
             return (s1,s3)
     }
 selectQuery:
@@ -680,6 +682,12 @@ parseModule ps path = catch
             exitWith (ExitFailure 1))
        
 parse path = do
-    (m,_) <- parseModule initParserState path
-    return m
+    (m,ps) <- parseModule initParserState path
+    let ast = expandMacros $ implementClasses m
+    errors <- postValidation ast ps
+    if errors == 0
+        then return $ Just ast
+        else do
+            hPutStrLn stderr $ show errors ++ " errors"
+            return Nothing
 }

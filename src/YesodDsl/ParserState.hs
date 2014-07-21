@@ -7,17 +7,20 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireEntityField,
     requireField,
     setCurrentHandlerType,
-    unsetCurrentHandlerType) where 
+    unsetCurrentHandlerType,
+    postValidation) where 
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.Class
 import YesodDsl.AST 
 import YesodDsl.Lexer 
+import YesodDsl.ExpandMacros
+import YesodDsl.ClassImplementer
 import System.IO (FilePath)
 import qualified Data.List as L
 data SymType = SEnum EnumType
              | SClass Class
-             | SEntity Entity
+             | SEntity EntityName
              | SDefine Define
              | SField Field
              | SUnique Unique
@@ -47,7 +50,7 @@ type ParserMonad = StateT ParserState IO
 
 type Syms = Map.Map String [Sym]
 
-
+type EntityValidation = (EntityName, Entity -> ParserMonad ())
 
 data ParserState = ParserState {
     psSyms        :: Syms,
@@ -56,7 +59,7 @@ data ParserState = ParserState {
     psParsed      :: [FilePath],
     psErrors      :: Int,
     psHandlerType :: Maybe HandlerType,
-    psValidations :: [ParserMonad ()]
+    psEntityValidations :: [EntityValidation]
 }
 
 initParserState :: ParserState
@@ -67,7 +70,7 @@ initParserState = ParserState {
     psParsed = [],
     psErrors = 0,
     psHandlerType = Nothing,
-    psValidations = []
+    psEntityValidations = []
 }
 getParserState :: ParserMonad ParserState
 getParserState = get
@@ -90,12 +93,23 @@ unsetCurrentHandlerType = modify $ \ps -> ps {
 setParserState :: ParserState -> ParserMonad ()
 setParserState = put
 
+runEntityValidation :: Module -> EntityValidation -> ParserMonad ()
+runEntityValidation m (en,f) = 
+    case L.find (\e -> entityName e == en) $ modEntities m of
+        Just e -> f e
+        Nothing -> return ()
+
+postValidation :: Module -> ParserState -> IO Int
+postValidation m ps = do
+    ps' <- execStateT (mapM (runEntityValidation m) $
+                         psEntityValidations ps) $ ps
+    return $ psErrors ps'  
+
+
 runParser :: FilePath -> ParserState -> ParserMonad a -> IO (a,ParserState)
 runParser path ps m = do
     (r,ps') <- runStateT m $ ps { psPath = path, psParsed = path:psParsed ps }
-    ps'' <- execStateT (sequence $ psValidations ps') $ ps'
-
-    return (r, ps'' { psPath = psPath ps} )
+    return (r, ps' { psPath = psPath ps} )
 
 pushScope :: ParserMonad ()
 pushScope = modify $ \ps -> ps {
@@ -139,15 +153,15 @@ mkLoc t = do
 parseErrorCount :: ParserState -> Int
 parseErrorCount = psErrors
   
-addValidation :: ParserMonad () -> ParserMonad ()
-addValidation f = do
+addEntityValidation :: EntityValidation -> ParserMonad ()
+addEntityValidation ev = do
     modify $ \ps -> ps {
-        psValidations = psValidations ps ++ [f]
+        psEntityValidations = psEntityValidations ps ++ [ev]
     }
 
 
 withSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
-withSymbol l n f = addValidation $ do
+withSymbol l n f = do
     syms <- gets psSyms
     case Map.lookup n syms >>= return . (filter notReserved) of
         Just ((Sym _ l' st):_) -> f l l' st
@@ -164,16 +178,16 @@ requireClass f = f'
 
 requireEntity :: (Entity -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireEntity f = f'
-    where f' _ _ (SEntity e) = f e
+    where f' _ _ (SEntity en) = addEntityValidation (en, f)
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
 
 requireEntityField :: Location -> FieldName -> ((Entity,Field) -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireEntityField l fn fun = fun'
-    where fun' _ _ (SEntity e) = 
+    where fun' _ _ (SEntity en) = addEntityValidation (en, \e -> 
             case L.find (\f -> fieldName f == fn) $ entityFields e of
               Just f -> fun (e,f)
               Nothing -> pError l $ "Reference to undeclared field '" 
-                                ++ fn ++ "' of entity '" ++ entityName e ++ "'"
+                                ++ fn ++ "' of entity '" ++ entityName e ++ "'")
           fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
 
 
