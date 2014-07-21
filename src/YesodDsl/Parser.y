@@ -187,8 +187,8 @@ defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals pushScop
 maybeEmptyLowerIdList : { [] }
         | lowerIdList { (reverse $1) }
 
-lowerIdList : lowerId { [$1] }
-            | lowerIdList comma lowerId { $3 : $1 }
+lowerIdList : lowerIdTk { [tkString $1] }
+            | lowerIdList comma lowerIdTk { (tkString $3) : $1 }
 
 defineContent : selectQuery
                { DefineSubQuery $1 }
@@ -208,7 +208,7 @@ uniqueUpperIdTk: upperIdTk {%
     do
         l <- mkLoc $1
         declare l (tkString $1) SReserved
-        return $ $1 
+        return $1 
     }
 
 uniqueUpperId: uniqueUpperIdTk { tkString $1 }
@@ -247,7 +247,7 @@ routeDef :
 pathPieces : slash pathPiece { [$2] }
            | pathPieces slash pathPiece { $3 : $1 }
 
-pathPiece : lowerId { PathText $1 } 
+pathPiece : lowerIdTk { PathText $ tkString $1 } 
           | hash entityId { PathId $2 }
 
 handlers : handlerdef  { [$1] }
@@ -287,21 +287,30 @@ handlerdef : handlerType pushScope handlerParamsBlock popScope {%
         return $ $1 $3 
     }
 
-fieldRef : lowerIdTk dot idField {%
-    do
-        l1 <- mkLoc $1
-        let s1 = tkString $1
-        withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-        return $ FieldRefId s1
+fieldRef : 
+    lowerIdTk dot idField {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            withSymbol l1 s1 $ requireEntity $ \_ -> return ()
+            return $ FieldRefId s1
     }
-          | lowerIdTk dot lowerId { FieldRefNormal (tkString $1) $3 } 
-          | upperId dot upperId { FieldRefEnum $1 $3 }
-          | lowerIdTk dot lbrace lowerId rbrace { FieldRefParamField (tkString $1) $4 }
+    | lowerIdTk dot lowerIdTk {% 
+        do 
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            withSymbol l1 s1 $ requireEntityField l3 s3 $ \_ -> return () 
+            return $ FieldRefNormal s1 s3
+    }
+    | upperId dot upperId { FieldRefEnum $1 $3 }
+          | lowerIdTk dot lbrace lowerIdTk rbrace { FieldRefParamField (tkString $1) (tkString $4) }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
-          | auth dot lowerId { FieldRefAuth $3 }
+          | auth dot lowerIdTk { FieldRefAuth $ tkString $3 }
           | localParam { FieldRefLocalParam }
-          | request dot lowerId { FieldRefRequest $3 }
+          | request dot lowerIdTk { FieldRefRequest $ tkString $3 }
           | lowerIdTk { FieldRefNamedLocalParam (tkString $1) }
  
 declareFromEntity: upperIdTk as lowerIdTk {%
@@ -311,6 +320,7 @@ declareFromEntity: upperIdTk as lowerIdTk {%
             let (s1,s3) = (tkString $1, tkString $3)
             withSymbol l1 s1 $ requireEntity $ \e -> do
                 declare l3 s3 (SEntity e)
+                return ()
             return (s1,s3)
     }
 selectQuery:
@@ -337,8 +347,7 @@ handlerParam : public { Public }
              | selectQuery
                          { Select $1 }
              | update upperId identified by inputRef with inputJson { Update $2 $5 (Just $7) } 
-             | delete from upperId as lowerId { DeleteFrom $3 $5 Nothing }
-             | delete from upperId as lowerId where expr { DeleteFrom $3 $5 (Just $7) }
+             | delete pushScope from declareFromEntity maybeWhere popScope { let (en,vn) = $4 in DeleteFrom en vn $5 }
              | update upperId identified by inputRef { Update $2 $5 Nothing }
              | bindResult get upperId identified by inputRef { GetById $3 $6 $1 }
              | maybeBindResult insert upperId from inputJson { Insert $3 (Just $5) $1 }
@@ -347,14 +356,14 @@ handlerParam : public { Public }
              | if param stringval equals localParam then pushScope joins where expr popScope { IfFilter ($3 ,$8 ,$10, True) }
              | if param stringval equals underscore then pushScope joins where expr popScope { IfFilter ($3, $8, $10, False) }
              | return outputJson { Return $2 }
-             | require upperId as lowerId joins where expr { Require (SelectQuery [] ($2,$4) $5 (Just $7) [] (0,0)) }
-             | for lowerId in inputRef lbrace handlerParams rbrace { For $2 $4 $6 }
-             | lowerId  inputRefList  { Call $1 (reverse $2) }
+             | require pushScope declareFromEntity joins where expr popScope { Require (SelectQuery [] $3 $4 (Just $6) [] (0,0)) }
+             | for pushScope lowerIdTk in inputRef lbrace handlerParams rbrace popScope { For (tkString $3) $5 $7 }
+             | lowerIdTk  inputRefList  { Call (tkString $1) (reverse $2) }
 
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
 
-bindResult: lowerId larrow { $1 }
+bindResult: lowerIdTk larrow { tkString $1 }
 
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
 
@@ -371,15 +380,15 @@ selectField: lowerIdTk dot asterisk {%
             l1 <- mkLoc $1
             return (l1, SelectIdField (tkString $1) $4) 
     }
-    | lowerIdTk dot lowerId maybeSelectAlias {%
+    | lowerIdTk dot lowerIdTk maybeSelectAlias {%
         do
             l1 <- mkLoc $1
-            return (l1, SelectField (tkString $1) $3 $4) 
+            return (l1, SelectField (tkString $1) (tkString $3) $4) 
     }
-    | lowerIdTk dot lbrace lowerId rbrace maybeSelectAlias {% 
+    | lowerIdTk dot lbrace lowerIdTk rbrace maybeSelectAlias {% 
         do
             l1 <- mkLoc $1
-            return (l1, SelectParamField (tkString $1) $4 $6)
+            return (l1, SelectParamField (tkString $1) (tkString $4) $6)
     }
     | valexpr as lowerIdTk {% 
         do
@@ -389,7 +398,7 @@ selectField: lowerIdTk dot asterisk {%
            
        
 maybeSelectAlias: { Nothing }
-                | as lowerId { Just $2 }
+                | as lowerIdTk { Just $ tkString $2 }
 joins : { [] }
       | jointype declareFromEntity maybeJoinOn joins
         {% 
@@ -417,17 +426,17 @@ orderByDir : asc { SortAsc }
         |desc  { SortDesc }
  
 inputJson:  lbrace inputJsonFields rbrace { $2 }
-inputJsonField : lowerId equals inputRef { ($1, $3) }
+inputJsonField : lowerIdTk equals inputRef { (tkString $1, $3) }
 
 inputRefList:  { [] }
             | inputRefList inputRef  { $2 : $1 }
 
-inputRef: request dot lowerId { InputFieldNormal $3 }
-        | lowerId { InputFieldLocalParam $1 }
-        | lowerId dot lowerId { InputFieldLocalParamField $1 $3 }
+inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
+        | lowerIdTk { InputFieldLocalParam (tkString $1) }
+        | lowerIdTk dot lowerIdTk { InputFieldLocalParamField (tkString $1) (tkString $3) }
         | pathParam { InputFieldPathParam $1 }
         | auth dot idField { InputFieldAuthId }
-        | auth dot lowerId { InputFieldAuth $3 }
+        | auth dot lowerIdTk { InputFieldAuth $ tkString $3 }
         | value { InputFieldConst $1 }
         | now lparen rparen { InputFieldNow }
 
@@ -441,9 +450,9 @@ maybeOutputJsonFields: { [] }
 outputJsonFields: outputJsonField { [ $1 ] }
                 | outputJsonFields comma outputJsonField { $3:$1 }
 
-outputJsonField : lowerId equals outputRef { ($1,$3) }
+outputJsonField : lowerIdTk equals outputRef { (tkString $1,$3) }
 
-outputRef: lowerId { OutputFieldLocalParam $1 }
+outputRef: lowerIdTk { OutputFieldLocalParam $ tkString $1 }
 
 binop : equals { Eq }
       | ne { Ne }
@@ -477,11 +486,11 @@ valexpr : lparen valexpr rparen { $2 }
         | random lparen rparen { RandomExpr }
         | floor lparen valexpr rparen { FloorExpr $3 }
         | ceiling lparen valexpr rparen { CeilingExpr $3 }
-        | extract lparen lowerId from valexpr rparen { 
-                ExtractExpr $3 $5  }
+        | extract lparen lowerIdTk from valexpr rparen { 
+                ExtractExpr (tkString $3) $5  }
         | lparen pushScope selectQuery popScope rparen
                    { SubQueryExpr $3 }
-        | lowerId lparen maybeEmptyLowerIdList rparen { ApplyExpr $1 $3 }
+        | lowerIdTk lparen maybeEmptyLowerIdList rparen { ApplyExpr (tkString $1) $3 }
 
 valexprlist: valexpr { [$1] }        
            | valexprlist comma valexpr { $3 : $1 }
@@ -504,7 +513,7 @@ instanceDef: uniqueUpperIdTk {%
         l <- mkLoc $1
         let n = tkString $1
         withSymbol l n $ requireClass $ \c -> do
-            forM_ (classFields c) $ \f -> 
+            forM_ (classFields c) $ \f -> do
                 declare (fieldLoc f) (fieldName f) (SField f)
         return n
     }

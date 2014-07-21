@@ -4,6 +4,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     ParserState, mkLoc, parseErrorCount, withSymbol, 
     requireClass, 
     requireEntity,
+    requireEntityField,
     requireField,
     setCurrentHandlerType,
     unsetCurrentHandlerType) where 
@@ -13,7 +14,7 @@ import Control.Monad.Trans.Class
 import YesodDsl.AST 
 import YesodDsl.Lexer 
 import System.IO (FilePath)
-
+import qualified Data.List as L
 data SymType = SEnum EnumType
              | SClass Class
              | SEntity Entity
@@ -44,13 +45,18 @@ data Sym = Sym Int Location SymType
 
 type ParserMonad = StateT ParserState IO 
 
+type Syms = Map.Map String [Sym]
+
+
+
 data ParserState = ParserState {
-    psSyms    :: Map.Map String [Sym],
-    psScopeId :: Int,
-    psPath    :: FilePath,
-    psParsed  :: [FilePath],
-    psErrors  :: Int,
-    psHandlerType :: Maybe HandlerType
+    psSyms        :: Syms,
+    psScopeId     :: Int,
+    psPath        :: FilePath,
+    psParsed      :: [FilePath],
+    psErrors      :: Int,
+    psHandlerType :: Maybe HandlerType,
+    psValidations :: [ParserMonad ()]
 }
 
 initParserState :: ParserState
@@ -60,7 +66,8 @@ initParserState = ParserState {
     psPath = "",
     psParsed = [],
     psErrors = 0,
-    psHandlerType = Nothing
+    psHandlerType = Nothing,
+    psValidations = []
 }
 getParserState :: ParserMonad ParserState
 getParserState = get
@@ -86,7 +93,9 @@ setParserState = put
 runParser :: FilePath -> ParserState -> ParserMonad a -> IO (a,ParserState)
 runParser path ps m = do
     (r,ps') <- runStateT m $ ps { psPath = path, psParsed = path:psParsed ps }
-    return (r, ps' { psPath = psPath ps} )
+    ps'' <- execStateT (sequence $ psValidations ps') $ ps'
+
+    return (r, ps'' { psPath = psPath ps} )
 
 pushScope :: ParserMonad ()
 pushScope = modify $ \ps -> ps {
@@ -111,8 +120,10 @@ declare l n t = do
     let sym = [Sym (psScopeId ps) l t] 
     case Map.lookup n (psSyms ps) of
         Just ((Sym s l' _):_) -> if s == psScopeId ps
-            then pError l $ "'" ++ n 
+            then do
+                pError l $ "'" ++ n 
                     ++ "' already declared in " ++ show l'
+                return ()
             else put $ ps { 
                 psSyms = Map.adjust (sym++) n (psSyms ps)
             }
@@ -128,13 +139,20 @@ mkLoc t = do
 parseErrorCount :: ParserState -> Int
 parseErrorCount = psErrors
   
+addValidation :: ParserMonad () -> ParserMonad ()
+addValidation f = do
+    modify $ \ps -> ps {
+        psValidations = psValidations ps ++ [f]
+    }
+
+
 withSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
-withSymbol l n f = do
+withSymbol l n f = addValidation $ do
     syms <- gets psSyms
     case Map.lookup n syms >>= return . (filter notReserved) of
         Just ((Sym _ l' st):_) -> f l l' st
         _ -> pError l $ "Reference to an undeclared identifier '"
-            ++ n ++ "'"
+                ++ n ++ "'"
     where
         notReserved (Sym _ _ SReserved) = False
         notReserved _ = True        
@@ -148,6 +166,16 @@ requireEntity :: (Entity -> ParserMonad ()) -> (Location -> Location -> SymType 
 requireEntity f = f'
     where f' _ _ (SEntity e) = f e
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
+
+requireEntityField :: Location -> FieldName -> ((Entity,Field) -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
+requireEntityField l fn fun = fun'
+    where fun' _ _ (SEntity e) = 
+            case L.find (\f -> fieldName f == fn) $ entityFields e of
+              Just f -> fun (e,f)
+              Nothing -> pError l $ "Reference to undeclared field '" 
+                                ++ fn ++ "' of entity '" ++ entityName e ++ "'"
+          fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
+
 
 
 requireField:: (Field -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
