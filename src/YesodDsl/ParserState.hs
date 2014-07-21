@@ -4,7 +4,9 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     ParserState, mkLoc, parseErrorCount, withSymbol, 
     requireClass, 
     requireEntity,
-    requireField) where 
+    requireField,
+    setCurrentHandlerType,
+    unsetCurrentHandlerType) where 
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.Class
@@ -47,7 +49,8 @@ data ParserState = ParserState {
     psScopeId :: Int,
     psPath    :: FilePath,
     psParsed  :: [FilePath],
-    psErrors  :: Int
+    psErrors  :: Int,
+    psHandlerType :: Maybe HandlerType
 }
 
 initParserState :: ParserState
@@ -56,7 +59,8 @@ initParserState = ParserState {
     psScopeId = 0,
     psPath = "",
     psParsed = [],
-    psErrors = 0
+    psErrors = 0,
+    psHandlerType = Nothing
 }
 getParserState :: ParserMonad ParserState
 getParserState = get
@@ -67,6 +71,14 @@ getPath = gets psPath
 getParsed :: ParserMonad [FilePath]
 getParsed = gets psParsed
 
+setCurrentHandlerType :: HandlerType -> ParserMonad ()
+setCurrentHandlerType ht = modify $ \ps -> ps {
+        psHandlerType = Just ht
+    }
+unsetCurrentHandlerType :: ParserMonad ()
+unsetCurrentHandlerType = modify $ \ps -> ps {
+        psHandlerType = Nothing
+    }
 
 setParserState :: ParserState -> ParserMonad ()
 setParserState = put
