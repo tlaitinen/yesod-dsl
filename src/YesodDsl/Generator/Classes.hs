@@ -41,13 +41,18 @@ classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instanc
     ++ (concatMap (classEntityInstanceField c es) (classFields c))
     where entityInstance e = T.unpack $(codegenFile "codegen/class-entity-instance.cg")
 
-
+classSelect :: Class -> [Entity] -> String
+classSelect c es = T.unpack $(codegenFile "codegen/class-select.cg")
+    where 
+        selectEntity e = T.unpack $(codegenFile "codegen/class-select-entity.cg")
+        wrapResult e = T.unpack $(codegenFile "codegen/class-select-result.cg")
 classInstances :: Module -> Class -> String
 classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                    ++ (concatMap (classDefField c) (classFields c))
                    ++ (classFieldType c $ classFields c)
                    ++ (concatMap (classInstance c) (instancesOf c))
                    ++ (classEntityInstances c (instancesOf c))
+                   ++ (classSelect c $ instancesOf c)
     where 
         instancesOf c = [ e | e <- modEntities m, 
                          (className c) `elem` (entityInstances e)]
