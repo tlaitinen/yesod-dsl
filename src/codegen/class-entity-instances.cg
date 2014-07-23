@@ -1,1 +1,3 @@
 data ~{className c}Instance = ~{intercalate "    | " $ map entityInstance es}
+
+instance ~{className c} ~{className c}Instance where

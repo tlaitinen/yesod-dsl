@@ -1,0 +1,2 @@
+    ~{classFieldName c f} x = case x of
+~{indent 8 $ concatMap caseEntity es}    

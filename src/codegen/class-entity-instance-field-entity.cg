@@ -1,0 +1,1 @@
+~{className c}Instance~{entityName e} (Entity _ e) -> ~{entityFieldName e f} e
