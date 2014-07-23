@@ -1,4 +1,7 @@
 update~{className c} :: forall (m :: * -> *). 
     (MonadLogger m, MonadIO m, MonadThrow m, MonadBaseControl IO m) => 
-    ~{maybeFilterType} SqlPersistT m ()
-update~{className c} ~{maybeFilterParam} = return ()
+    [[~{className c}InstanceFilterType]] -> [~{className c}InstanceUpdateType] -> SqlPersistT m ()
+update~{className c} filters updates = do
+~{indent 4 $ concatMap updateEntity es}
+    return ()
+

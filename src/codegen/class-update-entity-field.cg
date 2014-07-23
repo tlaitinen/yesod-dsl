@@ -1,0 +1,1 @@
+    ~{className c}InstanceUpdate~{upperFirst $ fieldName f} v -> ~{entityFieldTypeName e f} =. v

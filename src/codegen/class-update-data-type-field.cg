@@ -1,0 +1,1 @@
+~{className c}InstanceUpdate~{upperFirst $ fieldName f} (SqlExpr (Database.Esqueleto.Value (~{hsFieldType f})))

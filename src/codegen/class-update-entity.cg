@@ -1,0 +1,8 @@
+update $ \e -> do
+    let _ = e ^. ~{entityName e}Id
+    set e $ map (\update -> case update of
+~{indent 12 $ concatMap (updateEntityField e) $ classFields c}
+        ) updates
+~{maybeFilter e}
+ 
+            
