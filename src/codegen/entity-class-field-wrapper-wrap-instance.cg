@@ -1,0 +1,1 @@
+~{lowerFirst $ entityName e}~{entityName e2}~{upperFirst (fieldName f)} e >>= (return . ~{className c}Instance~{entityName e2}Id)

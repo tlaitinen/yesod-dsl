@@ -45,6 +45,7 @@ implInEntity :: Module -> [Class] -> Entity -> Entity
 implInEntity m classes' e 
     | null invalidClassNames = e {
         entityFields  = concatMap (expandClassRefFields m e) $ entityFields e ++ extraFields,
+        entityClassFields = filter isClassField $ entityFields e,
         entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses),
         entityChecks = entityChecks e 
     }
@@ -63,6 +64,8 @@ implInEntity m classes' e
                                  isNothing $ classLookup classes name ]
         instantiatedClasses = map (classLookup classes) instances
         validClasses = catMaybes instantiatedClasses
+        isClassField (Field _ _ _ _ (EntityField iName)) = iName `elem` (map className $ modClasses m)
+        isClassField _ = False
                                      
         extraFields = concatMap classFields validClasses
         addEntityNameToUnique e (Unique name fields) = Unique (entityName e ++ name) fields

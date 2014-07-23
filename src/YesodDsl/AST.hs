@@ -192,6 +192,7 @@ data Entity = Entity {
     entityName       :: String,
     entityInstances :: [ClassName],
     entityFields     :: [Field],
+    entityClassFields :: [Field],
     entityUniques    :: [Unique],
     entityDeriving   :: [ClassName],
     entityChecks     :: [FunctionName]

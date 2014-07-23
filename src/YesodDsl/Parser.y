@@ -231,7 +231,7 @@ entityDef : entity upperIdTk lbrace
     do
         l <- mkLoc $2
         let n = tkString $2
-        let e = Entity l n $5 (reverse $6) (reverse $7) $8 (reverse $9) 
+        let e = Entity l n $5 (reverse $6) [] (reverse $7) $8 (reverse $9) 
         declare l n (SEntity n)
         return e
     }

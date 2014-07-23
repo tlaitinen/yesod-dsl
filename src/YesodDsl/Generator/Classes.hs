@@ -41,7 +41,9 @@ classEntityInstanceField c es f = T.unpack $(codegenFile "codegen/class-entity-i
 classEntityInstances :: Class -> [Entity] -> String
 classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instances.cg")
     ++ (concatMap (classEntityInstanceField c es) (classFields c))
-    where entityInstance e = T.unpack $(codegenFile "codegen/class-entity-instance.cg")
+    where 
+        entityInstance e = T.unpack $(codegenFile "codegen/class-entity-instance.cg")
+        entityInstanceId e = T.unpack $(codegenFile "codegen/class-entity-instance-id.cg")
 
 classSelectFilterDataType :: Class -> String
 classSelectFilterDataType c = T.unpack $(codegenFile "codegen/class-select-filter-data-type.cg")
@@ -65,24 +67,28 @@ classSelect c es = maybeFilterDataType
         maybeFilterParam = if hasClassFields then "filters" :: String else ""
         maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
         
-
+instancesOf :: Module -> Class -> [Entity]
+instancesOf m c = [ e | e <- modEntities m,  (className c) `elem` (entityInstances e)]
 
 classInstances :: Module -> Class -> String
 classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                    ++ (concatMap (classDefField c) (classFields c))
                    ++ (classFieldType c $ classFields c)
-                   ++ (concatMap (classInstance c) (instancesOf c))
-                   ++ (classEntityInstances c (instancesOf c))
-                   ++ (classSelect c $ instancesOf c)
-    where 
-        instancesOf c = [ e | e <- modEntities m, 
-                         (className c) `elem` (entityInstances e)]
+                   ++ (concatMap (classInstance c) (instancesOf m c))
+                   ++ (classEntityInstances c (instancesOf m c))
+                   ++ (classSelect c $ instancesOf m c)
 
                                            
-                                                         
-
+entityClassFieldWrappers :: Module -> Entity -> String
+entityClassFieldWrappers m e = concatMap fieldWrapper $ entityClassFields e
+    where
+        fieldWrapper f@(Field _ _ _ _ (EntityField cName)) = case find (\c -> className c == cName) $ modClasses m of
+            Just c ->  T.unpack $(codegenFile "codegen/entity-class-field-wrapper.cg")
+            Nothing -> ""
+        wrapInstance c f e2 = T.unpack $(codegenFile "codegen/entity-class-field-wrapper-wrap-instance.cg")
 classes :: Module -> String
 classes m = 
     (concatMap (classInstances m) (modClasses m))
+    ++ (concatMap (entityClassFieldWrappers m) (modEntities m))
     
 

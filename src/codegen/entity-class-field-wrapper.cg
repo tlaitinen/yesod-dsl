@@ -1,0 +1,5 @@
+~{entityFieldName e f} :: ~{entityName e} -> Maybe (~{className c}InstanceId)
+~{entityFieldName e f} e = listToMaybe $ catMaybes [
+~{indent 8 $ intercalate ", " $ map (wrapInstance c f) $ instancesOf m c}
+    ]
+
