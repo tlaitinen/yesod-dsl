@@ -18,6 +18,10 @@ classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 classDefField :: Class -> Field -> String
 classDefField c f = T.unpack $(codegenFile "codegen/class-field.cg")
 
+classFieldType :: Class -> [Field] -> String
+classFieldType c fs = T.unpack $(codegenFile "codegen/class-field-type.cg")
+    where cfName f = T.unpack $(codegenFile "codegen/class-field-type-field-name.cg")
+
 classInstanceField :: Class -> Entity -> Field -> String
 classInstanceField c e f = T.unpack $(codegenFile "codegen/class-instance-field.cg")
 
@@ -39,6 +43,7 @@ classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instanc
 classInstances :: Module -> Class -> String
 classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                    ++ (concatMap (classDefField c) (classFields c))
+                   ++ (classFieldType c $ classFields c)
                    ++ (concatMap (classInstance c) (instancesOf c))
                    ++ (classEntityInstances c (instancesOf c))
     where 
