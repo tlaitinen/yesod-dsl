@@ -689,5 +689,5 @@ parse path = do
         then return $ Just ast
         else do
             hPutStrLn stderr $ show errors ++ " errors"
-            return Nothing
+            return $ Just ast -- Nothing
 }

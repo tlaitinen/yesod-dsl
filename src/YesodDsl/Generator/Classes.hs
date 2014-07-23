@@ -25,12 +25,21 @@ classInstance :: Class -> Entity -> String
 classInstance c e = T.unpack $(codegenFile "codegen/class-instance-header.cg")
                   ++ (concatMap (classInstanceField c e) (classFields c))
 
+classEntityInstances :: Class -> [Entity] -> String
+classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instances.cg")
+    where entityInstance e = T.unpack $(codegenFile "codegen/class-entity-instance.cg")
+
+
 classInstances :: Module -> Class -> String
 classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                    ++ (concatMap (classDefField c) (classFields c))
-                   ++ (concatMap (classInstance c) 
-                                 [ e | e <- modEntities m, 
-                                  (className c) `elem` (entityInstances e)])
+                   ++ (concatMap (classInstance c) (instancesOf c))
+                   ++ (classEntityInstances c (instancesOf c))
+    where 
+        instancesOf c = [ e | e <- modEntities m, 
+                         (className c) `elem` (entityInstances e)]
+
+                                           
                                                          
 
 classes :: Module -> String
