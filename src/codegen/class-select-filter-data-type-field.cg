@@ -1,1 +1,1 @@
-~{className c}Instance~{upperFirst $ fieldName f}Filter (SqlExpr (Database.Esqueleto.Value (~{hsFieldType f})) -> SqlExpr (Database.Esqueleto.Value (~{hsFieldType f})) -> SqlExpr (Database.Esqueleto.Value Bool)) (~{hsFieldType f})
+~{className c}Instance~{upperFirst $ fieldName f}Filter (SqlExpr (Database.Esqueleto.Value (~{hsFieldType f})) -> SqlExpr (Database.Esqueleto.Value Bool))

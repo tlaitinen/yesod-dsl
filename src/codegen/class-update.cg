@@ -1,0 +1,4 @@
+update~{className c} :: forall (m :: * -> *). 
+    (MonadLogger m, MonadIO m, MonadThrow m, MonadBaseControl IO m) => 
+    ~{maybeFilterType} SqlPersistT m ()
+update~{className c} ~{maybeFilterParam} = return ()

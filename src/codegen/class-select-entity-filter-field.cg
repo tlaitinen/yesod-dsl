@@ -1,1 +1,1 @@
-~{className c}Instance~{upperFirst $ fieldName f}Filter op v -> (e ^. ~{entityFieldTypeName e f}) `op` val v
+~{className c}Instance~{upperFirst $ fieldName f}Filter op -> op $ e ^. ~{entityFieldTypeName e f}

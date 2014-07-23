@@ -66,9 +66,18 @@ classSelect c es = maybeFilterDataType
             else ""
         maybeFilterParam = if hasClassFields then "filters" :: String else ""
         maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
+
+classUpdate :: Class -> [Entity] -> String
+classUpdate c es = T.unpack $(codegenFile "codegen/class-update.cg")
+    where
+        maybeFilterParam = if hasClassFields then "filters" :: String else ""
+        maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
+        hasClassFields = not . null $ classFields c
+      
         
 instancesOf :: Module -> Class -> [Entity]
 instancesOf m c = [ e | e <- modEntities m,  (className c) `elem` (entityInstances e)]
+
 
 classInstances :: Module -> Class -> String
 classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
@@ -77,6 +86,7 @@ classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                    ++ (concatMap (classInstance c) (instancesOf m c))
                    ++ (classEntityInstances c (instancesOf m c))
                    ++ (classSelect c $ instancesOf m c)
+                   ++ (classUpdate c $ instancesOf m c)
 
                                            
 entityClassFieldWrappers :: Module -> Entity -> String
