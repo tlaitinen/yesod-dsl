@@ -19,7 +19,9 @@ classDefField :: Class -> Field -> String
 classDefField c f = T.unpack $(codegenFile "codegen/class-field.cg")
 
 classFieldType :: Class -> [Field] -> String
-classFieldType c fs = T.unpack $(codegenFile "codegen/class-field-type.cg")
+classFieldType c fs = if null fs
+    then ""
+    else T.unpack $(codegenFile "codegen/class-field-type.cg")
     where cfName f = T.unpack $(codegenFile "codegen/class-field-type-field-name.cg")
 
 classInstanceField :: Class -> Entity -> Field -> String
