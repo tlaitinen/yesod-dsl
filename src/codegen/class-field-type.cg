@@ -1,1 +1,1 @@
-data ~{className c}InstanceField = ~{intercalate "    | " $ map cfName fs} 
+data ~{className c}InstanceFieldName = ~{intercalate "    | " $ map (classFieldTypeName c) fs} 

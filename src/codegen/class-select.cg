@@ -1,0 +1,8 @@
+select~{className c} :: forall (m :: * -> *). 
+    (MonadLogger m, MonadIO m, MonadThrow m, MonadBaseControl IO m) => 
+    ~{maybeFilterType} SqlPersistT m [~{className c}Instance]
+select~{className c} ~{maybeFilterParam} = do
+~{indent 4 $ concatMap selectEntity es}
+    return $ concat [
+~{indent 8 $ intercalate ", " $ map wrapResult es}
+        ]

@@ -41,7 +41,8 @@ ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) AnyVersion
                                   "filepath",
                                   "unix",
                                   "path-pieces",
-                                  "conduit-extra" ] ] ++ deps)
+                                  "conduit-extra",
+                                  "exceptions" ] ] ++ deps)
     where samePackage (Dependency pn1 _) (Dependency pn2 _) = pn1 == pn2
           
 

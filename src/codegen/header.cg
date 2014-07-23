@@ -17,6 +17,8 @@ module Handler.~{moduleName m}.Internal where
 import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto
 import Prelude
+import Control.Monad (forM_, when)
+import Control.Monad.Catch (MonadThrow)
 import Database.Esqueleto
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlExtractSubField, UnsafeSqlFunctionArgument)
 import qualified Database.Persist as P

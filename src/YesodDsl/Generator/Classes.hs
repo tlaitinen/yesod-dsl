@@ -11,18 +11,20 @@ import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import YesodDsl.Generator.Models
 import YesodDsl.Generator.Common
-
+import Data.String.Utils (rstrip)
 classFieldName :: Class -> Field -> String
 classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 
 classDefField :: Class -> Field -> String
 classDefField c f = T.unpack $(codegenFile "codegen/class-field.cg")
 
+classFieldTypeName :: Class -> Field -> String
+classFieldTypeName c f= rstrip $ T.unpack $(codegenFile "codegen/class-field-type-field-name.cg")
+
 classFieldType :: Class -> [Field] -> String
 classFieldType c fs = if null fs
     then ""
     else T.unpack $(codegenFile "codegen/class-field-type.cg")
-    where cfName f = T.unpack $(codegenFile "codegen/class-field-type-field-name.cg")
 
 classInstanceField :: Class -> Entity -> Field -> String
 classInstanceField c e f = T.unpack $(codegenFile "codegen/class-instance-field.cg")
@@ -41,11 +43,30 @@ classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instanc
     ++ (concatMap (classEntityInstanceField c es) (classFields c))
     where entityInstance e = T.unpack $(codegenFile "codegen/class-entity-instance.cg")
 
+classSelectFilterDataType :: Class -> String
+classSelectFilterDataType c = T.unpack $(codegenFile "codegen/class-select-filter-data-type.cg")
+    where 
+        fieldFilterDataType f = rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-data-type-field.cg")
+
 classSelect :: Class -> [Entity] -> String
-classSelect c es = T.unpack $(codegenFile "codegen/class-select.cg")
+classSelect c es = maybeFilterDataType 
+    ++ T.unpack $(codegenFile "codegen/class-select.cg")
     where 
         selectEntity e = T.unpack $(codegenFile "codegen/class-select-entity.cg")
         wrapResult e = T.unpack $(codegenFile "codegen/class-select-result.cg")
+        hasClassFields = not . null $ classFields c
+        maybeFilter e = if hasClassFields
+            then T.unpack $(codegenFile "codegen/class-select-entity-filter.cg")
+            else ""
+        filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
+        maybeFilterDataType = if hasClassFields 
+            then classSelectFilterDataType c
+            else ""
+        maybeFilterParam = if hasClassFields then "filters" :: String else ""
+        maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
+        
+
+
 classInstances :: Module -> Class -> String
 classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                    ++ (concatMap (classDefField c) (classFields c))
@@ -61,6 +82,7 @@ classInstances m c = T.unpack $(codegenFile "codegen/class-header.cg")
                                                          
 
 classes :: Module -> String
-classes m = concatMap (classInstances m) (modClasses m)
-
+classes m = 
+    (concatMap (classInstances m) (modClasses m))
+    
 

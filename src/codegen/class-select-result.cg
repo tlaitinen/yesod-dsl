@@ -1,0 +1,1 @@
+map ~{className c}Instance~{entityName e} result_~{entityName e}

@@ -1,0 +1,4 @@
+    forM_ filters $ \exprs -> 
+        when (not . null $ exprs) $ where_ $ foldl1 (||.) $ map (\expr -> case expr of 
+~{indent 12 $ concatMap (filterField e) $ classFields c}
+        ) exprs

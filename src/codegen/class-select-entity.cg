@@ -1,0 +1,4 @@
+result_~{entityName e} <- select $ from $ \e -> do
+    let _ = e ^. ~{entityName e}Id
+~{maybeFilter e}
+    return e

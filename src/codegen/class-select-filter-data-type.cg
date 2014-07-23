@@ -1,0 +1,1 @@
+data ~{className c}InstanceFilterType = ~{intercalate "    | " $ map fieldFilterDataType $ classFields c}
