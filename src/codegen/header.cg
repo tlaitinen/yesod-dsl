@@ -146,14 +146,6 @@ instance PathPiece Double where
             Left _ -> Nothing
     toPathPiece = T.pack . show
 
-instance PathPiece Bool where
-    fromPathPiece "true" = Just True
-    fromPathPiece "false" = Just False
-    fromPathPiece "True" = Just True
-    fromPathPiece "False" = Just False
-    fromPathPiece  _ = Nothing
-    toPathPiece = T.pack . show
-
 instance PathPiece TimeOfDay where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show

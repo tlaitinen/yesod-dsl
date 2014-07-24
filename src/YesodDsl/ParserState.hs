@@ -125,8 +125,9 @@ popScope = modify $ \ps -> ps {
 
 pError :: Location -> String -> ParserMonad ()
 pError l e = do
-    lift $ putStrLn $ show l ++ ": " ++ e
-    modify $ \ps -> ps { psErrors = psErrors ps + 1 }
+    return ()
+    -- lift $ putStrLn $ show l ++ ": " ++ e
+    -- modify $ \ps -> ps { psErrors = psErrors ps + 1 }
 
 declare :: Location -> String -> SymType -> ParserMonad ()
 declare l n t = do
