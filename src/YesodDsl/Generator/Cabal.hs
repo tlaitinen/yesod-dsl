@@ -19,7 +19,7 @@ stripGenerated m mods = [ mn | mn <- mods,
     where mnToString mn = intercalate "." (components mn)            
 
 generatedMods :: Module -> [ModuleName]
-generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto"]
+generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto", pfx ++ ".PathPieces"]
                 ++ [pfx ++ "." ++ (routeModuleName r) | r <- modRoutes m ]
     where pfx = "Handler." ++ (fromMaybe "" $ modName m)
 
@@ -42,7 +42,8 @@ ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) AnyVersion
                                   "unix",
                                   "path-pieces",
                                   "conduit-extra",
-                                  "exceptions" ] ] ++ deps)
+                                  "exceptions"
+                                  ] ] ++ deps)
     where samePackage (Dependency pn1 _) (Dependency pn2 _) = pn1 == pn2
           
 

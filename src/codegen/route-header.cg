@@ -17,6 +17,7 @@ module Handler.~{moduleName m}.~{routeModuleName r} where
 import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto
 import Handler.~{moduleName m}.Internal
+import qualified Handler.~{moduleName m}.PathPieces as PP
 import Prelude
 import Database.Esqueleto
 import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)

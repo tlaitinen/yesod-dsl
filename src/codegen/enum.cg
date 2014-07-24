@@ -15,7 +15,7 @@ instance A.FromJSON ~{enumName e} where
 instance A.ToJSON ~{enumName e} where
 ~{toJSONs}
 
-instance PathPiece ~{enumName e} where
+instance PP.PathPiece ~{enumName e} where
 ~{fromPathPieces}
     fromPathPiece _ = Nothing
 ~{toPathPieces}

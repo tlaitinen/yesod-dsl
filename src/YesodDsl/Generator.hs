@@ -61,6 +61,8 @@ generate path m = do
            routes m
     syncFile (joinPath ["Handler", moduleName m ++ ".hs"]) $ 
         T.unpack $(codegenFile "codegen/dispatch.cg")
+    syncFile (joinPath ["Handler", moduleName m, "PathPieces.hs"]) $
+        T.unpack $(codegenFile "codegen/path-pieces.cg")
     where
            routeImport r = T.unpack $(codegenFile "codegen/route-import.cg")
 

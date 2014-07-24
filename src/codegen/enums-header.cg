@@ -1,8 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Handler.~{moduleName m}.Enums where
+import qualified Handler.~{moduleName m}.PathPieces as PP
 import Database.Persist.TH
 import qualified Data.Aeson as A
 import Prelude
-import Web.PathPieces
 import Control.Monad (mzero)

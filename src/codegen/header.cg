@@ -16,6 +16,7 @@
 module Handler.~{moduleName m}.Internal where
 import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto
+import qualified Handler.~{moduleName m}.PathPieces as PP
 import Prelude
 import Control.Monad (forM_, when)
 import Control.Monad.Catch (MonadThrow)
@@ -111,64 +112,9 @@ is = unsafeSqlBinOp " IS "
 extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value Double)
 extractSubField = unsafeSqlExtractSubField
 
-safeRead :: forall a. Read a => Text -> Maybe a
-safeRead s = case (reads $ T.unpack s) of
-   [(v,_)] -> Just v
-   _ -> Nothing
-
-instance PathPiece Int32 where
-    fromPathPiece s = 
-        case Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-    toPathPiece = T.pack . show
-
-instance PathPiece Word32 where
-    fromPathPiece s =
-        case Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-
-    toPathPiece = T.pack . show
-
-instance PathPiece Word64 where
-    fromPathPiece s = 
-        case Data.Text.Read.decimal s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-
-    toPathPiece = T.pack . show
-
-instance PathPiece Double where
-    fromPathPiece s = 
-        case Data.Text.Read.double s of
-            Right (i, _) -> Just i
-            Left _ -> Nothing
-    toPathPiece = T.pack . show
-
-instance PathPiece TimeOfDay where
-    fromPathPiece = safeRead
-    toPathPiece = T.pack . show
-
-instance PathPiece UTCTime where
-    fromPathPiece = safeRead
-    toPathPiece = T.pack . show
-
-instance PathPiece ZonedTime where
-    fromPathPiece = safeRead
-    toPathPiece = T.pack . show
-
-instance (PathPiece a, Show a) => PathPiece [a] where
-    fromPathPiece s = do
-        parts <- safeRead s
-        values <- mapM fromPathPiece parts
-        return values
-    toPathPiece = T.pack . show
-            
-
 getDefaultFilter maybeGetParam defaultFilterJson p = do
     f <- maybe maybeGetParam Just getFilter
-    fromPathPiece f
+    PP.fromPathPiece f
     where 
         getFilter = do            
             j <- defaultFilterJson
