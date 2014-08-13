@@ -104,7 +104,9 @@ data ValBinOp = Add | Sub | Div | Mul | Concat deriving (Show,Eq, Data,Typeable)
 data BoolExpr = AndExpr BoolExpr BoolExpr
           | OrExpr BoolExpr BoolExpr
           | NotExpr BoolExpr
-          | BinOpExpr ValExpr BinOp ValExpr deriving (Show, Eq, Data, Typeable)
+          | BinOpExpr ValExpr BinOp ValExpr 
+          | ExistsExpr SelectQuery
+          deriving (Show, Eq, Data, Typeable)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
            | ConcatManyExpr [ValExpr]

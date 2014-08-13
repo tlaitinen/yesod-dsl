@@ -220,7 +220,9 @@ exprToJsonAttrs (AndExpr e1 e2) = concatMap exprToJsonAttrs [e1,e2]
 exprToJsonAttrs (OrExpr e1 e2) = concatMap exprToJsonAttrs [e1,e2]
 exprToJsonAttrs (NotExpr e) = exprToJsonAttrs e
 exprToJsonAttrs (BinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
-
+exprToJsonAttrs (ExistsExpr sq) = fromMaybe [] $ do
+    expr <- sqWhere sq
+    return $ exprToJsonAttrs expr
 getJsonAttrs :: Module -> HandlerParam -> [FieldName]
 getJsonAttrs _ (Update _ fr (Just fields)) = maybeToList (inputFieldRefToJsonAttr fr) ++ (mapMaybe inputFieldToJsonAttr fields)
 getJsonAttrs m (Update en fr Nothing) = maybeToList (inputFieldRefToJsonAttr fr) ++ case lookupEntity m en of

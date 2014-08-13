@@ -133,6 +133,7 @@ import Data.List
     random { Tk _ TRandom }
     floor { Tk _ TFloor }
     ceiling { Tk _ TCeiling }
+    exists { Tk _ TExists }
 %left in 
 %left plus minus
 %left asterisk slash
@@ -368,6 +369,7 @@ maybeBindResult: { Nothing }
 bindResult: lowerIdTk larrow { tkString $1 }
 
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
+           | { [] }
 
 moreSelectFields: { [] }
                 | moreSelectFields comma selectField { $3 : $1 }
@@ -472,6 +474,9 @@ expr : expr and expr { AndExpr $1 $3 }
      | not expr { NotExpr $2 }
      | lparen expr rparen { $2 } 
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
+     | exists lparen pushScope selectQuery popScope rparen
+                   { ExistsExpr $4 }
+ 
 
 valbinop :      
       slash { Div }

@@ -197,7 +197,7 @@ exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (OrExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (NotExpr e) = exprFieldRefs e
 exprFieldRefs (BinOpExpr ve1 _ ve2) = valExprRefs ve1 ++ (valExprRefs ve2)
-          
+exprFieldRefs (ExistsExpr sq) = sqFieldRefs sq          
 joinFieldRefs :: Join -> [FieldRef]
 joinFieldRefs j = maybe [] exprFieldRefs (joinExpr j)
 

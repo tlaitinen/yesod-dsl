@@ -342,6 +342,8 @@ vBoolExpr (BinOpExpr ve1 op ve2) = do
     vValExpr ve2
      
     return ()
+vBoolExpr (ExistsExpr sq) = do
+    vSelectQuery sq
 
 ensureFieldWith :: (Field -> Validation) -> String -> String -> Entity -> Validation
 ensureFieldWith vFunc vn fn e = do

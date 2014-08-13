@@ -79,6 +79,7 @@ expandMacros m = m {
         repExpr sub (BinOpExpr ve1 bo ve2) = BinOpExpr (repValExpr sub ve1)
                                                        bo
                                                        (repValExpr sub ve2)
+        repExpr sub (ExistsExpr sq) = ExistsExpr (repSubQuery sq sub)                                               
         repValExpr sub (FieldExpr fr) = FieldExpr (repFieldRef sub fr)
         repValExpr sub (ConcatManyExpr ves) = ConcatManyExpr (map (repValExpr sub) ves)
         repValExpr sub (ValBinOpExpr ve1 vbo ve2) = 

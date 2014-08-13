@@ -122,6 +122,7 @@ tokens :-
      "random" { mkT TRandom }
      "ceiling" { mkT TCeiling }
      "floor" { mkT TFloor }
+     "exists" { mkT TExists }
     $lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
     @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
@@ -243,6 +244,7 @@ data TokenType = TSemicolon
            | TRandom
            | TFloor
            | TCeiling
+           | TExists
     deriving (Show)
 
 tkString :: Token -> String

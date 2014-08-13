@@ -365,6 +365,7 @@ expr: (expr) and (expr)
     | valExpr (= | <> | < | > | <= | >= | like | ilike) valExpr
     | entityAlias.field (in | not in) ($i | $$ | sub_select)
     | extract (subField from entityAlias.field)
+    | exists (sub_select)
      
 valExpr: "string-constant"
        | int-constant

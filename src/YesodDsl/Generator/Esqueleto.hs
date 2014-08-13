@@ -197,7 +197,7 @@ hsValExpr ve = do
             ExtractExpr fn ve -> resetMaybe $ do
                 r <- hsValExpr ve
                 return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " $ " ++ r++ ")"
-            SubQueryExpr sq -> subQuery sq
+            SubQueryExpr sq -> subQuery "subList_select" sq
 
 fieldRefMaybeLevel :: FieldRef -> State Context Int
 fieldRefMaybeLevel (FieldRefId vn) = ctxMaybeLevel vn
@@ -269,8 +269,8 @@ selectReturnFields sq = do
 joinDef :: Join-> String
 joinDef (Join jt _ vn _) = "`" ++ show jt ++ "` " ++ vn
 
-subQuery :: SelectQuery -> State Context String
-subQuery sq = withScope (sqAliases sq) $ do
+subQuery :: String -> SelectQuery -> State Context String
+subQuery sqFunc sq = withScope (sqAliases sq) $ do
     jes <- liftM (concat . (map makeInline)) $ mapM mapJoinExpr (reverse $ sqJoins sq)
     rfs <- selectReturnFields sq
     maybeWhere <- case sqWhere sq of
@@ -278,7 +278,7 @@ subQuery sq = withScope (sqAliases sq) $ do
             e <- hsBoolExpr expr
             return $ "where_ (" ++ e ++ ")"
         Nothing -> return ""
-    return $ "subList_select $ from $ \\(" ++ vn ++ 
+    return $ sqFunc ++ " $ from $ \\(" ++ vn ++ 
         (concatMap joinDef (sqJoins sq)) ++ ") -> do { " ++
         jes
         ++ " ; " ++ maybeWhere
@@ -338,3 +338,4 @@ hsBoolExpr expr = case expr of
                 }) 
                (hsValExpr e2)
         return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
+    ExistsExpr sq -> subQuery "exists" sq
