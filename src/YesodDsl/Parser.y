@@ -370,7 +370,13 @@ fieldRef :
     }
     | localParam { FieldRefLocalParam }
     | request dot lowerIdTk { FieldRefRequest $ tkString $3 }
-    | lowerIdTk { FieldRefNamedLocalParam (tkString $1) }
+    | lowerIdTk {%
+        do
+            l1 <- mkLoc $1
+            let n1 = tkString $1
+            withSymbol l1 n1 $ \_ _ _ -> return ()
+            return $ FieldRefNamedLocalParam (tkString $1) 
+    }
  
 declareFromEntity: upperIdTk as lowerIdTk {%
         do
@@ -407,21 +413,51 @@ handlerParam : public { Public }
              | update upperId identified by inputRef with inputJson { Update $2 $5 (Just $7) } 
              | delete pushScope from declareFromEntity maybeWhere popScope { let (en,vn) = $4 in DeleteFrom en vn $5 }
              | update upperId identified by inputRef { Update $2 $5 Nothing }
-             | bindResult get upperId identified by inputRef { GetById $3 $6 $1 }
-             | maybeBindResult insert upperId from inputJson { Insert $3 (Just $5) $1 }
-             | maybeBindResult insert upperId { Insert $3 Nothing $1 }
+             | bindResult get upperId identified by inputRef {% 
+                  do
+                      let (l1,s1) = $1
+                      declare l1 s1 $ SEntity $3
+                      return $ GetById $3 $6 s1
+             }
+             | maybeBindResult insert upperId from inputJson {%
+                  do
+                      let s1 = $1 >>= \(l1,s1') -> return s1'
+                      case $1 of
+                          Just (l1,s1) -> declare l1 s1 $ SEntity $3
+                          Nothing -> return ()
+                      return $ Insert $3 (Just $5) s1 
+             }
+             | maybeBindResult insert upperId {%
+                 do
+                     let s1 = $1 >>= \(l1,s1') -> return s1'
+                     case $1 of
+                         Just (l1,s1) -> declare l1 s1 $ SEntity $3
+                         Nothing -> return ()
+                     return $ Insert $3 Nothing s1 }
              | defaultfiltersort { DefaultFilterSort }
              | if param stringval equals localParam then pushScope joins where expr popScope { IfFilter ($3 ,$8 ,$10, True) }
              | if param stringval equals underscore then pushScope joins where expr popScope { IfFilter ($3, $8, $10, False) }
              | return outputJson { Return $2 }
              | require pushScope declareFromEntity joins where expr popScope { Require (SelectQuery [] $3 $4 (Just $6) [] (0,0)) }
-             | for pushScope lowerIdTk in inputRef lbrace handlerParams rbrace popScope { For (tkString $3) $5 $7 }
+             | for pushScope lowerIdParam in inputRef lbrace handlerParams rbrace popScope {%
+                do
+                    return $ For $3 $5 $7 }
              | lowerIdTk  inputRefList  { Call (tkString $1) (reverse $2) }
 
+lowerIdParam: lowerIdTk {%
+    do
+        l1 <- mkLoc $1
+        let n1 = tkString $1
+        declare l1 n1 SParam
+        return $ n1
+}
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
 
-bindResult: lowerIdTk larrow { tkString $1 }
+bindResult: lowerIdTk larrow {%
+    do
+        l1 <- mkLoc $1
+        return $ (l1, tkString $1) }
 
 selectFields: selectField moreSelectFields { $1 : (reverse $2) }
            | { [] }
@@ -491,9 +527,19 @@ inputRefList:  { [] }
             | inputRefList inputRef  { $2 : $1 }
 
 inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
-        | lowerIdTk { InputFieldLocalParam (tkString $1) }
+        | lowerIdTk {%
+            do
+                l1 <- mkLoc $1
+                let n1 = tkString $1
+                withSymbol l1 n1 $ \_ _ _ -> return ()
+                return $ InputFieldLocalParam n1 }
         | lowerIdTk dot lowerIdTk { InputFieldLocalParamField (tkString $1) (tkString $3) }
-        | pathParam { InputFieldPathParam $ tkInt $1 }
+        | pathParam {%
+        do
+            l1 <- mkLoc $1
+            let i1 = tkInt $1
+            withSymbol l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
+            return $ InputFieldPathParam i1 }
         | auth dot idField { InputFieldAuthId }
         | auth dot lowerIdTk {% 
           do 
