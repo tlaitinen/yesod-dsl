@@ -6,6 +6,7 @@ import YesodDsl.AST
 import YesodDsl.ModuleMerger
 import YesodDsl.ClassImplementer
 import YesodDsl.ExpandMacros
+import Control.Monad.Trans.Class
 import System.IO
 import Data.Maybe
 import Data.Typeable
@@ -519,7 +520,7 @@ instanceDef: uniqueUpperIdTk {%
     do
         l <- mkLoc $1
         let n = tkString $1
-        withSymbol l n $ requireClass $ \c -> do
+        withSymbolNow l n $ requireClass $ \c -> do
             forM_ (classFields c) $ \f -> do
                 declare (fieldLoc f) (fieldName f) (SField f)
         return n
@@ -694,5 +695,5 @@ parse path = do
         then return $ Just ast
         else do
             hPutStrLn stderr $ show errors ++ " errors"
-            return $ Just ast -- Nothing
+            return Nothing
 }
