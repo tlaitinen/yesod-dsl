@@ -20,7 +20,7 @@ import YesodDsl.Generator.Esqueleto
 hsRouteParams :: [PathPiece] -> String
 hsRouteParams ps = intercalate " " [("p" ++ show x) | 
                                     x <- [1..length (filter hasType ps)]]
-    where hasType (PathId _) = True
+    where hasType (PathId _ _) = True
           hasType _ = False
 
 hsHandlerMethod :: HandlerType -> String          

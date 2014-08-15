@@ -14,7 +14,7 @@ import YesodDsl.Generator.Common
 trPathPiece :: PathPiece -> String
 trPathPiece pp = case pp of
     PathText pt -> "PathText " ++ show pt
-    PathId pi   -> "PathId " ++ show pi
+    PathId _ pi   -> "PathId " ++ show pi
 
 trHandlerType :: HandlerType -> String
 trHandlerType ht = case ht of

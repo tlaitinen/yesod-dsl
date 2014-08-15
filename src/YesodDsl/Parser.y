@@ -112,9 +112,9 @@ import Data.List
     where { Tk _ TWhere }
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
-    pathParam {Tk _ (TPathParam $$) }
+    pathParam {Tk _ (TPathParam _) }
     idField { Tk _ TId }
-    entityId { Tk _ (TEntityId $$) }
+    entityId { Tk _ (TEntityId _) }
     localParam { Tk _ TLocalParam }
     true { Tk _ TTrue }
     false { Tk _ TFalse }
@@ -254,20 +254,30 @@ entityDef : entity upperIdTk lbrace
 
 routeDef : 
     route 
-    pathPieces 
-    lbrace 
     pushScope
+    pathPiecesDef
+    lbrace 
     handlers 
     popScope
     rbrace {% 
-        mkLoc $1 >>= \l -> return $ Route l (reverse $2) (reverse $5) 
+        mkLoc $1 >>= \l -> return $ Route l $3 (reverse $5) 
     }
 
+pathPiecesDef: pathPieces {% 
+    do
+        forM_ (zip [1..] (filter isPathParam $1)) $ \(idx,pp) -> case pp of
+            PathId l en -> declare l ("$" ++ show idx) (SEntityId en) 
+            _           -> return ()
+        return $1
+    }
 pathPieces : slash pathPiece { [$2] }
-           | pathPieces slash pathPiece { $3 : $1 }
+           | pathPieces slash pathPiece { $1 ++ [$3]}
 
 pathPiece : lowerIdTk { PathText $ tkString $1 } 
-          | hash entityId { PathId $2 }
+          | hash entityId {%
+              do
+                  l2 <- mkLoc $2
+                  return $ PathId l2 (tkString $2) }
 
 handlers : handlerdef  { [$1] }
          | handlers handlerdef { $2 : $1 }
@@ -342,7 +352,12 @@ fieldRef :
             withSymbol l4 s4 $ requireParam
             return $ FieldRefParamField s1 s4 
     }
-          | pathParam { FieldRefPathParam $1 }
+    | pathParam {%
+        do
+            l1 <- mkLoc $1
+            let i1 = tkInt $1
+            withSymbol l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
+            return $ FieldRefPathParam i1 }
           | auth dot idField { FieldRefAuthId }
           | auth dot lowerIdTk { FieldRefAuth $ tkString $3 }
           | localParam { FieldRefLocalParam }
@@ -470,7 +485,7 @@ inputRefList:  { [] }
 inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
         | lowerIdTk { InputFieldLocalParam (tkString $1) }
         | lowerIdTk dot lowerIdTk { InputFieldLocalParamField (tkString $1) (tkString $3) }
-        | pathParam { InputFieldPathParam $1 }
+        | pathParam { InputFieldPathParam $ tkInt $1 }
         | auth dot idField { InputFieldAuthId }
         | auth dot lowerIdTk { InputFieldAuth $ tkString $3 }
         | value { InputFieldConst $1 }
@@ -594,7 +609,7 @@ field : lowerIdTk maybeMaybe fieldType fieldOptions fieldFlags {%
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField $3) 
+            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField $ tkString $3) 
             declare l n (SField f)
             return f}
       | lowerIdTk maybeMaybe upperId fieldFlags {%

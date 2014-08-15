@@ -54,7 +54,7 @@ inputFieldRefType (InputFieldPathParam i) = do
         Just r -> do
             let p = (routePathParams r) !! (i-1)
             case p of
-                PathId en -> return $ en ++ "Id"
+                PathId _ en -> return $ en ++ "Id"
                 _ -> return ""
         Nothing -> return ""
 inputFieldRefType ifr = do

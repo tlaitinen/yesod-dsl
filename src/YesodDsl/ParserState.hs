@@ -4,6 +4,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     ParserState, mkLoc, parseErrorCount, withSymbol, withSymbolNow,
     requireClass, 
     requireEntity,
+    requireEntityId,
     requireEntityField,
     requireField,
     requireEnumValue,
@@ -23,6 +24,7 @@ import qualified Data.List as L
 data SymType = SEnum EnumType
              | SClass Class
              | SEntity EntityName
+             | SEntityId EntityName
              | SDefine Define
              | SField Field
              | SUnique Unique
@@ -37,6 +39,7 @@ instance Show SymType where
         SEnum _  -> "enum"
         SClass _   -> "class"
         SEntity _  -> "entity"
+        SEntityId _ -> "entity id"
         SDefine _  -> "define"
         SField _   -> "field"
         SUnique _  -> "unique"
@@ -202,6 +205,12 @@ requireEntity :: (Entity -> ParserMonad ()) -> (Location -> Location -> SymType 
 requireEntity f = f'
     where f' _ _ (SEntity en) = addEntityValidation (en, f)
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
+
+requireEntityId :: (EntityName -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
+requireEntityId f = f'
+    where f' _ _ (SEntityId en) = f en
+          f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity id)"
+ 
 
 requireEntityField :: Location -> FieldName -> ((Entity,Field) -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireEntityField l fn fun = fun'

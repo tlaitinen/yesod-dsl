@@ -209,8 +209,10 @@ data Route = Route {
 
 routePathParams :: Route -> [PathPiece]
 routePathParams = (filter isPathParam) . routePath
-    where isPathParam (PathId _) = True
-          isPathParam _ = False
+
+isPathParam :: PathPiece -> Bool
+isPathParam (PathId _ _) = True
+isPathParam _ = False
 
         
 
@@ -221,11 +223,11 @@ routeName :: [PathPiece] -> String
 routeName ps = "/" ++ intercalate "/" (map show ps)
 
 data PathPiece = PathText String
-               | PathId EntityName
+               | PathId Location EntityName
                deriving (Eq, Data, Typeable)
 instance Show PathPiece where
     show (PathText s) = s
-    show (PathId en) = "#" ++ en ++ "Id"
+    show (PathId _ en) = "#" ++ en ++ "Id"
     
 data FieldRef = FieldRefId VariableName
               | FieldRefNormal VariableName FieldName

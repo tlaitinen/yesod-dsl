@@ -11,7 +11,7 @@ import Data.Char
 routeModuleName :: Route -> String
 routeModuleName r = "Route" ++ (concat $ map f (routePath r))
     where f (PathText s) = upperFirst s
-          f (PathId en) = upperFirst en
+          f (PathId _ en) = upperFirst en
 hsRouteName :: [PathPiece] -> String
 hsRouteName = f . routeName 
     where f ('/':'#':xs) = f xs
@@ -22,7 +22,7 @@ hsRouteName = f . routeName
 hsRouteType :: [PathPiece] -> String
 hsRouteType = (intercalate " ") . (mapMaybe toType)
     where toType (PathText _) = Nothing
-          toType (PathId en) = Just $ en ++ "Id -> "
+          toType (PathId _ en) = Just $ en ++ "Id -> "
 
 hsRoutePath :: Route -> String
 hsRoutePath r = T.unpack $(codegenFile "codegen/route.cg")
