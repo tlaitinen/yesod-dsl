@@ -358,11 +358,19 @@ fieldRef :
             let i1 = tkInt $1
             withSymbol l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
             return $ FieldRefPathParam i1 }
-          | auth dot idField { FieldRefAuthId }
-          | auth dot lowerIdTk { FieldRefAuth $ tkString $3 }
-          | localParam { FieldRefLocalParam }
-          | request dot lowerIdTk { FieldRefRequest $ tkString $3 }
-          | lowerIdTk { FieldRefNamedLocalParam (tkString $1) }
+    | auth dot idField { FieldRefAuthId }
+    | auth dot lowerIdTk {%
+        do 
+
+            l1 <- mkLoc $1
+            l3 <- mkLoc $3
+            let n3 = tkString $3
+            withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
+            return $ FieldRefAuth n3 
+    }
+    | localParam { FieldRefLocalParam }
+    | request dot lowerIdTk { FieldRefRequest $ tkString $3 }
+    | lowerIdTk { FieldRefNamedLocalParam (tkString $1) }
  
 declareFromEntity: upperIdTk as lowerIdTk {%
         do
@@ -487,7 +495,14 @@ inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
         | lowerIdTk dot lowerIdTk { InputFieldLocalParamField (tkString $1) (tkString $3) }
         | pathParam { InputFieldPathParam $ tkInt $1 }
         | auth dot idField { InputFieldAuthId }
-        | auth dot lowerIdTk { InputFieldAuth $ tkString $3 }
+        | auth dot lowerIdTk {% 
+          do 
+                l1 <- mkLoc $1
+                l3 <- mkLoc $3
+                let n3 = tkString $3
+                withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
+                return $ InputFieldAuth n3
+           }
         | value { InputFieldConst $1 }
         | now lparen rparen { InputFieldNow }
 
