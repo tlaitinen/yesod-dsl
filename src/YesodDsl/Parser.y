@@ -180,17 +180,31 @@ def : routeDef     { RouteDef $1 }
       | enumDef       { EnumDef $1 }
       | defineDef     { DefineDef $1 }
 
-defineDef : define lowerIdTk lparen maybeEmptyLowerIdList rparen equals pushScope defineContent popScope semicolon {% 
+defineDef : define lowerIdTk pushScope lparen maybeEmptyParamList rparen equals defineContent popScope semicolon {% 
     do
         l <- mkLoc $2 
         let n = tkString $2
-        let d = Define n l $4 $8
+        let d = Define n l $5 $8
         declare l n (SDefine d) 
         return d
     } 
 
+maybeEmptyParamList: { [] }
+         | paramList { $1 } 
+
+paramList : paramDef { [$1] }
+          | paramList comma paramDef { $1 ++ [$3] }
+
+paramDef: lowerIdTk {%
+    do
+        l <- mkLoc $1
+        let n = tkString $1
+        declare l n SParam
+        return n
+    } 
+
 maybeEmptyLowerIdList : { [] }
-        | lowerIdList { (reverse $1) }
+                      | lowerIdList { (reverse $1) }
 
 lowerIdList : lowerIdTk { [tkString $1] }
             | lowerIdList comma lowerIdTk { (tkString $3) : $1 }
@@ -318,7 +332,16 @@ fieldRef :
             withSymbol l1 s1 $ requireEnumValue l3 s3
             return $ FieldRefEnum s1 s3
     }
-    | lowerIdTk dot lbrace lowerIdTk rbrace { FieldRefParamField (tkString $1) (tkString $4) }
+    | lowerIdTk dot lbrace lowerIdTk rbrace {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            l4 <- mkLoc $4
+            let s4 = tkString $4
+            withSymbol l1 s1 $ requireEntity $ \_ -> return ()
+            withSymbol l4 s4 $ requireParam
+            return $ FieldRefParamField s1 s4 
+    }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
           | auth dot lowerIdTk { FieldRefAuth $ tkString $3 }
