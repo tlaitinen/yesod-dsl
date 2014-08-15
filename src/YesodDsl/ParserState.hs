@@ -6,6 +6,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireEntity,
     requireEntityField,
     requireField,
+    requireEnumValue,
     setCurrentHandlerType,
     unsetCurrentHandlerType,
     postValidation) where 
@@ -210,6 +211,17 @@ requireEntityField l fn fun = fun'
                                 ++ fn ++ "' of entity '" ++ entityName e ++ "'")
           fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
 
+
+requireEnumValue :: Location -> FieldName -> (Location -> Location -> SymType -> ParserMonad ())
+requireEnumValue l fn = fun'
+    where 
+        fun' _ _ (SEnum e) = 
+            case L.find (\ev' -> ev' == fn) $ enumValues e of
+                Just ev -> return ()
+                Nothing -> pError l $ "Reference to undeclared enum value '"
+                    ++ fn ++ "' of enum '" ++ enumName e ++ "'"
+        fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected enum)"
+            
 
 
 requireField:: (Field -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())

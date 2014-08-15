@@ -309,8 +309,16 @@ fieldRef :
             withSymbol l1 s1 $ requireEntityField l3 s3 $ \_ -> return () 
             return $ FieldRefNormal s1 s3
     }
-    | upperId dot upperId { FieldRefEnum $1 $3 }
-          | lowerIdTk dot lbrace lowerIdTk rbrace { FieldRefParamField (tkString $1) (tkString $4) }
+    | upperIdTk dot upperIdTk {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            withSymbol l1 s1 $ requireEnumValue l3 s3
+            return $ FieldRefEnum s1 s3
+    }
+    | lowerIdTk dot lbrace lowerIdTk rbrace { FieldRefParamField (tkString $1) (tkString $4) }
           | pathParam { FieldRefPathParam $1 }
           | auth dot idField { FieldRefAuthId }
           | auth dot lowerIdTk { FieldRefAuth $ tkString $3 }
