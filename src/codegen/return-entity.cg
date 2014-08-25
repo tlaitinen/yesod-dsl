@@ -1,1 +1,1 @@
-    return $ A.object [ "result" .=  map JSONWrapper result, "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show v)  (head count)) ]
+    return $ A.object [ "result" .=  map JSONWrapper result, "totalCount" .= ((\(Database.Esqueleto.Value v) -> v) (head count)) ]

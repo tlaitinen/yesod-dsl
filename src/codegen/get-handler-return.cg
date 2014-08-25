@@ -1,5 +1,5 @@
     return $ A.object [
-        "totalCount" .= (T.pack $ (\(Database.Esqueleto.Value v) -> show (v::Int)) (head count)),
+        "totalCount" .= ((\(Database.Esqueleto.Value v) -> (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
                 (~{intercalate ", " resultFields}) -> A.object [
 ~{rstrip $ indent 20 $ intercalate ",\n" $ map rstrip $ lines mappedResultFields}                                    
