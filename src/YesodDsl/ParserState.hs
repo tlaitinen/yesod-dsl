@@ -11,6 +11,10 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireParam,
     setCurrentHandlerType,
     unsetCurrentHandlerType,
+    validateExtractField,
+    beginHandler,
+    statement,
+    lastStatement,
     postValidation) where 
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
@@ -21,6 +25,7 @@ import YesodDsl.ExpandMacros
 import YesodDsl.ClassImplementer
 import System.IO (FilePath)
 import qualified Data.List as L
+import Data.Maybe
 data SymType = SEnum EnumType
              | SClass Class
              | SEntity EntityName
@@ -67,7 +72,8 @@ data ParserState = ParserState {
     psErrors      :: Int,
     psHandlerType :: Maybe HandlerType,
     psPendingValidations :: [[PendingValidation]],
-    psEntityValidations :: [EntityValidation]
+    psEntityValidations :: [EntityValidation],
+    psLastStatement :: Maybe (Location, String)
 }
 
 initParserState :: ParserState
@@ -79,7 +85,8 @@ initParserState = ParserState {
     psErrors = 0,
     psHandlerType = Nothing,
     psPendingValidations = [],
-    psEntityValidations = []
+    psEntityValidations = [],
+    psLastStatement = Nothing
 }
 getParserState :: ParserMonad ParserState
 getParserState = get
@@ -108,6 +115,38 @@ runEntityValidation m (en,f) =
         Just e -> f e
         Nothing -> return ()
 
+validateExtractField :: Location -> String -> ParserMonad ()
+validateExtractField l s = if s `elem` validFields
+    then return ()
+    else pError l $ "Unknown subfield '" ++ s ++ "' to extract"
+    where 
+        validFields = [
+                "century", "day", "decade", "dow", "doy", "epoch", "hour",
+                "isodow", "microseconds", "millennium", "milliseconds",
+                "minute", "month", "quarter", "second", "timezone",
+                "timezone_hour", "timezone_minute", "week", "year" 
+            ]
+
+beginHandler :: ParserMonad ()
+beginHandler = modify $ \ps -> ps {
+        psLastStatement = Nothing
+    }
+
+statement :: Location -> String -> ParserMonad ()
+statement l s= do
+    mlast <- gets psLastStatement
+    fromMaybe (return ()) (mlast >>= \(l',s') -> do
+        return $ pError l $ "'" ++ s ++ "' not allowed after '" ++ s' ++ "' in "
+            ++ show l')
+lastStatement :: Location -> String -> ParserMonad ()
+lastStatement l s = do
+    statement l s
+    modify $ \ps -> ps {
+       psLastStatement = listToMaybe $ catMaybes [ 
+           psLastStatement ps, Just (l,s) 
+       ]
+    }
+        
 postValidation :: Module -> ParserState -> IO Int
 postValidation m ps = do
     ps' <- execStateT (mapM (runEntityValidation m) $

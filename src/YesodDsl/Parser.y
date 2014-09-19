@@ -389,6 +389,9 @@ declareFromEntity: upperIdTk as lowerIdTk {%
     }
 selectQuery:
     select 
+    selectQueryContent { $2 }
+
+selectQueryContent:
     selectFields 
     from
     declareFromEntity
@@ -398,8 +401,8 @@ selectQuery:
     maybeLimitOffset 
     {%
         do
-            let sfs = [ sf | (_,sf) <- $2 ]
-            return $ SelectQuery sfs $4 $5 $6 $7 $8
+            let sfs = [ sf | (_,sf) <- $1 ]
+            return $ SelectQuery sfs $3 $4 $5 $6 $7
     }
  
 
@@ -407,42 +410,109 @@ handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
 
 handlerParams : { [] }
               | handlerParams handlerParam semicolon { $2 : $1 }
-handlerParam : public { Public }
-             | selectQuery
-                         { Select $1 }
-             | update upperId identified by inputRef with inputJson { Update $2 $5 (Just $7) } 
-             | delete pushScope from declareFromEntity maybeWhere popScope { let (en,vn) = $4 in DeleteFrom en vn $5 }
-             | update upperId identified by inputRef { Update $2 $5 Nothing }
-             | bindResult get upperId identified by inputRef {% 
-                  do
-                      let (l1,s1) = $1
-                      declare l1 s1 $ SEntity $3
-                      return $ GetById $3 $6 s1
-             }
-             | maybeBindResult insert upperId from inputJson {%
-                  do
-                      let s1 = $1 >>= \(l1,s1') -> return s1'
-                      case $1 of
-                          Just (l1,s1) -> declare l1 s1 $ SEntity $3
-                          Nothing -> return ()
-                      return $ Insert $3 (Just $5) s1 
-             }
-             | maybeBindResult insert upperId {%
-                 do
-                     let s1 = $1 >>= \(l1,s1') -> return s1'
-                     case $1 of
-                         Just (l1,s1) -> declare l1 s1 $ SEntity $3
-                         Nothing -> return ()
-                     return $ Insert $3 Nothing s1 }
-             | defaultfiltersort { DefaultFilterSort }
-             | if param stringval equals localParam then pushScope joins where expr popScope { IfFilter ($3 ,$8 ,$10, True) }
-             | if param stringval equals underscore then pushScope joins where expr popScope { IfFilter ($3, $8, $10, False) }
-             | return outputJson { Return $2 }
-             | require pushScope declareFromEntity joins where expr popScope { Require (SelectQuery [] $3 $4 (Just $6) [] (0,0)) }
-             | for pushScope lowerIdParam in inputRef lbrace handlerParams rbrace popScope {%
-                do
-                    return $ For $3 $5 $7 }
-             | lowerIdTk  inputRefList  { Call (tkString $1) (reverse $2) }
+handlerParam : public {%
+        do
+            l <- mkLoc $1
+            declare l "public" SReserved
+            statement l "public"
+            return Public 
+    }
+    | select selectQueryContent {%
+        do
+            l <- mkLoc $1
+            declare l "select" SReserved
+            statement l "select"
+            return $ Select $2
+    }
+    | update upperId identified by inputRef with inputJson {%
+        do
+            l <- mkLoc $1
+            statement l "update"
+            return $ Update $2 $5 (Just $7) 
+    } 
+    | delete pushScope from declareFromEntity maybeWhere popScope {% 
+        do
+            l <- mkLoc $1
+            statement l "delete"
+            let (en,vn) = $4 
+            return $ DeleteFrom en vn $5 
+    }
+    | update upperId identified by inputRef {%
+        do
+            l <- mkLoc $1
+            statement l "update"
+            return $ Update $2 $5 Nothing 
+    }
+    | bindResult get upperId identified by inputRef {% 
+        do
+            l <- mkLoc $2
+            statement l "get"
+            let (l1,s1) = $1
+            declare l1 s1 $ SEntity $3
+            return $ GetById $3 $6 s1
+    }
+    | maybeBindResult insert upperId from inputJson {%
+        do
+            l <- mkLoc $2
+            statement l "insert"
+            let s1 = $1 >>= \(l1,s1') -> return s1'
+            case $1 of
+                Just (l1,s1) -> declare l1 s1 $ SEntity $3
+                Nothing -> return ()
+            return $ Insert $3 (Just $5) s1 
+    } 
+    | maybeBindResult insert upperId {%
+        do
+            l2 <- mkLoc $2
+            statement l2 "insert"
+            let s1 = $1 >>= \(l1,s1') -> return s1'
+            case $1 of
+                Just (l1,s1) -> declare l1 s1 $ SEntity $3
+                Nothing -> return ()
+            return $ Insert $3 Nothing s1 
+    }
+    | defaultfiltersort {%
+        do
+            l1 <- mkLoc $1
+            statement l1 "default-filter-sort"
+            return DefaultFilterSort 
+    }
+    | if param stringval equals localParam then pushScope joins where expr popScope {% 
+        do
+            l1 <- mkLoc $1
+            statement l1 "if-then"
+            return $ IfFilter ($3 ,$8 ,$10, True) 
+    }
+    | if param stringval equals underscore then pushScope joins where expr popScope {% 
+        do
+            l1 <- mkLoc $1
+            statement l1 "if-then"
+            return $ IfFilter ($3, $8, $10, False) 
+    }
+    | return outputJson {% 
+        do
+            l <- mkLoc $1
+            lastStatement l "return"
+            return $ Return $2 
+    }
+    | require pushScope declareFromEntity joins where expr popScope {%
+        do
+            l <- mkLoc $1
+            statement l "require"
+            return $ Require (SelectQuery [] $3 $4 (Just $6) [] (0,0)) 
+    }
+    | for pushScope lowerIdParam in inputRef lbrace handlerParams rbrace popScope {%
+        do
+            l <- mkLoc $1
+            statement l "for"
+            return $ For $3 $5 $7 
+    }
+    | lowerIdTk inputRefList {% 
+        do 
+            l <- mkLoc $1
+            statement l (tkString $1)
+            return $ Call (tkString $1) (reverse $2) 
+    }
 
 lowerIdParam: lowerIdTk {%
     do
@@ -451,6 +521,7 @@ lowerIdParam: lowerIdTk {%
         declare l1 n1 SParam
         return $ n1
 }
+
 maybeBindResult: { Nothing }
                | bindResult { Just $1 }
 
@@ -601,8 +672,13 @@ valexpr : lparen valexpr rparen { $2 }
         | random lparen rparen { RandomExpr }
         | floor lparen valexpr rparen { FloorExpr $3 }
         | ceiling lparen valexpr rparen { CeilingExpr $3 }
-        | extract lparen lowerIdTk from valexpr rparen { 
-                ExtractExpr (tkString $3) $5  }
+        | extract lparen lowerIdTk from valexpr rparen {% 
+            do
+                let s3 = tkString $3
+                l3 <- mkLoc $3 
+                validateExtractField l3 s3
+                return $ ExtractExpr (tkString $3) $5  
+        }
         | lparen pushScope selectQuery popScope rparen
                    { SubQueryExpr $3 }
         | lowerIdTk lparen maybeEmptyLowerIdList rparen { ApplyExpr (tkString $1) $3 }

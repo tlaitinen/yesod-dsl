@@ -196,7 +196,6 @@ vHandler h = do
         notReturn _ = True    
 
 vHandlerParam :: HandlerParam -> Validation
-vHandlerParam Public = declareLocal "public;" VReserved
 vHandlerParam DefaultFilterSort = declareLocal "default-filter-sort;" VReserved
 vHandlerParam (Select sq) = do
     declareLocal "select;" VReserved
@@ -417,16 +416,7 @@ vValExpr ve = case ve of
     RandomExpr -> return ()
     FloorExpr ve -> vValExpr ve
     CeilingExpr ve -> vValExpr ve
-    ExtractExpr fn ve -> do
-        if not $ fn `elem` ["century", "day", "decade", "dow", "doy", "epoch",
-                            "hour", "isodow", "microseconds", 
-                            "millennium", "milliseconds", "minute", "month",
-                            "quarter", "second", "timezone", 
-                            "timezone_hour", "timezone_minute",
-                            "week", "year" ]
-            then vError $ "Unknown subfield '" ++ fn ++ "' to extract" 
-            else return ()
-        vValExpr ve
+    ExtractExpr fn ve -> return ()
     SubQueryExpr sq -> do
         withScope "sub-select" $ do
             let (en,vn) = sqFrom sq
