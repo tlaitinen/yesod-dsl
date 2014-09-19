@@ -153,7 +153,6 @@ dbModule : maybeModuleName
                return $ mergeModules $ (path,m):$2 
            }
 
-lowerId: lowerIdTk { tkString $1 }
 upperId: upperIdTk { tkString $1 }
 
 maybeModuleName : { Nothing }
@@ -743,11 +742,11 @@ popScope: {% popScope }
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : lowerIdTk maybeMaybe fieldType fieldOptions fieldFlags {%
+field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScope {%
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $5) n (NormalField $3 (reverse $4)) 
+            let f = Field l $2 (FieldInternal `elem` $6) n (NormalField $4 (reverse $5)) 
             declare l n (SField f)
             return f
         } 
@@ -771,11 +770,14 @@ fieldOptions : { [] }
              | pushScope fieldOptionsList popScope { $2 }
 fieldOptionsList : fieldOption { [$1] }
                  | fieldOptionsList  fieldOption { $2 : $1 }
-fieldOption : check lowerId {%
+fieldOption : check lowerIdTk {%
         do
-            l <- mkLoc $1
-            declare l ("check " ++ $2) SReserved
-            return $ FieldCheck $2 
+            l2 <- mkLoc $2
+            let s2 = tkString $2
+            declare l2 ("check " ++ s2) SReserved
+            withSymbolNow l2 "current field type"  $ requireFieldType $ \ft ->
+                addCheck l2 s2 ft
+            return $ FieldCheck s2
     }
             | default value {%
         do
@@ -808,7 +810,7 @@ derives : upperId { [$1] }
         | derives comma upperId { $3 : $1 }
 
 checks : { [] }
-        | check fieldIdList semicolon { reverse $2 }
+        | check lowerIdList semicolon { reverse $2 }
 
 fieldId: lowerIdTk {%
     do
@@ -821,22 +823,33 @@ fieldId: lowerIdTk {%
 fieldIdList : fieldId { [$1] }
             | fieldIdList comma fieldId { $3 : $1 }
 
-fieldType : word32 { FTWord32 }
-          | word64{ FTWord64 }
-          | int32{ FTInt32 }
-          | int64{ FTInt64 }
-          | text { FTText }
-          | bool{ FTBool }
-          | double{ FTDouble }
-          | timeofday { FTTimeOfDay }
-          | day { FTDay }
-          | utctime{ FTUTCTime }
-          | zonedtime{ FTZonedTime }
+fieldType : fieldTypeContent {%
+        do
+            let (l,ft) = $1
+            declare l "current field type" $ SFieldType ft
+            return ft 
+    }
+
+fieldTypeContent: 
+    word32      {% fieldTypeWithLoc ($1,FTWord32) }
+    | word64    {% fieldTypeWithLoc ($1,FTWord64) }
+    | int32     {% fieldTypeWithLoc ($1,FTInt32) }
+    | int64     {% fieldTypeWithLoc ($1,FTInt64) }
+    | text      {% fieldTypeWithLoc ($1,FTText) }
+    | bool      {% fieldTypeWithLoc ($1,FTBool) }
+    | double    {% fieldTypeWithLoc ($1,FTDouble) }
+    | timeofday {% fieldTypeWithLoc ($1,FTTimeOfDay) }
+    | day       {% fieldTypeWithLoc ($1,FTDay) }
+    | utctime   {% fieldTypeWithLoc ($1,FTUTCTime) }
+    | zonedtime {% fieldTypeWithLoc ($1,FTZonedTime) }
 
 maybeMaybe : { False }
               | maybe {True }
 
 {
+
+fieldTypeWithLoc :: (Token,FieldType) -> ParserMonad (Location, FieldType)
+fieldTypeWithLoc (tk,ft) = mkLoc tk >>= \l -> return (l,ft)
 
 data ModDef = EntityDef Entity
            | ClassDef Class

@@ -58,7 +58,6 @@ library
            YesodDsl.Generator.EntityFactories
            YesodDsl.SyncFile
            YesodDsl.ExpandMacros
-           YesodDsl.Validation.Fields
            YesodDsl.Validation.Handlers
 
 

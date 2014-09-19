@@ -7,6 +7,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireEntityId,
     requireEntityField,
     requireField,
+    requireFieldType,
     requireEnumValue,
     requireParam,
     setCurrentHandlerType,
@@ -16,6 +17,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     beginHandler,
     statement,
     lastStatement,
+    addCheck,
     postValidation) where
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
@@ -33,6 +35,7 @@ data SymType = SEnum EnumType
              | SEntityId EntityName
              | SDefine Define
              | SField Field
+             | SFieldType FieldType
              | SUnique Unique
              | SRoute Route
              | SHandler Handler
@@ -48,6 +51,7 @@ instance Show SymType where
         SEntityId _ -> "entity id"
         SDefine _  -> "define"
         SField _   -> "field"
+        SFieldType _ -> "field type"
         SUnique _  -> "unique"
         SRoute _  -> "route"
         SHandler _ -> "handler"
@@ -74,7 +78,8 @@ data ParserState = ParserState {
     psHandlerType :: Maybe HandlerType,
     psPendingValidations :: [[PendingValidation]],
     psEntityValidations :: [EntityValidation],
-    psLastStatement :: Maybe (Location, String)
+    psLastStatement :: Maybe (Location, String),
+    psChecks      :: [(Location,String,FieldType)]
 }
 
 initParserState :: ParserState
@@ -87,7 +92,8 @@ initParserState = ParserState {
     psHandlerType = Nothing,
     psPendingValidations = [],
     psEntityValidations = [],
-    psLastStatement = Nothing
+    psLastStatement = Nothing,
+    psChecks = []
 }
 getParserState :: ParserMonad ParserState
 getParserState = get
@@ -157,7 +163,14 @@ lastStatement l s = do
            psLastStatement ps, Just (l,s) 
        ]
     }
-        
+
+addCheck :: Location -> String -> FieldType -> ParserMonad ()
+addCheck l n ft = do
+    checks <- gets psChecks
+    forM_ [ c | c@(l',n',ft') <- checks, ft' /= ft, n' == n ] $ \(l',n',ft') ->
+        pError l $ "'" ++ n ++ "' is for " ++ show ft ++ " but '" 
+            ++ n' ++ "' in " ++ show l' ++ " is for " ++ show ft' 
+    modify $ \ps -> ps { psChecks = psChecks ps ++ [(l,n,ft)] }
 postValidation :: Module -> ParserState -> IO Int
 postValidation m ps = do
     ps' <- execStateT (mapM (runEntityValidation m) $
@@ -270,6 +283,12 @@ requireEntityField l fn fun = fun'
                                 ++ fn ++ "' of entity '" ++ entityName e ++ "'")
           fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
 
+requireFieldType :: (FieldType -> ParserMonad()) -> (Location -> Location -> SymType -> ParserMonad ())
+requireFieldType f = fun'
+    where 
+        fun' _ _ (SFieldType ft) = f ft
+        fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected field type)"  
+        
 
 requireEnumValue :: Location -> FieldName -> (Location -> Location -> SymType -> ParserMonad ())
 requireEnumValue l fn = fun'
