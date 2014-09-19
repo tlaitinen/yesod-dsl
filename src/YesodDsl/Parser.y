@@ -156,7 +156,13 @@ dbModule : maybeModuleName
 upperId: upperIdTk { tkString $1 }
 
 maybeModuleName : { Nothing }
-                | module upperId semicolon { Just $2 }
+    | module upperIdTk semicolon {%
+        do
+            let s2 = tkString $2
+            l2 <- mkLoc $2
+            declare l2 "module name" $ SReserved
+            return $ Just s2 
+    }
 imports : { [] }
         | importStmt imports { $1++ $2 }
 
@@ -312,7 +318,8 @@ handlerType:
     }
 
 handlerdef : handlerType pushScope handlerParamsBlock popScope {% 
-        return $ $1 $3 
+        do
+            return $ $1 $3
     }
 
 fieldRef : 
@@ -413,7 +420,16 @@ targetEntity: upperIdTk {%
     } 
 
 beginHandler: {% beginHandler }
-handlerParamsBlock : lbrace beginHandler handlerParams rbrace { (reverse $3) }
+handlerParamsBlock : lbrace beginHandler handlerParams rbrace {%
+        do
+            ht <- getCurrentHandlerType
+            when (ht == Just GetHandler) $ do
+                hasSelect <- hasReserved "select"
+                l4 <- mkLoc $4
+                when (hasSelect == False) $ 
+                    pError l4 "missing select in GET handler"
+            return (reverse $3) 
+    }
 
 handlerParams : { [] }
      | handlerParams handlerParam semicolon { $2 : $1 }
@@ -428,6 +444,7 @@ handlerParam : public {%
         do
             l <- mkLoc $1
             declare l "select" SReserved
+            requireHandlerType l "select" (==GetHandler)
             statement l "select"
             return $ Select $2
     }
@@ -435,12 +452,14 @@ handlerParam : public {%
         do
             l <- mkLoc $1
             statement l "update"
+            requireHandlerType l "update" (/=GetHandler)
             return $ Update (tkString $3) $6 $7
     } 
     | delete pushScope from declareFromEntity maybeWhere popScope {% 
         do
             l <- mkLoc $1
             statement l "delete"
+            requireHandlerType l "delete" (/=GetHandler)
             let (en,vn) = $4 
             return $ DeleteFrom en vn $5 
     }
@@ -450,6 +469,7 @@ handlerParam : public {%
             statement l "get"
             let (l1,s1) = $1
             declare l1 s1 $ SEntity $3
+            requireHandlerType l "get" (/=GetHandler)
             return $ GetById $3 $6 s1
     }
     | maybeBindResult insert pushScope targetEntity maybeFromInputJson popScope {%
@@ -464,30 +484,35 @@ handlerParam : public {%
             l4 <- mkLoc $4
             let i = Insert s4 $5 s1 
             withSymbol l4 s4 $ requireEntity $ \e -> validateInsert l e $5
+            requireHandlerType l "insert" (/=GetHandler)
             return i
     } 
      | defaultfiltersort {%
         do
             l1 <- mkLoc $1
             statement l1 "default-filter-sort"
+            requireHandlerType l1 "default-filter-sort" (==GetHandler)
             return DefaultFilterSort 
     }
     | if param stringval equals localParam then pushScope joins where expr popScope {% 
         do
             l1 <- mkLoc $1
             statement l1 "if-then"
+            requireHandlerType l1 "if-then" (==GetHandler)
             return $ IfFilter ($3 ,$8 ,$10, True) 
     }
     | if param stringval equals underscore then pushScope joins where expr popScope {% 
         do
             l1 <- mkLoc $1
             statement l1 "if-then"
+            requireHandlerType l1 "if-then" (==GetHandler)
             return $ IfFilter ($3, $8, $10, False) 
     }
     | return outputJson {% 
         do
             l <- mkLoc $1
             lastStatement l "return"
+            requireHandlerType l "return" (/=GetHandler)
             return $ Return $2 
     }
     | require pushScope declareFromEntity joins where expr popScope {%
@@ -500,12 +525,14 @@ handlerParam : public {%
         do
             l <- mkLoc $1
             statement l "for"
+            requireHandlerType l "for" (/=GetHandler)
             return $ For $3 $5 $7 
     }
     | lowerIdTk inputRefList {% 
         do 
             l <- mkLoc $1
             statement l (tkString $1)
+            requireHandlerType l (tkString $1) (/=GetHandler)
             return $ Call (tkString $1) (reverse $2) 
     }
 

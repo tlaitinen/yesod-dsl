@@ -3,7 +3,6 @@ import YesodDsl.Parser
 import System.Environment
 import System.Console.GetOpt
 import YesodDsl.ModuleMerger
-import YesodDsl.Validation
 import YesodDsl.ClassImplementer
 import YesodDsl.Generator
 import Control.Monad
@@ -34,12 +33,8 @@ main = do
             mast <- parse path
             case mast of
                 Just ast -> do
-                    let errors = validate ast
-                    if null errors 
-                        then do
-                            generate path $ ast 
-                            forM_ o (processFlag ast)
-                        else hPutStrLn stderr errors
+                    generate path $ ast 
+                    forM_ o (processFlag ast)
                 Nothing -> return ()
         processFlag ast (FayPath path) = genFay path ast
             

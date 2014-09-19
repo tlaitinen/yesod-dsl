@@ -2,6 +2,8 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     getPath, getParsed,
     setParserState, runParser, pushScope, popScope, declare, SymType(..),
     ParserState, mkLoc, parseErrorCount, withSymbol, withSymbolNow,
+    pError,
+    hasReserved,
     requireClass, 
     requireEntity,
     requireEntityId,
@@ -11,7 +13,8 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireEnumValue,
     requireParam,
     setCurrentHandlerType,
-    unsetCurrentHandlerType,
+    getCurrentHandlerType,
+    requireHandlerType,
     validateExtractField,
     validateInsert,
     beginHandler,
@@ -108,11 +111,16 @@ setCurrentHandlerType :: HandlerType -> ParserMonad ()
 setCurrentHandlerType ht = modify $ \ps -> ps {
         psHandlerType = Just ht
     }
-unsetCurrentHandlerType :: ParserMonad ()
-unsetCurrentHandlerType = modify $ \ps -> ps {
-        psHandlerType = Nothing
-    }
-
+    
+requireHandlerType :: Location -> String -> (HandlerType -> Bool) -> ParserMonad ()
+requireHandlerType l n f = do
+    mht <- gets psHandlerType
+    when (fmap f mht /= Just True) $ 
+        pError l $ n ++ " not allowed " 
+            ++ (fromMaybe "outside handler" $ 
+                mht >>= \ht' -> return $ "in " ++ show ht' ++ " handler")
+getCurrentHandlerType :: ParserMonad (Maybe HandlerType)
+getCurrentHandlerType = gets psHandlerType    
 setParserState :: ParserState -> ParserMonad ()
 setParserState = put
 
@@ -240,6 +248,16 @@ addPendingValidation v = modify $ \ps -> let vs = psPendingValidations ps in ps 
         psPendingValidations = (v:(head vs)):tail vs
     }
 
+hasReserved :: String -> ParserMonad Bool
+hasReserved n = do
+    syms <- gets psSyms
+    return $ fromMaybe False $ 
+        Map.lookup n syms >>= return . (not . null . (filter match))
+    where
+        match (Sym _ _ SReserved) = True
+        match _ = False 
+
+
 withSymbol' :: Syms -> Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
 withSymbol' syms l n f = do
     case Map.lookup n syms >>= return . (filter notReserved) of
@@ -282,7 +300,6 @@ requireEntityField l fn fun = fun'
               Nothing -> pError l $ "Reference to undeclared field '" 
                                 ++ fn ++ "' of entity '" ++ entityName e ++ "'")
           fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
-
 requireFieldType :: (FieldType -> ParserMonad()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireFieldType f = fun'
     where 

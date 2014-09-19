@@ -41,7 +41,6 @@ library
            YesodDsl.Generator 
            YesodDsl.ClassImplementer 
            YesodDsl.ModuleMerger 
-           YesodDsl.Validation
            YesodDsl.Generator.Classes
            YesodDsl.Generator.Common
            YesodDsl.Generator.Esqueleto
@@ -58,7 +57,6 @@ library
            YesodDsl.Generator.EntityFactories
            YesodDsl.SyncFile
            YesodDsl.ExpandMacros
-           YesodDsl.Validation.Handlers
 
 
 executable  yesod-dsl
