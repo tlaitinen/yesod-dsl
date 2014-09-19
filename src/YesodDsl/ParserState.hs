@@ -12,10 +12,11 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     setCurrentHandlerType,
     unsetCurrentHandlerType,
     validateExtractField,
+    validateInsert,
     beginHandler,
     statement,
     lastStatement,
-    postValidation) where 
+    postValidation) where
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
 import Control.Monad.Trans.Class
@@ -127,6 +128,16 @@ validateExtractField l s = if s `elem` validFields
                 "timezone_hour", "timezone_minute", "week", "year" 
             ]
 
+validateInsert :: Location -> Entity -> Maybe [InputField] -> ParserMonad ()
+validateInsert  l e (Just ifs) = do
+    case [ fieldName f | f <- entityFields e, 
+                         (not . fieldOptional) f, 
+                         isNothing (fieldDefault f) ] 
+                         L.\\ [ fn | (fn,_) <- ifs ] of
+        fs@(_:_) -> pError l $ "Missing required fields without default value: " ++ (show fs)
+        _ -> return ()
+validateInsert _ _ _ = return ()
+
 beginHandler :: ParserMonad ()
 beginHandler = modify $ \ps -> ps {
         psLastStatement = Nothing
@@ -152,7 +163,6 @@ postValidation m ps = do
     ps' <- execStateT (mapM (runEntityValidation m) $
                          psEntityValidations ps) $ ps
     return $ psErrors ps'  
-
 
 runParser :: FilePath -> ParserState -> ParserMonad a -> IO (a,ParserState)
 runParser path ps m = do

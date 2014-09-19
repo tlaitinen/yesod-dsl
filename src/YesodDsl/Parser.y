@@ -404,12 +404,20 @@ selectQueryContent:
             let sfs = [ sf | (_,sf) <- $1 ]
             return $ SelectQuery sfs $3 $4 $5 $6 $7
     }
- 
 
-handlerParamsBlock : lbrace handlerParams rbrace { (reverse $2) }
+targetEntity: upperIdTk {%
+        do
+            let s1 = tkString $1
+            l1 <- mkLoc $1
+            declare l1 "target entity" $ SEntity s1
+            return $1
+    } 
+
+beginHandler: {% beginHandler }
+handlerParamsBlock : lbrace beginHandler handlerParams rbrace { (reverse $3) }
 
 handlerParams : { [] }
-              | handlerParams handlerParam semicolon { $2 : $1 }
+     | handlerParams handlerParam semicolon { $2 : $1 }
 handlerParam : public {%
         do
             l <- mkLoc $1
@@ -424,11 +432,11 @@ handlerParam : public {%
             statement l "select"
             return $ Select $2
     }
-    | update upperId identified by inputRef with inputJson {%
+    | update pushScope targetEntity identified by inputRef maybeWithInputJson popScope {%
         do
             l <- mkLoc $1
             statement l "update"
-            return $ Update $2 $5 (Just $7) 
+            return $ Update (tkString $3) $6 $7
     } 
     | delete pushScope from declareFromEntity maybeWhere popScope {% 
         do
@@ -436,12 +444,6 @@ handlerParam : public {%
             statement l "delete"
             let (en,vn) = $4 
             return $ DeleteFrom en vn $5 
-    }
-    | update upperId identified by inputRef {%
-        do
-            l <- mkLoc $1
-            statement l "update"
-            return $ Update $2 $5 Nothing 
     }
     | bindResult get upperId identified by inputRef {% 
         do
@@ -451,27 +453,21 @@ handlerParam : public {%
             declare l1 s1 $ SEntity $3
             return $ GetById $3 $6 s1
     }
-    | maybeBindResult insert upperId from inputJson {%
+    | maybeBindResult insert pushScope targetEntity maybeFromInputJson popScope {%
         do
             l <- mkLoc $2
             statement l "insert"
             let s1 = $1 >>= \(l1,s1') -> return s1'
+            let s4 = tkString $4
             case $1 of
-                Just (l1,s1) -> declare l1 s1 $ SEntity $3
+                Just (l1,s1) -> declare l1 s1 $ SEntity s4
                 Nothing -> return ()
-            return $ Insert $3 (Just $5) s1 
+            l4 <- mkLoc $4
+            let i = Insert s4 $5 s1 
+            withSymbol l4 s4 $ requireEntity $ \e -> validateInsert l e $5
+            return i
     } 
-    | maybeBindResult insert upperId {%
-        do
-            l2 <- mkLoc $2
-            statement l2 "insert"
-            let s1 = $1 >>= \(l1,s1') -> return s1'
-            case $1 of
-                Just (l1,s1) -> declare l1 s1 $ SEntity $3
-                Nothing -> return ()
-            return $ Insert $3 Nothing s1 
-    }
-    | defaultfiltersort {%
+     | defaultfiltersort {%
         do
             l1 <- mkLoc $1
             statement l1 "default-filter-sort"
@@ -590,9 +586,22 @@ orderByListitem : fieldRef orderByDir { ($1, $2) }
 
 orderByDir : asc { SortAsc }
         |desc  { SortDesc }
- 
+
+maybeWithInputJson: with inputJson { Just $2 }
+             | { Nothing }
+         
+maybeFromInputJson: from inputJson { Just $2 }
+             | { Nothing }
+              
 inputJson:  lbrace inputJsonFields rbrace { $2 }
-inputJsonField : lowerIdTk equals inputRef { (tkString $1, $3) }
+inputJsonField : lowerIdTk equals inputRef {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            withSymbol l1 "target entity" $ 
+                requireEntityField l1 s1 $ \_ -> return ()
+            return (s1, $3) 
+     }
 
 inputRefList:  { [] }
             | inputRefList inputRef  { $2 : $1 }
