@@ -6,7 +6,6 @@ import YesodDsl.Lexer
 import Data.Maybe
 import Data.List
 import Data.Char
-import Data.Generics.Uniplate.Data
 import Data.Data (Data)
 import Data.Typeable (Typeable)
 

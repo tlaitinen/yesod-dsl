@@ -28,7 +28,7 @@ library
                  , mtl >= 2.1.2
                  , strict
                  , Cabal
-                 , uniplate
+                 , syb
     Build-tools:         alex, happy
     ghc-options: -Wall -O0
     exposed: True
