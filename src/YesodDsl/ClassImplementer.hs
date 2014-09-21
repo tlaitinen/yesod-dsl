@@ -2,15 +2,10 @@ module YesodDsl.ClassImplementer (implementClasses) where
 import Data.List
 import YesodDsl.AST
 import Data.Maybe
-
 implementClasses :: Module -> Module
-implementClasses m = 
-    let
-        classes = modClasses m
-    in 
-        m {
-            modEntities  = [ implInEntity m classes e | e <- (modEntities m) ]
-        }
+implementClasses m = m {
+        modEntities  = [ implInEntity m (modClasses m) e | e <- modEntities m ]
+    }
 
 classLookup :: [Class] -> ClassName -> Maybe Class
 classLookup classes name =  find (\i -> name == className i) classes
@@ -38,20 +33,15 @@ expandClassRefFields m e f = expand (fieldContent f)
             Nothing -> [f]
         expand _ = [f]                           
             
-entityError :: Entity -> String -> a
-entityError e msg = error $ msg ++ " (" ++ entityName e ++ " in " ++ (show $ entityLoc e) ++ ")"
-
 implInEntity :: Module -> [Class] -> Entity -> Entity
-implInEntity m classes' e 
-    | null invalidClassNames = e {
-        entityFields  = concatMap (expandClassRefFields m e) $ entityFields e ++ extraFields,
+implInEntity m classes' e = e { 
+        entityFields  = concatMap (expandClassRefFields m e) $ 
+                            entityFields e ++ extraFields,
         entityClassFields = filter isClassField $ entityFields e,
-        entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses),
-        entityChecks = entityChecks e 
+        entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses)
     }
-    | otherwise        = entityError e $ "Invalid classes " 
-                                        ++ show invalidClassNames
     where
+        instances = entityInstances e
         classes = sortBy (\c1 c2 -> maybeCompare (elemIndex (className c1) instances) 
                                                  (elemIndex (className c2) instances))
                          classes'
@@ -59,15 +49,10 @@ implInEntity m classes' e
         maybeCompare (Just _) Nothing = LT
         maybeCompare Nothing (Just _) = GT
         maybeCompare Nothing Nothing = EQ
-        instances = entityInstances e
-        invalidClassNames = [ name | name <- instances, 
-                                 isNothing $ classLookup classes name ]
-        instantiatedClasses = map (classLookup classes) instances
-        validClasses = catMaybes instantiatedClasses
+        validClasses = mapMaybe (classLookup classes) $ entityInstances e
+        extraFields = concatMap classFields validClasses
         isClassField (Field _ _ _ _ (EntityField iName)) = iName `elem` (map className $ modClasses m)
         isClassField _ = False
-                                     
-        extraFields = concatMap classFields validClasses
         addEntityNameToUnique e (Unique name fields) = Unique (entityName e ++ name) fields
         
     
