@@ -24,6 +24,8 @@ tokens :-
     \} { mkT TRBrace }
     \( { mkT TLParen }
     \) { mkT TRParen }
+    \[ { mkT TLBracket }
+    \] { mkT TRBracket }
     \, { mkT TComma }
     \. { mkT TDot }
     \= { mkT TEquals }
@@ -33,6 +35,8 @@ tokens :-
     \<\= { mkT TLe }
     \>\= { mkT TGe }
     \<\- { mkT TLArrow }
+    \-\> { mkT TRArrow }
+    \:\: { mkT TDoubleColon }
     "like" { mkT TLike }
     "ilike" { mkT TIlike }
     "||" { mkT TConcatOp }
@@ -138,6 +142,8 @@ data TokenType = TSemicolon
            | TRBrace
            | TLParen
            | TRParen
+           | TLBracket
+           | TRBracket
            | TEquals
            | TNe 
            | TLt
@@ -232,6 +238,8 @@ data TokenType = TSemicolon
            | TNothing
            | TRequest
            | TLArrow
+           | TRArrow
+           | TDoubleColon
            | TNow
            | TAuth
            | TReturn

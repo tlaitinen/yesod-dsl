@@ -55,6 +55,8 @@ import Data.List
     rbrace { Tk _ TRBrace }
     lparen { Tk _ TLParen }
     rparen { Tk _ TRParen }
+    lbracket { Tk _ TLBracket }
+    rbracket { Tk _ TRBracket }
     comma  { Tk _ TComma }
     dot  { Tk _ TDot }
     slash { Tk _ TSlash }
@@ -121,6 +123,8 @@ import Data.List
     nothing { Tk _ TNothing }
     request { Tk _ TRequest }
     larrow { Tk _ TLArrow }
+    rarrow { Tk _ TRArrow }
+    doublecolon { Tk _ TDoubleColon }
     now { Tk _ TNow }
     auth { Tk _ TAuth }
     return { Tk _ TReturn }
@@ -453,7 +457,7 @@ handlerParam : public {%
             l <- mkLoc $1
             statement l "update"
             requireHandlerType l "update" (/=GetHandler)
-            return $ Update (tkString $3) $6 $7
+            return $ Update (tkString $3) (fst $6) $7
     } 
     | delete pushScope from declareFromEntity maybeWhere popScope {% 
         do
@@ -470,7 +474,7 @@ handlerParam : public {%
             let (l1,s1) = $1
             declare l1 s1 $ SEntity $3
             requireHandlerType l "get" (/=GetHandler)
-            return $ GetById $3 $6 s1
+            return $ GetById $3 (fst $6) s1
     }
     | maybeBindResult insert pushScope targetEntity maybeFromInputJson popScope {%
         do
@@ -526,14 +530,41 @@ handlerParam : public {%
             l <- mkLoc $1
             statement l "for"
             requireHandlerType l "for" (/=GetHandler)
-            return $ For $3 $5 $7 
+            return $ For $3 (fst $5) $7 
     }
     | lowerIdTk inputRefList {% 
         do 
             l <- mkLoc $1
             statement l (tkString $1)
             requireHandlerType l (tkString $1) (/=GetHandler)
-            return $ Call (tkString $1) (reverse $2) 
+            return $ Call (tkString $1) $2
+    } 
+    | lparen lowerIdTk doublecolon functionType rparen inputRefList {%
+        do 
+            l <- mkLoc $1
+            statement l (tkString $1)
+            requireHandlerType l (tkString $1) (/=GetHandler)
+            return $ Call (tkString $1) $6
+    }
+
+functionType: functionTypes rarrow lowerIdTk lparen rparen { $1 }
+
+functionTypes: type { $1 }
+             | lbracket type rbracket { TypeList $2 }
+
+type: entityId {%
+    do
+        l1 <- mkLoc $1
+        let s1 = tkString $1
+        withSymbol l1 s1 $ requireEntity $ \_ -> return ()
+        return $ TypeEntityId s1
+    }
+    | upperIdTk {%
+    do
+        l1 <- mkLoc $1
+        let s1 = tkString $1
+        withSymbol l1 s1 $ requireEnum 
+        return $ TypeEnum s1
     }
 
 lowerIdParam: lowerIdTk {%
@@ -626,37 +657,44 @@ inputJsonField : lowerIdTk equals inputRef {%
             let s1 = tkString $1
             withSymbol l1 "target entity" $ 
                 requireEntityField l1 s1 $ \_ -> return ()
-            return (s1, $3) 
+            let (ir, _) = $3
+            return (s1, ir) 
      }
 
 inputRefList:  { [] }
-            | inputRefList inputRef  { $2 : $1 }
+            | inputRefList inputRef  { $1 ++ [$2] }
 
-inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
+inputRef: request dot lowerIdTk { (InputFieldNormal $ tkString $3, Nothing) }
         | lowerIdTk {%
             do
                 l1 <- mkLoc $1
                 let n1 = tkString $1
                 withSymbol l1 n1 $ \_ _ _ -> return ()
-                return $ InputFieldLocalParam n1 }
-        | lowerIdTk dot lowerIdTk { InputFieldLocalParamField (tkString $1) (tkString $3) }
+                return $ (InputFieldLocalParam n1, Nothing) 
+                {- TODO: return type -}
+        }
+        | lowerIdTk dot lowerIdTk { 
+                (InputFieldLocalParamField (tkString $1) (tkString $3), Nothing) 
+            {- TODO: validate and return type -}
+        }
         | pathParam {%
         do
             l1 <- mkLoc $1
             let i1 = tkInt $1
-            withSymbol l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
-            return $ InputFieldPathParam i1 }
-        | auth dot idField { InputFieldAuthId }
+            withSymbolNow l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
+            return $ (InputFieldPathParam i1, Nothing)  {- TODO: return type -}
+        }
+        | auth dot idField { (InputFieldAuthId, Just $ TypeEntityId "User") }
         | auth dot lowerIdTk {% 
           do 
                 l1 <- mkLoc $1
                 l3 <- mkLoc $3
                 let n3 = tkString $3
                 withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
-                return $ InputFieldAuth n3
+                return $ (InputFieldAuth n3, Nothing) {- TODO: return type -}
            }
-        | value { InputFieldConst $1 }
-        | now lparen rparen { InputFieldNow }
+        | value { (InputFieldConst $1, Nothing) } {- TODO: return type -}
+        | now lparen rparen { (InputFieldNow, Just $ TypeField FTUTCTime) }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }
@@ -784,11 +822,14 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
             let f = Field l $2 (FieldInternal `elem` $4) n (EntityField $ tkString $3) 
             declare l n (SField f)
             return f}
-      | lowerIdTk maybeMaybe upperId fieldFlags {%
+      | lowerIdTk maybeMaybe upperIdTk fieldFlags {%
         do  
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $4) n (EnumField $3) 
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            {- TODO: validate enum ref -}
+            let f = Field l $2 (FieldInternal `elem` $4) n (EnumField s3) 
             declare l n (SField f)
             return f
             }

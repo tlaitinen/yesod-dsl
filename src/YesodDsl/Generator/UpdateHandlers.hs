@@ -105,8 +105,8 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
                 ifr <- inputFieldRef fr
                 return $ T.unpack $(codegenFile "codegen/for.cg")    
             Call fn frs -> do
-                ifrs <- mapM inputFieldRef frs
-                types <- mapM inputFieldRefType frs
+                ifrs <- mapM inputFieldRef $ map fst frs
+                types <- mapM inputFieldRefType $ map fst frs
                 ctx <- get
                 put $ ctx { ctxCalls = (fn,types):ctxCalls ctx}
                 return $ T.unpack $(codegenFile "codegen/call.cg") 
@@ -256,7 +256,7 @@ handlerParamToInputFieldRefs :: HandlerParam -> [InputFieldRef]
 handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr') <- fromMaybe [] io]
 handlerParamToInputFieldRefs (Insert _ io _) = [ fr | (_,fr) <- fromMaybe [] io ]
 handlerParamToInputFieldRefs (GetById _ ifr _) = [ifr]
-handlerParamToInputFieldRefs (Call _ ifrs) = ifrs
+handlerParamToInputFieldRefs (Call _ ifrs) = map fst ifrs
 handlerParamToInputFieldRefs _ = []
 
 updateHandlerMaybeCurrentTime :: [HandlerParam] -> String

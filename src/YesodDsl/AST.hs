@@ -2,7 +2,6 @@
 -- | Abstract Syntax Tree of yesod-dsl definition.
 module YesodDsl.AST where
 
-import YesodDsl.Lexer
 import Data.Maybe
 import Data.List
 import Data.Char
@@ -23,6 +22,7 @@ data Module = Module {
 moduleName :: Module -> String
 moduleName m = fromMaybe "" (modName m)
 
+emptyModule :: Module
 emptyModule = Module {
     modName = Nothing,
     modEntities = [],
@@ -117,6 +117,13 @@ data ValExpr = FieldExpr FieldRef
            | SubQueryExpr SelectQuery 
            | ApplyExpr FunctionName [ParamName]
            deriving (Show, Eq, Data, Typeable)
+  
+data Type = TypeEntityId EntityName       
+          | TypeEnum EnumName
+          | TypeList Type
+          | TypeField FieldType
+          deriving (Show, Eq, Data, Typeable)
+           
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | Select SelectQuery 
@@ -128,7 +135,7 @@ data HandlerParam = Public
                   | Return [OutputField]
                   | Require SelectQuery
                   | For VariableName InputFieldRef [HandlerParam]
-                  | Call FunctionName [InputFieldRef]
+                  | Call FunctionName [(InputFieldRef,Maybe Type)]
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)

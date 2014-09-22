@@ -28,7 +28,6 @@ hsBinOp op = case op of
     NotIn -> "`notIn`"
 
 type TypeName = String
-
 data Context = Context {
     ctxNames :: [(EntityName, VariableName, MaybeFlag)],
     ctxModule :: Module,

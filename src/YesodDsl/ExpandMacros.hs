@@ -2,7 +2,6 @@ module YesodDsl.ExpandMacros (expandMacros) where
 import YesodDsl.AST
 import Data.List
 import Data.Generics
-
 expandMacros :: Module -> Module
 expandMacros m = everywhere (mkT f) m 
     where
@@ -18,7 +17,7 @@ expandMacros m = everywhere (mkT f) m
             _ -> error $ "Reference to undefined macro " ++ fn
                         
         expandSubQuery sq subs = foldl repSubQuery sq subs
-        repSubQuery sq sub = everywhere (mkT $ repFr sub) $ everywhere (mkT $ repSf sub) sq 
+        repSubQuery sq sub = everywhere ((mkT $ repFr sub) . (mkT $ repSf sub)) sq 
         repSf (pn,pv) spf@(SelectParamField vn pn' mvn) 
             | pn == pn' = SelectField vn pv mvn
             | otherwise = spf
