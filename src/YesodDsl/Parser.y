@@ -541,16 +541,24 @@ handlerParam : public {%
     } 
     | lparen lowerIdTk doublecolon functionType rparen inputRefList {%
         do 
-            l <- mkLoc $1
-            statement l (tkString $1)
-            requireHandlerType l (tkString $1) (/=GetHandler)
-            return $ Call (tkString $1) $6
+            l2 <- mkLoc $2
+            let s2 = tkString $2
+            statement l2 s2
+            requireHandlerType l2 s2 (/=GetHandler)
+            when (length $4 /= length $6) $ pError l2 $ "'" ++ s2 
+                ++ "' expects " ++ show (length $4) ++ " parameters, " 
+                ++ show (length $6) ++ " given"
+            let types = zip $4 $6
+            forM_ [ (n,t1,fromJust mt2) | (n,(t1,(_,mt2))) <- zip [1..] types, 
+                    Just t1 /= mt2, isJust mt2 ] $ \(n,t1,t2) -> 
+                        pError l2 $ "'" ++ s2 ++ "' expects " ++ show t1 ++ " as the parameter #" ++ show n ++ ", got " ++ show t2 ++ " instead."
+            return $ Call s2 [ (ifr,Just $ fromMaybe t1 t2) | (t1,(ifr,t2)) <- types ]
     }
 
 functionType: functionTypes rarrow lowerIdTk lparen rparen { $1 }
 
-functionTypes: type { $1 }
-             | lbracket type rbracket { TypeList $2 }
+functionTypes: type { [$1] }
+             | functionTypes rarrow type { $1 ++ [$3] }
 
 type: entityId {%
     do
@@ -566,6 +574,8 @@ type: entityId {%
         withSymbol l1 s1 $ requireEnum 
         return $ TypeEnum s1
     }
+    | lbracket type rbracket { TypeList $2 }
+    | fieldType { TypeField $1 }
 
 lowerIdParam: lowerIdTk {%
     do
