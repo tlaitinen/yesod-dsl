@@ -366,7 +366,8 @@ fieldRef :
         do
             l1 <- mkLoc $1
             let i1 = tkInt $1
-            withSymbol l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
+            withSymbolNow Nothing l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return Nothing
+
             return $ FieldRefPathParam i1 }
     | auth dot idField { FieldRefAuthId }
     | auth dot lowerIdTk {%
@@ -383,9 +384,9 @@ fieldRef :
     | lowerIdTk {%
         do
             l1 <- mkLoc $1
-            let n1 = tkString $1
-            withSymbol l1 n1 $ \_ _ _ -> return ()
-            return $ FieldRefNamedLocalParam (tkString $1) 
+            let s1 = tkString $1
+            withSymbol l1 s1 $ \_ _ _ -> return ()
+            return $ FieldRefNamedLocalParam s1
     }
  
 declareFromEntity: upperIdTk as lowerIdTk {%
@@ -679,21 +680,24 @@ inputRef: request dot lowerIdTk { (InputFieldNormal $ tkString $3, Nothing) }
             do
                 l1 <- mkLoc $1
                 let n1 = tkString $1
-                withSymbol l1 n1 $ \_ _ _ -> return ()
-                return $ (InputFieldLocalParam n1, Nothing) 
-                {- TODO: return type -}
+                mtype <- withSymbolNow Nothing l1 n1 $ getSymbolType
+                return $ (InputFieldLocalParam n1, mtype) 
         }
-        | lowerIdTk dot lowerIdTk { 
-                (InputFieldLocalParamField (tkString $1) (tkString $3), Nothing) 
-            {- TODO: validate and return type -}
+        | lowerIdTk dot lowerIdTk {%
+            do
+                l1 <- mkLoc $1
+                l3 <- mkLoc $3
+                let (s1,s3) = (tkString $1, tkString $3)
+                withSymbol l1 s1 $ requireEntityField l3 s3 $ \_ -> return ()
+                return (InputFieldLocalParamField s1 s3, Nothing) 
         }
         | pathParam {%
         do
             l1 <- mkLoc $1
             let i1 = tkInt $1
-            withSymbolNow l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return ()
-            return $ (InputFieldPathParam i1, Nothing)  {- TODO: return type -}
-        }
+            mtype <- withSymbolNow Nothing l1 ("$" ++ show i1) $ getSymbolType 
+            return $ (InputFieldPathParam i1, mtype) 
+         }
         | auth dot idField { (InputFieldAuthId, Just $ TypeEntityId "User") }
         | auth dot lowerIdTk {% 
           do 
@@ -701,9 +705,9 @@ inputRef: request dot lowerIdTk { (InputFieldNormal $ tkString $3, Nothing) }
                 l3 <- mkLoc $3
                 let n3 = tkString $3
                 withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
-                return $ (InputFieldAuth n3, Nothing) {- TODO: return type -}
+                return $ (InputFieldAuth n3, Nothing)
            }
-        | value { (InputFieldConst $1, Nothing) } {- TODO: return type -}
+        | value { (InputFieldConst $1, fieldValueToType $1) } 
         | now lparen rparen { (InputFieldNow, Just $ TypeField FTUTCTime) }
 
 inputJsonFields : inputJsonField { [$1] }
@@ -786,7 +790,7 @@ instanceDef: uniqueUpperIdTk {%
     do
         l <- mkLoc $1
         let n = tkString $1
-        withSymbolNow l n $ requireClass $ \c -> do
+        withSymbolNow () l n $ requireClass $ \c -> do
             forM_ (classFields c) $ \f -> do
                 declare (fieldLoc f) (fieldName f) (SField f)
         return n
@@ -853,7 +857,7 @@ fieldOption : check lowerIdTk {%
             l2 <- mkLoc $2
             let s2 = tkString $2
             declare l2 ("check " ++ s2) SReserved
-            withSymbolNow l2 "current field type"  $ requireFieldType $ \ft ->
+            withSymbolNow () l2 "current field type"  $ requireFieldType $ \ft ->
                 addCheck l2 s2 ft
             return $ FieldCheck s2
     }

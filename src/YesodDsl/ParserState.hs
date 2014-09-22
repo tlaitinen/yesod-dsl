@@ -4,6 +4,9 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     ParserState, mkLoc, parseErrorCount, withSymbol, withSymbolNow,
     pError,
     hasReserved,
+    fieldValueToType,
+    fieldContentToType,
+    getSymbolType,
     requireClass, 
     requireEntity,
     requireEntityId,
@@ -256,23 +259,44 @@ hasReserved n = do
         match _ = False 
 
 
-withSymbol' :: Syms -> Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
-withSymbol' syms l n f = do
+withSymbol' :: Syms -> a -> Location -> String -> (Location -> Location -> SymType -> ParserMonad a) -> ParserMonad a
+withSymbol' syms d l n f = do
     case Map.lookup n syms >>= return . (filter notReserved) of
         Just ((Sym _ l' st):_) -> f l l' st
         _ -> pError l ("Reference to an undeclared identifier '"
-                ++ n ++ "'")
+                ++ n ++ "'") >> return d
     where
         notReserved (Sym _ _ SReserved) = False
         notReserved _ = True        
 
-withSymbolNow :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
-withSymbolNow l n f = do
+withSymbolNow :: a -> Location -> String -> (Location -> Location -> SymType -> ParserMonad a) -> ParserMonad a
+withSymbolNow d l n f = do
     syms <- gets psSyms
-    withSymbol' syms l n f
+    withSymbol' syms d l n f
 
 withSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
-withSymbol l n f = addPendingValidation $ \syms -> void $ withSymbol' syms l n f        
+withSymbol l n f = addPendingValidation $ \syms -> void $ withSymbol' syms () l n f    
+
+fieldValueToType :: FieldValue -> Maybe Type
+fieldValueToType fv = case fv of
+    StringValue _ -> Just $ TypeField FTText
+    IntValue _ -> Just $ TypeField FTInt32
+    FloatValue _ -> Just $ TypeField FTDouble
+    BoolValue _ -> Just $ TypeField FTBool
+    NothingValue -> Nothing
+    
+fieldContentToType :: FieldContent -> Type
+fieldContentToType fc = case fc of
+    NormalField ft _ -> TypeField ft
+    EntityField en -> TypeEntityId en
+    EnumField en -> TypeEnum en
+
+getSymbolType :: Location -> Location -> SymType -> ParserMonad (Maybe Type)
+getSymbolType l1 l2 st = return $ case st of
+    SEnum et -> Just $ TypeEnum $ enumName et
+    SEntityId en -> Just $ TypeEntityId en
+    SField f -> Just $ fieldContentToType $ fieldContent f
+    _ -> Nothing
 
 requireClass :: (Class -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireClass f = f'
@@ -284,20 +308,19 @@ requireEntity f = f'
     where f' _ _ (SEntity en) = addEntityValidation (en, f)
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
 
-requireEntityId :: (EntityName -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
+requireEntityId :: (EntityName -> ParserMonad (Maybe a)) -> (Location -> Location -> SymType -> ParserMonad (Maybe a))
 requireEntityId f = f'
     where f' _ _ (SEntityId en) = f en
-          f' l1 l2 st = pError l1 ("Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity id)")
- 
+          f' l1 l2 st = pError l1 ("Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity id)") >> return Nothing
 
 requireEntityField :: Location -> FieldName -> ((Entity,Field) -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireEntityField l fn fun = fun'
     where fun' _ _ (SEntity en) = addEntityValidation (en, \e -> 
             case L.find (\f -> fieldName f == fn) $ entityFields e of
               Just f -> fun (e,f)
-              Nothing -> pError l $ "Reference to undeclared field '" 
-                                ++ fn ++ "' of entity '" ++ entityName e ++ "'")
-          fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
+              Nothing -> pError l ("Reference to undeclared field '" 
+                            ++ fn ++ "' of entity '" ++ entityName e ++ "'"))
+          fun' l1 l2 st = pError l1 ( "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)") 
 requireFieldType :: (FieldType -> ParserMonad()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireFieldType f = fun'
     where 
