@@ -124,7 +124,7 @@ data Type = TypeEntityId EntityName
           | TypeField FieldType
           | TypeMaybe Type
           deriving (Show, Eq, Data, Typeable)
-           
+          
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | Select SelectQuery 

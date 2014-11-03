@@ -77,6 +77,14 @@ inputFieldRef (InputFieldLocalParamField vn fn) = do
 inputFieldRef (InputFieldPathParam i) = return $ T.unpack $(codegenFile "codegen/input-field-path-param.cg")
 inputFieldRef (InputFieldNormal pn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-normal.cg")
 inputFieldRef ifr = return $ show ifr
+
+formatType :: Type -> String
+formatType (TypeEntityId en) = en ++ "Id"
+formatType (TypeEnum en) = en 
+formatType (TypeList t) = "[" ++ formatType t ++ "]"
+formatType (TypeField ft) = fieldTypeToHsType ft
+formatType (TypeMaybe f) = "Maybe (" ++ formatType f ++ ")"
+
 updateHandlerRunDB :: (Int,HandlerParam) -> State Context String
 updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
         updateHandlerDecode (pId,p) >>= return . (indent 4),
@@ -106,7 +114,10 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
                 return $ T.unpack $(codegenFile "codegen/for.cg")    
             Call fn frs -> do
                 ifrs <- mapM inputFieldRef $ map fst frs
-                types <- mapM inputFieldRefType $ map fst frs
+                types <- forM frs $ \(fr,mt) -> do
+                    case mt of
+                        Just ft -> return $ formatType ft
+                        Nothing -> inputFieldRefType fr
                 ctx <- get
                 put $ ctx { ctxCalls = (fn,types):ctxCalls ctx}
                 return $ T.unpack $(codegenFile "codegen/call.cg") 
