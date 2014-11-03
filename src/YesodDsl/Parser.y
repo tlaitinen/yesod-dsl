@@ -576,7 +576,8 @@ type: entityId {%
         return $ TypeEnum s1
     }
     | lbracket type rbracket { TypeList $2 }
-    | fieldType { TypeField $1 }
+    | fieldTypeContent { TypeField (snd $1) }
+    | maybe type { TypeMaybe $2 }
 
 lowerIdParam: lowerIdTk {%
     do

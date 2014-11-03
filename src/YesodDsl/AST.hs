@@ -122,6 +122,7 @@ data Type = TypeEntityId EntityName
           | TypeEnum EnumName
           | TypeList Type
           | TypeField FieldType
+          | TypeMaybe Type
           deriving (Show, Eq, Data, Typeable)
            
 data HandlerParam = Public 
