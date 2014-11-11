@@ -4,10 +4,10 @@ A domain specific language and a code generator to create RESTful
 JSON-only web services for managing an RDBMS with [Yesod web
 framework](http://www.yesodweb.com/),
 [Persistent](http://www.yesodweb.com/book/persistent), and
-[Esqueleto](http://hackage.haskell.org/package/esqueleto-1.2).
+[Esqueleto](http://hackage.haskell.org/package/esqueleto).
 
 ## Features
- * Yesod 1.2-compatible (subsite)
+ * supports Yesod 1.4 and Persistent 2.1
  * boilerplate code for entity validation
  * supported field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
  * filtering and sorting code compatible with ExtJS grids
@@ -544,17 +544,7 @@ Otherwise, the following steps are required:
 
 ## Generated files
 
-Due to the GHC stage restriction (and ghc's tendency to blow up when optimizing large Haskell modules), 
-the code generator generates a number of Haskell modules that constitute a Yesod subsite: Handler/ModuleName.hs, Handler/ModuleName/Enums.hs, Handler/ModuleName/Routes.hs, Handler/ModuleName/Esqueleto.hs, Handler/ModuleName/Route*.hs, and Handler/ModuleName/Internal.hs.
-For the example above, the result can be examined in the following links:
- * [Handler.Example](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example.hs)
- * [Handler.Example.Enums](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Enums.hs)
- * [Handler.Example.Esqueleto](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Esqueleto.hs)
- * [Handler.Example.Internal](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Internal.hs)
- * [Handler.Example.RouteBlogposts](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteBlogposts.hs)
- * [Handler.Example.RouteComments](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteComments.hs)
- * [Handler.Example.RouteCommentsComment](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteCommentsComment.hs)
- * [Handler.Example.RouteUsers](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteUsers.hs)
- * [Handler.Example.RouteUsersUser](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/RouteUsersUser.hs)
- * [Handler.Example.Routes](https://github.com/tlaitinen/yesod-dsl/blob/master/example/Handler/Example/Routes.hs)
-
+Due to the GHC stage restriction (and ghc's tendency to blow up when optimizing
+large Haskell modules), the code generator generates a number of Haskell
+modules that constitute a Yesod subsite: Handler/ModuleName.hs,
+Handler/ModuleName/*.hs .

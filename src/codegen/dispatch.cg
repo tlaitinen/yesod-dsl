@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Handler.~{moduleName m} 
     ( module Handler.~{moduleName m}.Enums, module Handler.~{moduleName m}.Internal, module Handler.~{moduleName m}.Routes ) where
@@ -24,6 +25,7 @@ type ~{moduleName m}Route = Route ~{moduleName m}
  
 instance (YesodAuthPersist master,
           ~{moduleName m}Interface master,
-          KeyEntity (AuthId master) ~ User,
-          YesodPersistBackend master ~ SqlPersistT) => YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
+          AuthId master ~ Key User,
+          AuthEntity master ~ User,
+          YesodPersistBackend master ~ SqlBackend) => YesodSubDispatch ~{moduleName m} (HandlerT master IO) where
     yesodSubDispatch = $(mkYesodSubDispatch resources~{moduleName m})

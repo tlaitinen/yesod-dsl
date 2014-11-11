@@ -117,9 +117,9 @@ instance (PathPiece a, Show a) => PathPiece [a] where
         return values
     toPathPiece = T.pack . show
 
-instance PathPiece (KeyBackend SqlBackend entity) where
-    fromPathPiece = PP.fromPathPiece
-    toPathPiece = PP.toPathPiece
+instance (ToBackendKey SqlBackend a) => PathPiece (Key a) where
+    fromPathPiece x = PP.fromPathPiece x >>= (Just . toSqlKey)
+    toPathPiece = PP.toPathPiece . fromSqlKey
 
 instance PathPiece PersistValue where
     fromPathPiece = PP.fromPathPiece

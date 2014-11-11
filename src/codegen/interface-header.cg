@@ -4,12 +4,9 @@ checkResult msg f = do
    return $ if result then Nothing else (Just msg)
 
 class Validatable a where
-    validate :: forall master b. (P.PersistMonadBackend (b (HandlerT master IO)) ~ P.PersistEntityBackend a,
-                 b ~ YesodPersistBackend master,
-                 P.PersistQuery (b (HandlerT master IO)),
-                 P.PersistUnique (b (HandlerT master IO)),
-                 YesodPersist master,
-                 ~{moduleName m}Interface master) 
+    validate :: forall master. (SqlBackend ~ YesodPersistBackend master,
+                                YesodPersist master,
+                                ~{moduleName m}Interface master) 
              => a -> HandlerT master IO [Text]
 
 class Yesod master => ~{moduleName m}Interface master where

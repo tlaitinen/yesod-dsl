@@ -1,5 +1,5 @@
 name:           yesod-dsl
-version:        0.1.1.20
+version:        0.1.1.21
 license:        BSD3
 license-file:   LICENSE
 author:         Tero Laitinen 
@@ -73,7 +73,6 @@ executable  yesod-dsl
                  , mtl >= 2.1.2
                  , strict
                  , Cabal
-                 , uniplate
                  , yesod-dsl
                  
     ghc-options: -Wall -O0
