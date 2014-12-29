@@ -180,11 +180,15 @@ addCheck l n ft = do
         pError l $ "'" ++ n ++ "' is for " ++ show ft ++ " but '" 
             ++ n' ++ "' in " ++ show l' ++ " is for " ++ show ft' 
     modify $ \ps -> ps { psChecks = psChecks ps ++ [(l,n,ft)] }
+
 postValidation :: Module -> ParserState -> IO Int
 postValidation m ps = do
-    ps' <- execStateT (mapM (runEntityValidation m) $
-                         psEntityValidations ps) $ ps
+    ps' <- execStateT f ps
     return $ psErrors ps'  
+    where
+        f = do
+            forM_ (psEntityValidations ps) (runEntityValidation m)
+            when (isNothing $ modName m) $ globalError "Missing top-level module name"
 
 runParser :: FilePath -> ParserState -> ParserMonad a -> IO (a,ParserState)
 runParser path ps m = do
@@ -212,6 +216,10 @@ popScope = do
 pError :: Location -> String -> ParserMonad ()
 pError l e = do
     lift $ putStrLn $ show l ++ ": " ++ e
+    modify $ \ps -> ps { psErrors = psErrors ps + 1 }
+globalError :: String -> ParserMonad ()
+globalError e = do
+    lift $ putStrLn e
     modify $ \ps -> ps { psErrors = psErrors ps + 1 }
 
 declare :: Location -> String -> SymType -> ParserMonad ()
