@@ -146,15 +146,15 @@ import Data.List
 
 
 dbModule : maybeModuleName 
-           imports defs {%
+           pushScope imports defs popScope {%
            do
                path <- getPath
-               let m =  Module $1  ((reverse . getEntities) $3) 
-                                    ((reverse . getClasses) $3)
-                                    ((reverse . getEnums) $3)
-                                    ((reverse . getRoutes) $3)
-                                    ((reverse . getDefines) $3)
-               return $ mergeModules $ (path,m):$2 
+               let m =  Module $1  ((reverse . getEntities) $4) 
+                                    ((reverse . getClasses) $4)
+                                    ((reverse . getEnums) $4)
+                                    ((reverse . getRoutes) $4)
+                                    ((reverse . getDefines) $4)
+               return $ mergeModules $ (path,m):$3
            }
 
 upperId: upperIdTk { tkString $1 }
@@ -227,7 +227,7 @@ enumDef : enum upperIdTk equals pushScope enumValues popScope semicolon
         l <- mkLoc $2
         let n = tkString $2
         let e = EnumType l n $5
-        declare l n (SEnum e)
+        declareGlobal l n (SEnum e)
         forM_ (nub $ enumValues e) $ \ev -> declare l (n ++ ev) SReserved
         return e
     }
@@ -257,7 +257,7 @@ entityDef : entity upperIdTk lbrace
         l <- mkLoc $2
         let n = tkString $2
         let e = Entity l n $5 (reverse $6) [] (reverse $7) $8 (reverse $9) 
-        declare l n (SEntity n)
+        declareGlobal l n (SEntity n)
         return e
     }
 
@@ -809,7 +809,7 @@ classDef : class upperIdTk lbrace
                 l <- mkLoc $2
                 let n = tkString $2
                 let c = Class l n (reverse $5) (reverse $6)  
-                declare l n (SClass c)
+                declareGlobal l n (SClass c)
                 return c
             }
 
@@ -834,7 +834,10 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField $ tkString $3) 
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField s3)
+            withGlobalSymbol l3 s3 requireEntityOrClass
             declare l n (SField f)
             return f}
       | lowerIdTk maybeMaybe upperIdTk fieldFlags {%

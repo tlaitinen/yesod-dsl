@@ -1,7 +1,11 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
+
+
 module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     getPath, getParsed,
-    setParserState, runParser, pushScope, popScope, declare, SymType(..),
-    ParserState, mkLoc, parseErrorCount, withSymbol, withSymbolNow,
+    setParserState, runParser, pushScope, popScope, declare, declareGlobal, SymType(..),
+    ParserState, mkLoc, parseErrorCount, withSymbol, withGlobalSymbol, withSymbolNow,
     pError,
     hasReserved,
     fieldValueToType,
@@ -9,6 +13,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     getSymbolType,
     requireClass, 
     requireEntity,
+    requireEntityOrClass,
     requireEntityId,
     requireEntityField,
     requireField,
@@ -63,7 +68,7 @@ instance Show SymType where
         SForParam _ -> "for-param"
         SReserved -> "reserved"
 
-data Sym = Sym Int Location SymType
+data Sym = Sym Int Location SymType deriving (Show)
 
 type ParserMonad = StateT ParserState IO 
 
@@ -84,8 +89,13 @@ data ParserState = ParserState {
     psEntityValidations :: [EntityValidation],
     psLastStatement :: Maybe (Location, String),
     psChecks      :: [(Location,String,FieldType)]
-}
+} deriving (Show)
 
+instance Show (Syms -> ParserMonad ()) where
+    show _ = "<pendingvalidation>"
+
+instance Show (Entity -> ParserMonad ()) where
+    show _ = "<entityvalidation>"
 initParserState :: ParserState
 initParserState = ParserState {
     psSyms = Map.empty,
@@ -126,7 +136,7 @@ setParserState :: ParserState -> ParserMonad ()
 setParserState = put
 
 runEntityValidation :: Module -> EntityValidation -> ParserMonad ()
-runEntityValidation m (en,f) = 
+runEntityValidation m (en,f) = do
     case L.find (\e -> entityName e == en) $ modEntities m of
         Just e -> f e
         Nothing -> return ()
@@ -196,15 +206,18 @@ runParser path ps m = do
     return (r, ps' { psPath = psPath ps} )
 
 pushScope :: ParserMonad ()
-pushScope = modify $ \ps -> ps {
-    psScopeId = psScopeId ps + 1,
-    psPendingValidations = []:psPendingValidations ps 
-}
+pushScope = do
+    syms <- gets psSyms
+    modify $ \ps -> ps {
+        psScopeId = psScopeId ps + 1,
+        psPendingValidations = []:psPendingValidations ps 
+    }
 
 popScope :: ParserMonad ()
 popScope = do
     (vs:_) <- gets psPendingValidations 
     syms <- gets psSyms
+
     forM_ vs $ \v -> v syms
     modify $ \ps -> ps {
         psSyms = Map.filter (not . null) $ 
@@ -223,9 +236,15 @@ globalError e = do
     modify $ \ps -> ps { psErrors = psErrors ps + 1 }
 
 declare :: Location -> String -> SymType -> ParserMonad ()
-declare l n t = do
+declare l n t = declare' False l n t
+
+declareGlobal :: Location -> String -> SymType -> ParserMonad ()
+declareGlobal l n t = declare' True l n t
+
+declare' :: Bool -> Location -> String -> SymType -> ParserMonad ()
+declare' global l n t = do
     ps <- get
-    let sym = [Sym (psScopeId ps) l t] 
+    let sym = [Sym (if global then 0 else psScopeId ps) l t] 
     case Map.lookup n (psSyms ps) of
         Just ((Sym s l' _):_) -> if s == psScopeId ps
             then do
@@ -238,6 +257,7 @@ declare l n t = do
         _ -> put $ ps {
                 psSyms = Map.insert n sym $ psSyms ps
             }
+
 
 mkLoc :: Token -> ParserMonad Location
 mkLoc t = do
@@ -256,6 +276,11 @@ addPendingValidation :: (Syms -> ParserMonad ()) -> ParserMonad ()
 addPendingValidation v = modify $ \ps -> let vs = psPendingValidations ps in ps {
         psPendingValidations = (v:(head vs)):tail vs
     }
+addGlobalPendingValidation :: (Syms -> ParserMonad ()) -> ParserMonad ()
+addGlobalPendingValidation v = modify $ \ps -> let vs = psPendingValidations ps in ps {
+        psPendingValidations = init vs ++ [v : last vs]
+    }
+
 
 hasReserved :: String -> ParserMonad Bool
 hasReserved n = do
@@ -284,6 +309,10 @@ withSymbolNow d l n f = do
 
 withSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
 withSymbol l n f = addPendingValidation $ \syms -> void $ withSymbol' syms () l n f    
+
+withGlobalSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
+withGlobalSymbol l n f = addGlobalPendingValidation $ \syms -> void $ withSymbol' syms () l n f    
+
 
 fieldValueToType :: FieldValue -> Maybe Type
 fieldValueToType fv = case fv of
@@ -315,6 +344,13 @@ requireEntity :: (Entity -> ParserMonad ()) -> (Location -> Location -> SymType 
 requireEntity f = f'
     where f' _ _ (SEntity en) = addEntityValidation (en, f)
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity)"
+
+requireEntityOrClass :: (Location -> Location -> SymType -> ParserMonad ())
+requireEntityOrClass = f'
+    where f' _ _ (SEntity en) = return ()
+          f' _ _ (SClass cn) = return ()
+          f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity or class)"
+
 
 requireEntityId :: (EntityName -> ParserMonad (Maybe a)) -> (Location -> Location -> SymType -> ParserMonad (Maybe a))
 requireEntityId f = f'
