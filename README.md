@@ -9,7 +9,7 @@ framework](http://www.yesodweb.com/),
 ## Features
  * supports Yesod 1.4 and Persistent 2.1
  * boilerplate code for entity validation
- * supported field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime
+ * supported field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime, Checkmark
  * filtering and sorting code compatible with ExtJS grids
  * support code for implementing polymorphic relations and accessing common fields
 
@@ -393,6 +393,8 @@ inputValue: $i
           | now()
           | variableName
           | variableName.field
+          | CheckmarkActive
+          | CheckmarkInactive
 
 outputValue: variableName
 
@@ -500,8 +502,6 @@ route /usergroups {
         }
 }
 ```
-
-
 ## Using the generated subsite
 
 

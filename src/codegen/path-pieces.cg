@@ -106,6 +106,13 @@ instance PathPiece ZonedTime where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show
 
+instance PathPiece Checkmark where
+    fromPathPiece "Active" = Just Active
+    fromPathPiece "Inactive" = Just Inactive
+    fromPathPiece _ = Nothing
+    toPathPiece Active = "Active"
+    toPathPiece Inactive = "Inactive"
+
 instance (PathPiece a, PP.PathPiece (Maybe a)) => PathPiece (Maybe a) where
     fromPathPiece = PP.fromPathPiece
     toPathPiece = PP.toPathPiece
@@ -124,3 +131,4 @@ instance (ToBackendKey SqlBackend a) => PathPiece (Key a) where
 instance PathPiece PersistValue where
     fromPathPiece = PP.fromPathPiece
     toPathPiece = PP.toPathPiece
+

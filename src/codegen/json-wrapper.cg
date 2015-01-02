@@ -17,3 +17,12 @@ instance FromJSON TimeOfDay where
         case reads s of
             (d, _):_ -> return d
             [] -> mzero
+
+instance ToJSON Checkmark where
+    toJSON Active   = A.String "Active"
+    toJSON Inactive = A.String "Inactive"            
+
+instance FromJSON Checkmark where
+    parseJSON (A.String "Active") = return Active
+    parseJSON (A.String "Inactive") = return Inactive    
+    parseJSON _ = mzero   

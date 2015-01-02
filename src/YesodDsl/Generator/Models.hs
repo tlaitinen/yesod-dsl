@@ -8,8 +8,6 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import YesodDsl.Generator.Common
-recName :: String -> String -> String
-recName dt f = lowerFirst dt ++ upperFirst f
 
 boolToMaybe :: Bool -> String
 boolToMaybe True = "Maybe "
@@ -39,6 +37,7 @@ baseFieldType f = case fieldContent f of
     (NormalField ft _) -> fieldTypeToHsType ft
     (EntityField en) -> en ++ "Id"
     (EnumField en) -> en
+    CheckmarkField -> "Checkmark"
 
 
 persistFieldType :: Field -> String
@@ -46,10 +45,13 @@ persistFieldType f = baseFieldType f
                    ++ " " ++ (boolToMaybe . fieldOptional) f
                    ++ (maybeDefault . fieldDefault) f
                    ++ (maybeDefaultNull f)
+                   ++ (maybeCheckmarkNullable f)
     where maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
           maybeDefaultNull (Field _ True _ _ (EntityField _)) = " default=NULL"
           maybeDefaultNull _ = ""
+          maybeCheckmarkNullable (Field _ _ _ _ CheckmarkField) = " nullable"
+          maybeCheckmarkNullable _ = ""
 
 
 

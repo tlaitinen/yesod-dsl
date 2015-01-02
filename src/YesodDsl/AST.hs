@@ -123,6 +123,7 @@ data Type = TypeEntityId EntityName
           | TypeList Type
           | TypeField FieldType
           | TypeMaybe Type
+          | TypeCheckmark 
           deriving (Show, Eq, Data, Typeable)
           
 data HandlerParam = Public 
@@ -174,6 +175,9 @@ data Join = Join {
 
 type InputField = (ParamName, InputFieldRef)
 
+data CheckmarkValue = CheckmarkActive | CheckmarkInactive
+                    deriving (Show, Eq, Ord, Data, Typeable)
+
 data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldAuthId
                    | InputFieldAuth FieldName
@@ -182,6 +186,7 @@ data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldLocalParamField VariableName FieldName
                    | InputFieldConst FieldValue
                    | InputFieldNow
+                   | InputFieldCheckmark CheckmarkValue
                     deriving (Show, Eq, Ord, Data, Typeable)
                     
 type OutputField = (ParamName, OutputFieldRef)
@@ -270,6 +275,7 @@ type IsListFlag = Bool
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
                     | EnumField EnumName
+                    | CheckmarkField
                 deriving (Show,Eq, Data, Typeable)
    
 

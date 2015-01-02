@@ -139,6 +139,10 @@ import Data.List
     floor { Tk _ TFloor }
     ceiling { Tk _ TCeiling }
     exists { Tk _ TExists }
+    checkmark { Tk _ TCheckmark }
+    checkmarkActive { Tk _ TCheckmarkActive }
+    checkmarkInactive { Tk _ TCheckmarkInactive }
+
 %left in 
 %left plus minus
 %left asterisk slash
@@ -710,6 +714,10 @@ inputRef: request dot lowerIdTk { (InputFieldNormal $ tkString $3, Nothing) }
            }
         | value { (InputFieldConst $1, fieldValueToType $1) } 
         | now lparen rparen { (InputFieldNow, Just $ TypeField FTUTCTime) }
+        | checkmarkValue { (InputFieldCheckmark $1, Just TypeCheckmark) }
+
+checkmarkValue: checkmarkActive { CheckmarkActive }
+              | checkmarkInactive { CheckmarkInactive }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }
@@ -846,11 +854,19 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
             let n = tkString $1
             l3 <- mkLoc $3
             let s3 = tkString $3
-            {- TODO: validate enum ref -}
+            withGlobalSymbol l3 s3 requireEnum
             let f = Field l $2 (FieldInternal `elem` $4) n (EnumField s3) 
             declare l n (SField f)
             return f
             }
+      | lowerIdTk checkmark fieldFlags {%
+        do
+            l <- mkLoc $1
+            let n = tkString $1
+            let f = Field l False (FieldInternal `elem` $3) n CheckmarkField
+            declare l n (SField f)
+            return f
+            }      
 
 fieldOptions : { [] }
              | pushScope fieldOptionsList popScope { $2 }

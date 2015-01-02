@@ -127,6 +127,10 @@ tokens :-
      "ceiling" { mkT TCeiling }
      "floor" { mkT TFloor }
      "exists" { mkT TExists }
+     "Checkmark" { mkT TCheckmark }
+     "CheckmarkActive" { mkT TCheckmarkActive }
+     "CheckmarkInactive" { mkT TCheckmarkInactive } 
+
     $lower [$alpha $digit \_ ]*  { mkTvar TLowerId  }
     @entityId { mkTvar (TEntityId . (reverse . (drop 2) . reverse)) }
     $upper [$alpha $digit \_ ]*  { mkTvar TUpperId  }
@@ -253,6 +257,10 @@ data TokenType = TSemicolon
            | TFloor
            | TCeiling
            | TExists
+           | TCheckmark
+           | TCheckmarkActive
+           | TCheckmarkInactive
+
     deriving (Show)
 
 tkString :: Token -> String

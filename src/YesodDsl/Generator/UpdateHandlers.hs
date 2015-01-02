@@ -85,6 +85,7 @@ formatType (TypeList t) = "[" ++ formatType t ++ "]"
 formatType (TypeField ft) = fieldTypeToHsType ft
 formatType (TypeMaybe f) = "Maybe (" ++ formatType f ++ ")"
 
+
 updateHandlerRunDB :: (Int,HandlerParam) -> State Context String
 updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
         updateHandlerDecode (pId,p) >>= return . (indent 4),
@@ -95,7 +96,7 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
             Update en fr io -> do
                 ifr <- inputFieldRef fr
                 return $ T.unpack $(codegenFile "codegen/replace.cg")
-            Insert en io mbv -> 
+            Insert en io mbv -> do
                 return $ T.unpack $(codegenFile "codegen/insert.cg")
                     where 
                     maybeBindResult (Just vn) = "result_" ++ vn ++ " <- "
@@ -168,6 +169,9 @@ mapJsonInputField ifields isNew (e,f) = do
                 where
                       f (GetById en _ vn') = if vn' == vn then [en] else []
                       f _ = []
+            Just (InputFieldCheckmark v) -> return $ case v of
+                CheckmarkActive -> "Active"
+                CheckmarkInactive -> "Inactive"
             Nothing -> return $ if isNew then defaultFieldValue f
                                 else T.unpack $(codegenFile "codegen/map-input-field-no-match.cg")
 matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef

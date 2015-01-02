@@ -26,6 +26,7 @@ import Database.Persist.TH
 import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist, AuthEntity)
 import Yesod.Core hiding (fileName, fileContentType)
 import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
+import Control.Monad (when)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH
 import Data.Int
