@@ -1,1 +1,1 @@
-data ~{className c}InstanceUpdateType = ~{intercalate "    | " $ map fieldUpdateDataType $ classFields c}
+data ~{className c}InstanceUpdateType = ~{intercalate "    | " $ mapMaybe fieldUpdateDataType $ classFields c}

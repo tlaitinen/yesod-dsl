@@ -663,7 +663,15 @@ orderByDir : asc { SortAsc }
 maybeWithInputJson: with inputJson { Just $2 }
              | { Nothing }
          
-maybeFromInputJson: from inputJson { Just $2 }
+maybeFromInputJson: from inputJson { Just (Nothing, $2) }
+             | from lowerIdTk inputJson {%
+                 do
+                     l2 <- mkLoc $2
+                     let s2 = tkString $2
+                     tgt <- withSymbolNow Nothing l2 "target entity" $ getEntitySymbol
+                     withSymbolNow () l2 s2 $ requireEntity $ \e -> when (Just (entityName e) /= tgt) $ pError l2 $ "Reference to " ++ (entityName e) ++ " (expected " ++ (fromMaybe "" tgt) ++ ")"
+                     return $ Just (Just s2, $3)
+             }
              | { Nothing }
               
 inputJson:  lbrace inputJsonFields rbrace { $2 }

@@ -133,7 +133,7 @@ data HandlerParam = Public
                   | DeleteFrom EntityName VariableName (Maybe BoolExpr)
                   | GetById EntityName InputFieldRef VariableName
                   | Update EntityName InputFieldRef (Maybe [InputField])
-                  | Insert EntityName (Maybe [InputField]) (Maybe VariableName)
+                  | Insert EntityName (Maybe (Maybe VariableName, [InputField])) (Maybe VariableName)
                   | Return [OutputField]
                   | Require SelectQuery
                   | For VariableName InputFieldRef [HandlerParam]

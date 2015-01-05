@@ -1,1 +1,1 @@
-    ~{classFieldName c f} = ~{entityFieldName e f}
+    ~{classFieldName c f} = ~{mapper}~{entityFieldName e f}

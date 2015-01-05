@@ -16,7 +16,15 @@ classFieldName :: Class -> Field -> String
 classFieldName i f = (lowerFirst . className) i ++ (upperFirst . fieldName) f
 
 classDefField :: Class -> Field -> String
-classDefField c f = T.unpack $(codegenFile "codegen/class-field.cg")
+classDefField c cf = T.unpack $(codegenFile "codegen/class-field.cg")
+    where
+        f = case cf of
+            Field _ _ _ _ (EntityField "ClassInstance") -> cf {
+                fieldContent = EntityField (className c ++ "Instance")
+            }
+            _ -> cf
+                  
+        
 
 classFieldTypeName :: Class -> Field -> String
 classFieldTypeName c f= rstrip $ T.unpack $(codegenFile "codegen/class-field-type-field-name.cg")
@@ -28,6 +36,14 @@ classFieldType c fs = if null fs
 
 classInstanceField :: Class -> Entity -> Field -> String
 classInstanceField c e f = T.unpack $(codegenFile "codegen/class-instance-field.cg")
+    where
+        mapper = case f of
+            Field _ opt _ _ (EntityField "ClassInstance") -> 
+                let base = className c ++ "Instance" ++ entityName e ++ "Id"
+                    in if opt
+                        then "(fmap " ++ base ++ ") . "
+                        else base ++ " . "
+            _ -> ""     
 
 classInstance :: Class -> Entity -> String
 classInstance c e = T.unpack $(codegenFile "codegen/class-instance-header.cg")
@@ -35,7 +51,16 @@ classInstance c e = T.unpack $(codegenFile "codegen/class-instance-header.cg")
 
 classEntityInstanceField :: Class -> [Entity] -> Field -> String
 classEntityInstanceField c es f = T.unpack $(codegenFile "codegen/class-entity-instance-field.cg")
-    where caseEntity e = T.unpack $(codegenFile "codegen/class-entity-instance-field-entity.cg")
+    where   
+        caseEntity e = T.unpack $(codegenFile "codegen/class-entity-instance-field-entity.cg")
+        mapper e = case f of
+            Field _ opt _ _ (EntityField "ClassInstance") -> 
+                let base = className c ++ "Instance" ++ entityName e ++ "Id"
+                    in if opt
+                        then "(fmap " ++ base ++ ") $ "
+                        else base ++ " $ "
+            _ -> ""     
+ 
 
 
 classEntityInstances :: Class -> [Entity] -> String
@@ -48,7 +73,8 @@ classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instanc
 classSelectFilterDataType :: Class -> String
 classSelectFilterDataType c = T.unpack $(codegenFile "codegen/class-select-filter-data-type.cg")
     where 
-        fieldFilterDataType f = rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-data-type-field.cg")
+        fieldFilterDataType (Field _ _ _ _ (EntityField "ClassInstance")) = Nothing
+        fieldFilterDataType f = Just $ rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-data-type-field.cg")
 
 classSelect :: Class -> [Entity] -> String
 classSelect c es = maybeFilterDataType 
@@ -64,6 +90,7 @@ classSelect c es = maybeFilterDataType
             then classSelectFilterDataType c
             else ""
         maybeFilterParam = if hasClassFields then "filters" :: String else ""
+        filterField e (Field _ _ _ _ (EntityField "ClassInstance")) = ""
         filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
         maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
 
@@ -76,11 +103,14 @@ classUpdate c es
     where
         hasClassFields = not . null $ classFields c
         updateEntity e = T.unpack $(codegenFile "codegen/class-update-entity.cg")
-        fieldUpdateDataType f = rstrip $ T.unpack $(codegenFile "codegen/class-update-data-type-field.cg")
+        fieldUpdateDataType (Field _ _ _ _ (EntityField "ClassInstance")) = Nothing
+        fieldUpdateDataType f = Just $ rstrip $ T.unpack $(codegenFile "codegen/class-update-data-type-field.cg")
+        updateEntityField _ (Field _ _ _ _ (EntityField "ClassInstance")) = ""
         updateEntityField e f = T.unpack $(codegenFile "codegen/class-update-entity-field.cg")
         maybeFilter e = if hasClassFields
             then T.unpack $(codegenFile "codegen/class-select-entity-filter.cg")
             else ""
+        filterField e (Field _ _ _ _ (EntityField "ClassInstance")) = ""
         filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
         
 instancesOf :: Module -> Class -> [Entity]

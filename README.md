@@ -346,7 +346,7 @@ route /pathPiece[/pathPiece]* {
                [, fieldName = inputValue]*  
            }];]*
         [[variableName <- ] insert EntityName  
-           [from { 
+           [from [variableName] { 
                [fieldName = inputValue]
                [, fieldName = inputValue]* 
            }];]*

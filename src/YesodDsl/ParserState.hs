@@ -11,6 +11,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     fieldValueToType,
     fieldContentToType,
     getSymbolType,
+    getEntitySymbol,
     requireClass, 
     requireEntity,
     requireEntityOrClass,
@@ -155,8 +156,8 @@ validateExtractField l s = if s `elem` validFields
                 "timezone_hour", "timezone_minute", "week", "year" 
             ]
 
-validateInsert :: Location -> Entity -> Maybe [InputField] -> ParserMonad ()
-validateInsert  l e (Just ifs) = do
+validateInsert :: Location -> Entity -> Maybe (Maybe VariableName, [InputField]) -> ParserMonad ()
+validateInsert  l e (Just (Nothing, ifs)) = do
     case [ fieldName f | f <- entityFields e, 
                          (not . fieldOptional) f, 
                          isNothing (fieldDefault f) ] 
@@ -329,6 +330,11 @@ fieldContentToType fc = case fc of
     NormalField ft _ -> TypeField ft
     EntityField en -> TypeEntityId en
     EnumField en -> TypeEnum en
+
+
+getEntitySymbol :: Location -> Location -> SymType -> ParserMonad (Maybe EntityName)
+getEntitySymbol _ _ (SEntity en) = return $ Just en
+getEntitySymbol _ _ _ = return Nothing
 
 getSymbolType :: Location -> Location -> SymType -> ParserMonad (Maybe Type)
 getSymbolType l1 l2 st = return $ case st of

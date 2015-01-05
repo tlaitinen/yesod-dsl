@@ -1,1 +1,1 @@
-data ~{className c}InstanceFilterType = ~{intercalate "    | " $ map fieldFilterDataType $ classFields c}
+data ~{className c}InstanceFilterType = ~{intercalate "    | " $ mapMaybe fieldFilterDataType $ classFields c}

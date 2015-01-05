@@ -1,5 +1,5 @@
     e~{show pId} <- do
 ~{maybeExisting}
-        return $ ~{entityName e} {
+        return $ ~{entityToUpdate} {
 ~{indent 16 $ fieldMappers}
             }
