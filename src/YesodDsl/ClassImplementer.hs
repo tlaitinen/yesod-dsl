@@ -28,6 +28,11 @@ expandClassField _ _ _ = []
 expandClassRefFields :: Module -> Entity -> Field -> [Field]
 expandClassRefFields m e f = expand (fieldContent f)
     where       
+        expand (EntityField "ClassInstance") = [ 
+                f { 
+                    fieldContent = EntityField (entityName e)
+                }
+            ]
         expand (EntityField name) = case classLookup (modClasses m) name of
             Just _ -> expandClassField m e f
             Nothing -> [f]

@@ -4,8 +4,8 @@ license:        BSD3
 license-file:   LICENSE
 author:         Tero Laitinen 
 maintainer:     Tero Laitinen
-synopsis:       DSL for generating Yesod subsite to manage an RDBMS;
-description:    A domain specific language and a code generator desined to create RESTful services for managing an RDBMS with Yesod web framework and Persistent.
+synopsis:       DSL for generating Yesod subsite to manage a RDBMS;
+description:    A domain specific language and a code generator desined to create RESTful services for managing a RDBMS with Yesod web framework and Persistent.
 category:       Web, Yesod
 stability:      Experimental
 cabal-version:  >= 1.8

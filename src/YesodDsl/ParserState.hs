@@ -98,7 +98,9 @@ instance Show (Entity -> ParserMonad ()) where
     show _ = "<entityvalidation>"
 initParserState :: ParserState
 initParserState = ParserState {
-    psSyms = Map.empty,
+    psSyms = Map.fromList [
+            ("ClassInstance", [ Sym 0 (Loc "<builtin>" 0 0) (SEntity "ClassInstance") ])
+        ],
     psScopeId = 0,
     psPath = "",
     psParsed = [],

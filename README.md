@@ -295,8 +295,12 @@ The fields and unique definitions are copied to every entity that is an
 instance of the entity class. The unique definitions are prefixed with the
 entity name.
 
-Also, each field whose type is of the form Maybe *ClassName*Id is replaced by a
+ * A field whose type is of the form Maybe *ClassName*Id is replaced by a
 number of fields, one for each entity that is an instance of the entity class.
+ * A field whose type is ClassInstanceId is replaced by a field referencing the entity currently instantiating the class, e.g. 
+   ```class HasParent { parentId ClassInstanceId; } entity Person { instance of HasParent; }``` results in Person entity having the field ```parentId PersonId; ```
+
+
 
 ## Routes and handlers
 
