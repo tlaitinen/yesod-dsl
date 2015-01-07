@@ -1,4 +1,4 @@
-        es <- lift $ runDB $ select $ from $ \o -> do
+        es <- select $ from $ \o -> do
             where_ (o ^. ~{entityName e}Id ==. (val ~{ifr}))
             limit 1
             return o

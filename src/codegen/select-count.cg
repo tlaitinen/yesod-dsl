@@ -1,4 +1,4 @@
-    count <- lift $ runDB $ select $ do
+    count <- select $ do
         baseQuery False
         let countRows' = countRows
         orderBy []

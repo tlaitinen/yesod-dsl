@@ -4,4 +4,4 @@
     AuthId master ~ Key User,
     YesodPersistBackend master ~ SqlBackend)
     => ~{hsRouteType (routePath r)}HandlerT ~{moduleName m} (HandlerT master IO) A.Value
-~{hsHandlerMethod ht}~{hsRouteName (routePath r)} ~{hsRouteParams (routePath r)} = do
+~{hsHandlerMethod ht}~{hsRouteName (routePath r)} ~{hsRouteParams (routePath r)} = lift $ runDB $ do

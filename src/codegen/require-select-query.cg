@@ -1,5 +1,5 @@
     _ <- do
-        result <- lift $ runDB $ select $ from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
+        result <- select $ from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
 ~{indent 12 $ joinExprs}            let ~{selectVar}Id' = ~{selectVar} ^. ~{selectEntity}Id
 ~{indent 12 $ maybeWhere}
             limit 1

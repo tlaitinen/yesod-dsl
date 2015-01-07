@@ -1,1 +1,1 @@
-    results <- lift $ runDB $ select $ baseQuery True
+    results <- select $ baseQuery True

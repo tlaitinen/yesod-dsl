@@ -1,1 +1,1 @@
-    runDB_result <- lift $ runDB $ do
+    runDB_result <- do
