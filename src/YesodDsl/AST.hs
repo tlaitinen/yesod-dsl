@@ -37,6 +37,7 @@ type ClassName = String
 type ParamName = String
 type EntityName = String
 type EnumName = String
+type EnumValue = String
 
 -- | type of a 'Field' of an 'Entity'
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
@@ -274,8 +275,8 @@ type DefaultValue = String
 type IsListFlag = Bool
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
-                    | EnumField EnumName
-                    | CheckmarkField
+                    | EnumField EnumName (Maybe EnumValue)
+                    | CheckmarkField (Maybe CheckmarkValue)
                 deriving (Show,Eq, Data, Typeable)
    
 
@@ -298,6 +299,8 @@ data FieldValue = StringValue String
                 | FloatValue Double
                 | BoolValue Bool
                 | NothingValue
+                | CheckmarkFieldValue CheckmarkValue
+                | EnumFieldValue EnumName EnumValue
                 deriving (Show, Eq, Ord, Data, Typeable)
 fieldValueToSql :: FieldValue -> String    
 fieldValueToSql fv = case fv of
@@ -306,6 +309,9 @@ fieldValueToSql fv = case fv of
     (FloatValue d) -> show d
     (BoolValue b) -> show b
     NothingValue -> "NULL"
+    CheckmarkFieldValue CheckmarkActive -> "True"
+    CheckmarkFieldValue CheckmarkInactive -> "NULL"
+    EnumFieldValue en ev -> en ++ ev
    
 fieldValueToEsqueleto :: FieldValue -> String    
 fieldValueToEsqueleto fv = case fv of
@@ -314,6 +320,9 @@ fieldValueToEsqueleto fv = case fv of
     (FloatValue d) -> show d
     (BoolValue b) -> show b
     NothingValue -> "nothing"
+    CheckmarkFieldValue CheckmarkActive -> "Active"
+    CheckmarkFieldValue CheckmarkInactive -> "Inactive"
+    EnumFieldValue en ev -> en ++ ev
 
 fieldValueToHs :: FieldValue -> String
 fieldValueToHs fv = case fv of
@@ -322,9 +331,17 @@ fieldValueToHs fv = case fv of
     FloatValue d -> show d
     BoolValue b -> show b
     NothingValue -> "Nothing"
+    CheckmarkFieldValue CheckmarkActive -> "Active"
+    CheckmarkFieldValue CheckmarkInactive -> "Inactive"
+    EnumFieldValue en ev ->  en ++ ev
+
+
+        
 fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)
     where fieldContentOptions (NormalField  _ options) = options
+          fieldContentOptions (EnumField en (Just ev)) = [ FieldDefault (EnumFieldValue en ev) ]
+          fieldContentOptions (CheckmarkField (Just cv)) = [ FieldDefault (CheckmarkFieldValue cv) ]
           fieldContentOptions _ = []
     
 fieldDefault :: Field -> Maybe FieldValue

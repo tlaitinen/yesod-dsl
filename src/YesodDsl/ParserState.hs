@@ -329,7 +329,7 @@ fieldContentToType :: FieldContent -> Type
 fieldContentToType fc = case fc of
     NormalField ft _ -> TypeField ft
     EntityField en -> TypeEntityId en
-    EnumField en -> TypeEnum en
+    EnumField en _ -> TypeEnum en
 
 
 getEntitySymbol :: Location -> Location -> SymType -> ParserMonad (Maybe EntityName)
@@ -385,14 +385,14 @@ requireEnum = fun'
         fun' _ _ (SEnum e) = return ()
         fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected enum)"
  
-requireEnumValue :: Location -> FieldName -> (Location -> Location -> SymType -> ParserMonad ())
-requireEnumValue l fn = fun'
+requireEnumValue :: Location -> EnumValue -> (Location -> Location -> SymType -> ParserMonad ())
+requireEnumValue l ev = fun'
     where 
         fun' _ _ (SEnum e) = 
-            case L.find (\ev' -> ev' == fn) $ enumValues e of
+            case L.find (\ev' -> ev' == ev) $ enumValues e of
                 Just ev -> return ()
                 Nothing -> pError l $ "Reference to undeclared enum value '"
-                    ++ fn ++ "' of enum '" ++ enumName e ++ "'"
+                    ++ ev ++ "' of enum '" ++ enumName e ++ "'"
         fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected enum)"
           
 requireParam :: (Location -> Location -> SymType -> ParserMonad ())

@@ -856,25 +856,44 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
             withGlobalSymbol l3 s3 requireEntityOrClass
             declare l n (SField f)
             return f}
-      | lowerIdTk maybeMaybe upperIdTk fieldFlags {%
+      | lowerIdTk maybeMaybe enumFieldContent fieldFlags {%
         do  
             l <- mkLoc $1
             let n = tkString $1
-            l3 <- mkLoc $3
-            let s3 = tkString $3
-            withGlobalSymbol l3 s3 requireEnum
-            let f = Field l $2 (FieldInternal `elem` $4) n (EnumField s3) 
+            let f = Field l $2 (FieldInternal `elem` $4) n $3
             declare l n (SField f)
             return f
             }
-      | lowerIdTk checkmark fieldFlags {%
+      | lowerIdTk checkmark maybeDefaultCheckmarkValue fieldFlags {%
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l False (FieldInternal `elem` $3) n CheckmarkField
+            let f = Field l False (FieldInternal `elem` $4) n (CheckmarkField $3)
             declare l n (SField f)
             return f
             }      
+enumFieldContent: 
+    upperIdTk default upperIdTk {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            withGlobalSymbol l1 s1 requireEnum
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            withGlobalSymbol l1 s1 $ requireEnumValue l3 s3
+            return $ EnumField s1 (Just s3)
+        } 
+    | upperIdTk {% 
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            withGlobalSymbol l1 s1 requireEnum
+            return $ EnumField s1 Nothing
+    }
+
+maybeDefaultCheckmarkValue: { Nothing }
+    | default checkmarkValue { Just $2 }
+        
 
 fieldOptions : { [] }
              | pushScope fieldOptionsList popScope { $2 }

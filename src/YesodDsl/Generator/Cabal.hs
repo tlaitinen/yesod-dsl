@@ -24,7 +24,7 @@ generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pf
     where pfx = "Handler." ++ (fromMaybe "" $ modName m)
 
 ensureDeps :: [Dependency] -> [Dependency]
-ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) AnyVersion 
+ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) anyVersion 
                        | name <- ["unordered-containers",
                                   "transformers",
                                   "tagged",

@@ -36,8 +36,8 @@ baseFieldType :: Field -> String
 baseFieldType f = case fieldContent f of
     (NormalField ft _) -> fieldTypeToHsType ft
     (EntityField en) -> en ++ "Id"
-    (EnumField en) -> en
-    CheckmarkField -> "Checkmark"
+    (EnumField en _) -> en
+    (CheckmarkField _) -> "Checkmark"
 
 
 persistFieldType :: Field -> String
@@ -46,11 +46,12 @@ persistFieldType f = baseFieldType f
                    ++ (maybeDefault . fieldDefault) f
                    ++ (maybeDefaultNull f)
                    ++ (maybeCheckmarkNullable f)
-    where maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
+    where 
+          maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
           maybeDefaultNull (Field _ True _ _ (EntityField _)) = " default=NULL"
           maybeDefaultNull _ = ""
-          maybeCheckmarkNullable (Field _ _ _ _ CheckmarkField) = " nullable"
+          maybeCheckmarkNullable (Field _ _ _ _ (CheckmarkField _)) = " nullable"
           maybeCheckmarkNullable _ = ""
 
 
