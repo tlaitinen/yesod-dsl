@@ -35,7 +35,9 @@ cabal install yesod-dsl
 ```
 
 Note that the current version is experimental and all of the DSL syntax is
-probably not handled correctly.
+probably not handled correctly. However, it the generated code compiles, it
+probably does the right thing. I've been running a site generated with
+yesod-dsl (with PostgreSQL) for over a year now without problems.
 
 ## DSL syntax
 
