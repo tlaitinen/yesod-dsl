@@ -37,7 +37,9 @@ cabal install yesod-dsl
 Note that the current version is experimental and all of the DSL syntax is
 probably not handled correctly. However, if the generated code compiles, it
 probably does the right thing. I've been running a site generated with
-yesod-dsl (using PostgreSQL) for over a year now without problems.
+yesod-dsl (using PostgreSQL) for over a year now without problems. If the
+generated code does not compile, please post an issue with the related .ydsl
+files.
 
 
 ## DSL syntax
