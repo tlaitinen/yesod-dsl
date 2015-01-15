@@ -35,9 +35,10 @@ cabal install yesod-dsl
 ```
 
 Note that the current version is experimental and all of the DSL syntax is
-probably not handled correctly. However, it the generated code compiles, it
+probably not handled correctly. However, if the generated code compiles, it
 probably does the right thing. I've been running a site generated with
-yesod-dsl (with PostgreSQL) for over a year now without problems.
+yesod-dsl (using PostgreSQL) for over a year now without problems.
+
 
 ## DSL syntax
 
@@ -55,7 +56,7 @@ class Named {
 }
 
 entity User {
-    instance of Named, Versioned;
+    instance of Named;
     firstName Text;
     lastName Text;
     age      Maybe Int32;
@@ -458,16 +459,11 @@ define hasReadPerm(field) =
 
 class Restricted {
 }
-class Deletable {
-    deletedVersionId Maybe VersionId;
-}
 entity UserGroup {
-    instance of Named, Versioned, Deletable, Restricted;
+    instance of Named, Restricted;
     unique Group name;
 }
 entity UserGroupContent {
-    instance of Deletable;
-
     userGroupId UserGroupId;
     contentId Maybe RestrictedId;
 }
@@ -554,3 +550,11 @@ Due to the GHC stage restriction (and ghc's tendency to blow up when optimizing
 large Haskell modules), the code generator generates a number of Haskell
 modules that constitute a Yesod subsite: Handler/ModuleName.hs,
 Handler/ModuleName/*.hs .
+
+## Examples
+
+See [yesod-dsl wiki](https://github.com/tlaitinen/yesod-dsl/wiki) for examples
+and feel free to add yours.
+
+
+
