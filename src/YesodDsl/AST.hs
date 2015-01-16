@@ -311,7 +311,7 @@ fieldValueToSql fv = case fv of
     NothingValue -> "NULL"
     CheckmarkFieldValue CheckmarkActive -> "True"
     CheckmarkFieldValue CheckmarkInactive -> "NULL"
-    EnumFieldValue en ev -> en ++ ev
+    EnumFieldValue _ ev ->  "'" ++ ev ++ "'"
    
 fieldValueToEsqueleto :: FieldValue -> String    
 fieldValueToEsqueleto fv = case fv of
