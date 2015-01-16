@@ -201,8 +201,8 @@ Field names must begin with a lower-case letter. Single-quotes can be used to
 avoid clashes with reserved words of the DSL.
 
 Built-in values for FieldType are Word32, Word64, Int32, Int64, Text, Bool,
-Double, TimeOfDay, Day, UTCTime, ZonedTime. If the FieldType ends in "Id",
-then the prefix must be a valid entity or class name.
+Double, TimeOfDay, Day, UTCTime, ZonedTime, and Checkmark. If the FieldType
+ends in "Id", then the prefix must be a valid entity or class name.
 
 A field with an "entity class" type is replaced with a number of fields
 referencing the Id field in each entity implementing the class. For this
