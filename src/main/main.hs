@@ -1,3 +1,5 @@
+import Paths_yesod_dsl (version)
+import Data.Version (showVersion)
 import YesodDsl.Lexer
 import YesodDsl.Parser
 import System.Environment
@@ -9,11 +11,12 @@ import Control.Monad
 import System.IO
 import YesodDsl.ExpandMacros
 
-data Flag = 
-          FayPath String deriving Eq
+data Flag = Version 
+          | FayPath String deriving Eq
 options :: [OptDescr Flag]
 options = [
-    Option ['f']     ["fay"] (ReqArg FayPath "FILE") "translate DSL definition to Fay compatible code and store it in FILE"
+    Option ['f'] ["fay"] (ReqArg FayPath "FILE") "translate DSL definition to Fay compatible code and store it in FILE",
+    Option ['v'] ["version"] (NoArg Version) "print version number"
   ]
 
 header :: String
@@ -24,18 +27,22 @@ main = do
     args <- getArgs
     case getOpt RequireOrder options args of
         (o,     (path:_), [])     -> main' o path
-        (_,     _,       msgs)   -> error $ concat msgs ++ usageInfo header options
+        (o,     _,       msgs)   -> if Version `elem` o
+            then versionInfo 
+            else error $ concat msgs ++ usageInfo header options
 
 
     where
-                         
+        versionInfo = putStrLn $ "yesod-dsl " ++ showVersion version
         main' o path = do
-            mast <- parse path
-            case mast of
-                Just ast -> do
-                    generate path $ ast 
-                    forM_ o (processFlag ast)
-                Nothing -> return ()
+            if Version `elem` o
+                then versionInfo
+                else do
+                    mast <- parse path
+                    case mast of
+                        Just ast -> do
+                            generate path $ ast 
+                            forM_ o (processFlag ast)
+                        Nothing -> return ()
         processFlag ast (FayPath path) = genFay path ast
-            
         processFlag _ _ = return ()
