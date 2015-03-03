@@ -10,7 +10,7 @@ expandMacros m = everywhere (mkT f) m
         expandApplyExpr fn ps = case find (\d -> defineName d == fn) (modDefines m) of
             Just d -> if length (defineParams d) == length ps
                 then case defineContent d of
-                    (DefineSubQuery sq) -> SubQueryExpr (expandSubQuery sq $ zip (defineParams d) ps)
+                    (DefineSubQuery sq) -> SubQueryExpr (expandSubQuery (everywhere (mkT f) sq) $ zip (defineParams d) ps)
                 else error $ "Expected " ++ show (length $ defineParams d)
                              ++ " parameters for macro " ++ fn ++ " got " ++
                              show (length ps)
