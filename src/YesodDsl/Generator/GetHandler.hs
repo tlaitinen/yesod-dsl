@@ -17,6 +17,7 @@ import YesodDsl.Generator.Common
 import YesodDsl.Generator.Esqueleto
 import YesodDsl.Generator.Models
 import YesodDsl.Generator.Require
+import YesodDsl.Generator.Input
 import Control.Monad.State
 getHandlerParam :: HandlerParam -> State Context String
 getHandlerParam DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
@@ -219,14 +220,45 @@ getHandlerMaybeAuth ps
         where fieldRefs = concatMap getHandlerParamFieldRefs ps
               isAuthField (FieldRefAuth _) = True
               isAuthField _ =False
-    
+   
+callStmts :: State Context String
+callStmts = do
+    ps <- gets ctxHandlerParams
+    liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
+    where 
+        f (callId,(Call fn frs)) = do
+            ifrs <- mapM inputFieldRef $ map fst frs
+            types <- forM frs $ \(fr,mt) -> do
+                case mt of
+                    Just ft -> return $ formatType ft
+                    Nothing -> inputFieldRefType fr
+            ctx <- get
+            put $ ctx { ctxCalls = (fn,types):ctxCalls ctx}
+            return $ T.unpack $(codegenFile "codegen/get-call.cg")
+        f _ = return ""     
+getHandlerReadRequestFields :: State Context String
+getHandlerReadRequestFields = do
+    m <- gets ctxModule
+    ps <- gets ctxHandlerParams
+    let attrs = jsonAttrs m ps
+    if null attrs
+        then return ""
+        else return $
+            concatMap prepareRequestInputField attrs
+    where
+        jsonAttrs m ps = nub $ concatMap (getJsonAttrs m) ps
+        prepareRequestInputField fn = T.unpack $(codegenFile "codegen/prepare-request-input-field.cg")
+
+
 getHandler :: State Context String
 getHandler = do
     ps <- gets ctxHandlerParams
     liftM concat $ sequence [
             return $ getHandlerMaybeAuth ps,
             liftM concat $ mapM getHandlerParam ps,
+            getHandlerReadRequestFields,
             requireStmts,
+            callStmts,
             getHandlerSelect
         ]
     

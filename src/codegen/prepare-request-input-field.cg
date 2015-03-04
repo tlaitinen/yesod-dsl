@@ -1,0 +1,2 @@
+    attr_~{fn}' <- lookupGetParam "~{fn}"
+    let attr_~{fn} = attr_~{fn}' >>= PP.fromPathPiece

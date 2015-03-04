@@ -21,3 +21,4 @@ indent x = unlines . (map ((replicate x ' ')++)) . lines
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 
+

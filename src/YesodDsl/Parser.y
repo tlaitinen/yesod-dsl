@@ -541,7 +541,7 @@ handlerParam : public {%
         do 
             l <- mkLoc $1
             statement l (tkString $1)
-            requireHandlerType l (tkString $1) (/=GetHandler)
+            -- requireHandlerType l (tkString $1) (/=GetHandler)
             return $ Call (tkString $1) $2
     } 
     | lparen lowerIdTk doublecolon functionType rparen inputRefList {%
@@ -549,7 +549,7 @@ handlerParam : public {%
             l2 <- mkLoc $2
             let s2 = tkString $2
             statement l2 s2
-            requireHandlerType l2 s2 (/=GetHandler)
+            -- requireHandlerType l2 s2 (/=GetHandler)
             when (length $4 /= length $6) $ pError l2 $ "'" ++ s2 
                 ++ "' expects " ++ show (length $4) ++ " parameters, " 
                 ++ show (length $6) ++ " given"

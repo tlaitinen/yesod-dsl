@@ -44,6 +44,7 @@ library
            YesodDsl.ModuleMerger 
            YesodDsl.Generator.Classes
            YesodDsl.Generator.Common
+           YesodDsl.Generator.Input
            YesodDsl.Generator.Esqueleto
            YesodDsl.Generator.GetHandler
            YesodDsl.Generator.Handlers
