@@ -13,14 +13,9 @@ import System.FilePath.Posix
 import Data.List
 import YesodDsl.Generator.Routes
 import YesodDsl.SyncFile
-stripGenerated :: Module -> [ModuleName] -> [ModuleName]
-stripGenerated m mods = [ mn | mn <- mods, 
-          not $("Handler." ++ (fromMaybe "" $ modName m)) `isPrefixOf` (mnToString mn) ]
-    where mnToString mn = intercalate "." (components mn)            
-
-generatedMods :: Module -> [ModuleName]
-generatedMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto", pfx ++ ".PathPieces"]
-                ++ [pfx ++ "." ++ (routeModuleName r) | r <- modRoutes m ]
+knownMods :: Module -> [ModuleName]
+knownMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto", pfx ++ ".PathPieces", pfx ++ ".Validation"]
+                ++ [pfx ++ "." ++ (routeModuleName r) | r <- modRoutes m ] ++ (map importModule $ modImports m)
     where pfx = "Handler." ++ (fromMaybe "" $ modName m)
 
 ensureDeps :: [Dependency] -> [Dependency]
@@ -59,7 +54,7 @@ modifyDesc m d = d {
         modifyLib l = l {
             exposedModules = modifyExposed (exposedModules l)            
         }
-        modifyExposed mods = stripGenerated m mods ++ generatedMods m
+        modifyExposed mods = nub $ mods ++ knownMods m
 
 syncCabal :: FilePath -> Module -> IO ()
 syncCabal path' m = do

@@ -192,13 +192,19 @@ valExprRefs (FloorExpr ve) = valExprRefs ve
 valExprRefs (CeilingExpr ve) = valExprRefs ve
 valExprRefs (ExtractExpr _ ve) = valExprRefs ve
 valExprRefs (SubQueryExpr sq) = sqFieldRefs sq
-valExprRefs (ApplyExpr _ _) = [] 
+valExprRefs (ApplyExpr _ _) = []
+
 exprFieldRefs :: BoolExpr -> [FieldRef]
 exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (OrExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
 exprFieldRefs (NotExpr e) = exprFieldRefs e
 exprFieldRefs (BinOpExpr ve1 _ ve2) = valExprRefs ve1 ++ (valExprRefs ve2)
 exprFieldRefs (ExistsExpr sq) = sqFieldRefs sq          
+exprFieldRefs (ExternExpr _ ps) = mapMaybe f ps
+    where
+        f (FieldRefParam fr) = Just fr
+        f _ = Nothing
+
 joinFieldRefs :: Join -> [FieldRef]
 joinFieldRefs j = maybe [] exprFieldRefs (joinExpr j)
 

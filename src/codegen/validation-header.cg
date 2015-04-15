@@ -9,25 +9,23 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Handler.~{moduleName m}.~{routeModuleName r} where
-import Handler.~{moduleName m}.Enums
-import Handler.~{moduleName m}.Esqueleto
+module Handler.~{moduleName m}.Validation where
 import Handler.~{moduleName m}.Internal
-import Handler.~{moduleName m}.Validation
 import qualified Handler.~{moduleName m}.PathPieces as PP
 import Prelude
+import Control.Monad (forM_, when)
+import Control.Monad.Catch (MonadThrow)
 import Database.Esqueleto
-import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp)
+import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlExtractSubField, UnsafeSqlFunctionArgument)
 import qualified Database.Persist as P
 import Database.Persist.TH
-import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist, AuthEntity)
+import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
 import Yesod.Core hiding (fileName, fileContentType)
 import Yesod.Persist (runDB, YesodPersist, YesodPersistBackend)
-import Control.Monad (when)
 import Data.Aeson ((.:), (.:?), (.!=), FromJSON, parseJSON, decode)
 import Data.Aeson.TH
 import Data.Int
@@ -42,9 +40,10 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.Maybe
 import qualified Data.Text.Read
 import qualified Data.Text as T
+import Data.String (IsString(..))
 import Data.Text (Text)
 import qualified Data.List as DL
-import Control.Monad (mzero, forM_)
+import Control.Monad (mzero)
 import Control.Monad.Trans.Resource (runResourceT)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as L
@@ -56,4 +55,5 @@ import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
 import qualified Data.HashMap.Strict as HMS
+import qualified Data.Text.Lazy.Builder as TLB
 ~{imports m}

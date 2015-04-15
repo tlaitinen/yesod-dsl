@@ -22,6 +22,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireEnum,
     requireEnumValue,
     requireParam,
+    requireFunction,
     setCurrentHandlerType,
     getCurrentHandlerType,
     requireHandlerType,
@@ -52,6 +53,7 @@ data SymType = SEnum EnumType
              | SParam
              | SForParam InputFieldRef
              | SReserved
+             | SFunction
 
 instance Show SymType where
     show st = case st of
@@ -68,6 +70,7 @@ instance Show SymType where
         SParam   -> "param"
         SForParam _ -> "for-param"
         SReserved -> "reserved"
+        SFunction -> "function"
 
 data Sym = Sym Int Location SymType deriving (Show)
 
@@ -247,9 +250,10 @@ declareGlobal l n t = declare' True l n t
 declare' :: Bool -> Location -> String -> SymType -> ParserMonad ()
 declare' global l n t = do
     ps <- get
-    let sym = [Sym (if global then 0 else psScopeId ps) l t] 
+    let scopeId = if global then 0 else psScopeId ps
+        sym = [Sym scopeId l t ]
     case Map.lookup n (psSyms ps) of
-        Just ((Sym s l' _):_) -> if s == psScopeId ps
+        Just ((Sym s l' _):_) -> if s == scopeId
             then do
                 pError l $ "'" ++ n 
                     ++ "' already declared in " ++ show l'
@@ -330,6 +334,7 @@ fieldContentToType fc = case fc of
     NormalField ft _ -> TypeField ft
     EntityField en -> TypeEntityId en
     EnumField en _ -> TypeEnum en
+    CheckmarkField _ -> TypeCheckmark
 
 
 getEntitySymbol :: Location -> Location -> SymType -> ParserMonad (Maybe EntityName)
@@ -407,3 +412,10 @@ requireField:: (Field -> ParserMonad ()) -> (Location -> Location -> SymType -> 
 requireField f = f'
     where f' _ _ (SField sf) = f sf
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected field)"
+
+requireFunction :: (Location -> Location -> SymType -> ParserMonad ())
+requireFunction = fun'
+    where 
+        fun' _ _ SFunction = return ()
+        fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected function)"  
+ 

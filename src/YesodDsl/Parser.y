@@ -10,6 +10,7 @@ import Control.Monad.Trans.Class
 import System.IO
 import Data.Maybe
 import Data.Typeable
+import Data.Either
 import Prelude hiding (catch) 
 import Control.Exception hiding (Handler)
 import System.Exit
@@ -61,6 +62,7 @@ import Data.List
     dot  { Tk _ TDot }
     slash { Tk _ TSlash }
     stringval     { Tk _ (TString $$) }
+    verbatim { Tk _ (TVerbatim _) }
     word32   { Tk _ TWord32 }
     word64   { Tk _ TWord64 }
     int32    { Tk _ TInt32 }
@@ -149,6 +151,7 @@ import Data.List
 %%
 
 
+
 dbModule : maybeModuleName 
            pushScope imports defs popScope {%
            do
@@ -158,7 +161,8 @@ dbModule : maybeModuleName
                                     ((reverse . getEnums) $4)
                                     ((reverse . getRoutes) $4)
                                     ((reverse . getDefines) $4)
-               return $ mergeModules $ (path,m):$3
+                                    (rights $3)
+               return $ mergeModules $ (path,m):lefts $3
            }
 
 upperId: upperIdTk { tkString $1 }
@@ -172,19 +176,36 @@ maybeModuleName : { Nothing }
             return $ Just s2 
     }
 imports : { [] }
-        | importStmt imports { $1++ $2 }
+        | import importContent semicolon imports { $2++ $4 }
 
-importStmt : import stringval semicolon {%  
-            do
-                parsed <- getParsed
-                if not ($2 `elem` parsed)
-                    then do
-                        ps <- getParserState
-                        (m,ps') <- liftIO $parseModule ps $2
-                        setParserState ps'
-                        return [($2,m)]
-                    else return []
-            }
+importContent : stringval {%  
+    do
+        parsed <- getParsed
+        if not ($1 `elem` parsed)
+            then do
+                ps <- getParserState
+                (m,ps') <- liftIO $ parseModule ps $1
+                setParserState ps'
+                return [Left ($1,m)]
+            else return []
+   } | moduleName lparen lowerIdList rparen {%
+   do   
+       let (ns,l) = $1
+           n = intercalate "." ns
+       declareGlobal l n SReserved
+       forM_ $3 $ \f -> do
+           declareGlobal l f SFunction
+       return [Right $ Import n $3] 
+   }
+
+moduleName: upperIdTk moduleNames {%
+    do
+        l <- mkLoc $1
+        return (tkString $1 : $2, l)
+    }
+moduleNames: { [] }
+    | moduleNames dot upperId moduleNames { $1 ++ [$3] }
+                
 defs : { [] }
        | defs def  { $2 : $1 }
 def : routeDef     { RouteDef $1 }
@@ -199,6 +220,7 @@ defineDef : define lowerIdTk pushScope lparen maybeEmptyParamList rparen equals 
         let n = tkString $2
         let d = Define n l $5 $8
         declare l n (SDefine d) 
+        lift $ putStrLn $ show l ++ ": Define support is being deprecated. Please switch to external functions."
         return d
     } 
 
@@ -329,7 +351,8 @@ handlerdef : handlerType pushScope handlerParamsBlock popScope {%
         do
             return $ $1 $3
     }
-
+fieldRefList : { [ ] }
+             | fieldRefList fieldRef { $1 ++ [$2] }
 fieldRef : 
     lowerIdTk dot idField {%
         do
@@ -759,7 +782,19 @@ expr : expr and expr { AndExpr $1 $3 }
      | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
      | exists lparen pushScope selectQuery popScope rparen
                    { ExistsExpr $4 }
- 
+     | lowerIdTk functionParamList {%
+     do
+         l1 <- mkLoc $1
+         let s1 = tkString $1
+         withSymbol l1 s1 requireFunction
+         return $ ExternExpr s1 $2
+     }         
+
+functionParamList: { [] }
+                 | functionParamList functionParam { $1 ++ [$2] }
+functionParam: fieldRef { FieldRefParam $1 }
+             | verbatim { VerbatimParam (tkString $1) }
+    
 
 valbinop :      
       slash { Div }

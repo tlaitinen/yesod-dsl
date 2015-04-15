@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveDataTypeable #-}
--- | Abstract Syntax Tree of yesod-dsl definition.
 module YesodDsl.AST where
 
 import Data.Maybe
@@ -8,17 +7,16 @@ import Data.Char
 import Data.Data (Data)
 import Data.Typeable (Typeable)
 
--- | definitions in single file form a 'Module'
 data Module = Module {
-    modName      :: Maybe String,  -- ^ top-level module must have a name
-    modEntities  :: [Entity],      -- ^ database entity definitions
-    modClasses   :: [Class],       -- ^ entity classes
-    modEnums     :: [EnumType],    -- ^ enumerated field types 
-    modRoutes    :: [Route],       -- ^ HTTP routes
-    modDefines   :: [Define]       -- ^ common expressions
+    modName      :: Maybe String,  
+    modEntities  :: [Entity],      
+    modClasses   :: [Class],       
+    modEnums     :: [EnumType],    
+    modRoutes    :: [Route],       
+    modDefines   :: [Define],
+    modImports   :: [Import]
 } deriving (Show, Data, Typeable)
 
--- | safe function to extract 'Module' name
 moduleName :: Module -> String
 moduleName m = fromMaybe "" (modName m)
 
@@ -29,17 +27,24 @@ emptyModule = Module {
     modClasses = [],
     modEnums = [],
     modRoutes = [],
-    modDefines = []
+    modDefines = [],
+    modImports = []
 }
 
+
+data Import = Import {
+    importModule    :: String,
+    importFunctions :: [FunctionName]
+} deriving (Show, Data, Typeable)
+
 type ClassName = String
--- | name of a parameter (for various things)
 type ParamName = String
 type EntityName = String
 type EnumName = String
 type EnumValue = String
+type FunctionName = String
+type FieldName = String 
 
--- | type of a 'Field' of an 'Entity'
 data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
                | FTZonedTime deriving (Eq,Show,Data,Typeable)
@@ -66,8 +71,6 @@ data Define = Define {
 data DefineContent = DefineSubQuery SelectQuery 
                      deriving (Show, Eq, Data, Typeable)
 
--- | name of a 'Field'
-type FieldName = String 
 
 data Unique = Unique {
     uniqueName :: String,
@@ -106,7 +109,11 @@ data BoolExpr = AndExpr BoolExpr BoolExpr
           | NotExpr BoolExpr
           | BinOpExpr ValExpr BinOp ValExpr 
           | ExistsExpr SelectQuery
+          | ExternExpr FunctionName [FunctionParam]
           deriving (Show, Eq, Data, Typeable)
+data FunctionParam = FieldRefParam FieldRef
+                   | VerbatimParam String
+    deriving (Show, Eq, Data, Typeable)
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
            | ConcatManyExpr [ValExpr]
@@ -288,7 +295,6 @@ data Field = Field {
     fieldContent  :: FieldContent
 } deriving (Show,Eq, Data, Typeable)
 
-type FunctionName = String
 
 data FieldOption = FieldCheck FunctionName
                  | FieldDefault FieldValue

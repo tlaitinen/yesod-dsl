@@ -18,6 +18,7 @@ tokens :-
 	$white+	;
 	"--".*	;
     \n ;
+    "[|" .* "|]" { mkTvar (TVerbatim . stripBrackets) }
     @string { mkTvar (TString . stripQuotes) }
     \; { mkT TSemicolon } 
     \{ { mkT TLBrace }
@@ -171,6 +172,7 @@ data TokenType = TSemicolon
            | TLimit 
            | TOffset
            | TString  String
+           | TVerbatim String
            | TLowerId String
            | TUpperId String
            | TInt     Int
@@ -268,6 +270,7 @@ tkString (Tk _ (TLowerId s)) = s
 tkString (Tk _ (TUpperId s)) = s
 tkString (Tk _ (TString s)) = s
 tkString (Tk _ (TEntityId s)) = s
+tkString (Tk _ (TVerbatim s)) = s
 tkString _ = ""
 
 tkInt :: Token -> Int
@@ -275,6 +278,7 @@ tkInt (Tk _ (TPathParam i)) = i
 tkInt _ = 0
 
 stripQuotes s = take ((length s) -2) (tail s)
+stripBrackets s = take ((length s) -4) (drop 2 s)
 
 mkT :: TokenType -> AlexPosn -> String -> Token
 mkT t p s = Tk p t

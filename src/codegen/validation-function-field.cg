@@ -1,1 +1,0 @@
-    ~{func} :: (YesodPersist master) => ~{hsFieldType f} -> HandlerT master IO Bool

@@ -302,6 +302,7 @@ localCtx f st = do
     return r
 
 
+
 hsBoolExpr :: BoolExpr -> State Context String
 hsBoolExpr expr = case expr of
     AndExpr e1 e2 -> do
@@ -338,3 +339,9 @@ hsBoolExpr expr = case expr of
                (hsValExpr e2)
         return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
     ExistsExpr sq -> subQuery "exists" sq
+    ExternExpr ee ps -> do
+        ps' <- mapM externExprParam ps
+        return $ intercalate " " $ [ee] ++ map ((++ ")"). ("("++)) ps'
+    where
+        externExprParam (FieldRefParam fr) = hsFieldRef fr
+        externExprParam (VerbatimParam v) = return v 

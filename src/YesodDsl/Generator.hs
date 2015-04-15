@@ -22,6 +22,7 @@ import YesodDsl.Generator.EntityFactories
 import YesodDsl.Generator.Classes
 import YesodDsl.Generator.Routes
 import YesodDsl.Generator.Interface
+import YesodDsl.Generator.Validation
 import YesodDsl.Generator.Handlers
 import YesodDsl.Generator.EsqueletoInstances
 import YesodDsl.Generator.Cabal
@@ -29,7 +30,10 @@ import YesodDsl.Generator.Fay
 import YesodDsl.SyncFile
 import Control.Monad.State
 import YesodDsl.Generator.Esqueleto
-
+imports :: Module -> String
+imports m = concatMap fmtImport $ modImports m
+    where
+        fmtImport i = T.unpack $(codegenFile "codegen/import.cg")    
 writeRoute :: Module -> Route -> IO Context
 writeRoute m r = do
     let (content, ctx) = runState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r})
@@ -37,7 +41,6 @@ writeRoute m r = do
                                       routeModuleName r ++ ".hs"]) $
         T.unpack $(codegenFile "codegen/route-header.cg") ++ content
     return ctx
-    
 generate :: FilePath -> Module -> IO ()
 generate path m = do
     syncCabal path m
@@ -57,6 +60,9 @@ generate path m = do
             ++ classes m
             ++ interface m ctxs
             ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))      
+    syncFile (joinPath ["Handler", moduleName m, "Validation.hs"]) $
+        T.unpack $(codegenFile "codegen/validation-header.cg")
+            ++ (concatMap validationEntity (modEntities m))
     syncFile (joinPath ["Handler", moduleName m, "Routes.hs"]) $
            routes m
     syncFile (joinPath ["Handler", moduleName m ++ ".hs"]) $ 

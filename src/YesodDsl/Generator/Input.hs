@@ -112,6 +112,10 @@ exprToJsonAttrs (BinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 exprToJsonAttrs (ExistsExpr sq) = fromMaybe [] $ do
     expr <- sqWhere sq
     return $ exprToJsonAttrs expr
+exprToJsonAttrs (ExternExpr ee ps) = concatMap f ps
+    where
+        f (FieldRefParam fr) = fieldRefToJsonAttrs fr
+        f _ = []
 
 getJsonAttrs :: Module -> HandlerParam -> [FieldName]
 getJsonAttrs _ (Update _ fr (Just fields)) = maybeToList (inputFieldRefToJsonAttr fr) ++ (mapMaybe inputFieldToJsonAttr fields)

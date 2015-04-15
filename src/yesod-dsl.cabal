@@ -52,6 +52,7 @@ library
            YesodDsl.Generator.Routes
            YesodDsl.Generator.UpdateHandlers
            YesodDsl.Generator.Interface
+           YesodDsl.Generator.Validation
            YesodDsl.Generator.Require
            YesodDsl.Generator.Cabal
            YesodDsl.Generator.EsqueletoInstances
