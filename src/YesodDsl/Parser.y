@@ -192,7 +192,6 @@ importContent : stringval {%
    do   
        let (ns,l) = $1
            n = intercalate "." ns
-       declareGlobal l n SReserved
        forM_ $3 $ \f -> do
            declareGlobal l f SFunction
        return [Right $ Import n $3] 
@@ -485,7 +484,7 @@ handlerParam : public {%
             l <- mkLoc $1
             statement l "update"
             requireHandlerType l "update" (/=GetHandler)
-            return $ Update (tkString $3) (fst $6) $7
+            return $ Update (tkString $3) $6 $7
     } 
     | delete pushScope from declareFromEntity maybeWhere popScope {% 
         do
@@ -502,7 +501,7 @@ handlerParam : public {%
             let (l1,s1) = $1
             declare l1 s1 $ SEntity $3
             requireHandlerType l "get" (/=GetHandler)
-            return $ GetById $3 (fst $6) s1
+            return $ GetById $3 $6 s1
     }
     | maybeBindResult insert pushScope targetEntity maybeFromInputJson popScope {%
         do
@@ -558,54 +557,14 @@ handlerParam : public {%
             l <- mkLoc $1
             statement l "for"
             requireHandlerType l "for" (/=GetHandler)
-            return $ For $3 (fst $5) $7 
+            return $ For $3 $5 $7 
     }
     | lowerIdTk inputRefList {% 
         do 
             l <- mkLoc $1
             statement l (tkString $1)
-            -- requireHandlerType l (tkString $1) (/=GetHandler)
             return $ Call (tkString $1) $2
     } 
-    | lparen lowerIdTk doublecolon functionType rparen inputRefList {%
-        do 
-            l2 <- mkLoc $2
-            let s2 = tkString $2
-            statement l2 s2
-            -- requireHandlerType l2 s2 (/=GetHandler)
-            when (length $4 /= length $6) $ pError l2 $ "'" ++ s2 
-                ++ "' expects " ++ show (length $4) ++ " parameters, " 
-                ++ show (length $6) ++ " given"
-            let types = zip $4 $6
-            forM_ [ (n,t1,fromJust mt2) | (n,(t1,(_,mt2))) <- zip [1..] types, 
-                    Just t1 /= mt2, isJust mt2 ] $ \(n,t1,t2) -> 
-                        pError l2 $ "'" ++ s2 ++ "' expects " ++ show t1 ++ " as the parameter #" ++ show n ++ ", got " ++ show t2 ++ " instead."
-            return $ Call s2 [ (ifr,Just $ fromMaybe t1 t2) | (t1,(ifr,t2)) <- types ]
-    }
-
-functionType: functionTypes rarrow lowerIdTk lparen rparen { $1 }
-
-functionTypes: type { [$1] }
-             | functionTypes rarrow type { $1 ++ [$3] }
-
-type: entityId {%
-    do
-        l1 <- mkLoc $1
-        let s1 = tkString $1
-        withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-        return $ TypeEntityId s1
-    }
-    | upperIdTk {%
-    do
-        l1 <- mkLoc $1
-        let s1 = tkString $1
-        withSymbol l1 s1 $ requireEnum 
-        return $ TypeEnum s1
-    }
-    | lbracket type rbracket { TypeList $2 }
-    | fieldTypeContent { TypeField (snd $1) }
-    | maybe type { TypeMaybe $2 }
-
 lowerIdParam: lowerIdTk {%
     do
         l1 <- mkLoc $1
@@ -704,20 +663,18 @@ inputJsonField : lowerIdTk equals inputRef {%
             let s1 = tkString $1
             withSymbol l1 "target entity" $ 
                 requireEntityField l1 s1 $ \_ -> return ()
-            let (ir, _) = $3
-            return (s1, ir) 
+            return (s1, $3) 
      }
 
 inputRefList:  { [] }
             | inputRefList inputRef  { $1 ++ [$2] }
 
-inputRef: request dot lowerIdTk { (InputFieldNormal $ tkString $3, Nothing) }
+inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
         | lowerIdTk {%
             do
                 l1 <- mkLoc $1
                 let n1 = tkString $1
-                mtype <- withSymbolNow Nothing l1 n1 $ getSymbolType
-                return $ (InputFieldLocalParam n1, mtype) 
+                return $ InputFieldLocalParam n1
         }
         | lowerIdTk dot lowerIdTk {%
             do
@@ -725,27 +682,26 @@ inputRef: request dot lowerIdTk { (InputFieldNormal $ tkString $3, Nothing) }
                 l3 <- mkLoc $3
                 let (s1,s3) = (tkString $1, tkString $3)
                 withSymbol l1 s1 $ requireEntityField l3 s3 $ \_ -> return ()
-                return (InputFieldLocalParamField s1 s3, Nothing) 
+                return $ InputFieldLocalParamField s1 s3
         }
         | pathParam {%
         do
             l1 <- mkLoc $1
             let i1 = tkInt $1
-            mtype <- withSymbolNow Nothing l1 ("$" ++ show i1) $ getSymbolType 
-            return $ (InputFieldPathParam i1, mtype) 
+            return $ InputFieldPathParam i1
          }
-        | auth dot idField { (InputFieldAuthId, Just $ TypeEntityId "User") }
+        | auth dot idField { InputFieldAuthId }
         | auth dot lowerIdTk {% 
           do 
                 l1 <- mkLoc $1
                 l3 <- mkLoc $3
                 let n3 = tkString $3
                 withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
-                return $ (InputFieldAuth n3, Nothing)
+                return $ InputFieldAuth n3
            }
-        | value { (InputFieldConst $1, fieldValueToType $1) } 
-        | now lparen rparen { (InputFieldNow, Just $ TypeField FTUTCTime) }
-        | checkmarkValue { (InputFieldCheckmark $1, Just TypeCheckmark) }
+        | value { InputFieldConst $1 } 
+        | now lparen rparen { InputFieldNow }
+        | checkmarkValue { InputFieldCheckmark $1 }
 
 checkmarkValue: checkmarkActive { CheckmarkActive }
               | checkmarkInactive { CheckmarkInactive }
@@ -938,9 +894,7 @@ fieldOption : check lowerIdTk {%
         do
             l2 <- mkLoc $2
             let s2 = tkString $2
-            declare l2 ("check " ++ s2) SReserved
-            withSymbolNow () l2 "current field type"  $ requireFieldType $ \ft ->
-                addCheck l2 s2 ft
+            withSymbol l2 s2 requireFunction
             return $ FieldCheck s2
     }
             | default value {%
@@ -974,7 +928,18 @@ derives : upperId { [$1] }
         | derives comma upperId { $3 : $1 }
 
 checks : { [] }
-        | check lowerIdList semicolon { reverse $2 }
+        | check functionIdList semicolon { $2 }
+
+functionIdList: functionId { [$1] }
+              | functionIdList comma functionId { $1 ++ [$3] }
+
+functionId: lowerIdTk {%
+    do
+        l <- mkLoc $1
+        let n = tkString $1
+        withSymbol l n requireFunction
+        return n
+    }              
 
 fieldId: lowerIdTk {%
     do
@@ -987,33 +952,24 @@ fieldId: lowerIdTk {%
 fieldIdList : fieldId { [$1] }
             | fieldIdList comma fieldId { $3 : $1 }
 
-fieldType : fieldTypeContent {%
-        do
-            let (l,ft) = $1
-            declare l "current field type" $ SFieldType ft
-            return ft 
-    }
 
-fieldTypeContent: 
-    word32      {% fieldTypeWithLoc ($1,FTWord32) }
-    | word64    {% fieldTypeWithLoc ($1,FTWord64) }
-    | int32     {% fieldTypeWithLoc ($1,FTInt32) }
-    | int64     {% fieldTypeWithLoc ($1,FTInt64) }
-    | text      {% fieldTypeWithLoc ($1,FTText) }
-    | bool      {% fieldTypeWithLoc ($1,FTBool) }
-    | double    {% fieldTypeWithLoc ($1,FTDouble) }
-    | timeofday {% fieldTypeWithLoc ($1,FTTimeOfDay) }
-    | day       {% fieldTypeWithLoc ($1,FTDay) }
-    | utctime   {% fieldTypeWithLoc ($1,FTUTCTime) }
-    | zonedtime {% fieldTypeWithLoc ($1,FTZonedTime) }
+fieldType: 
+    word32      { FTWord32 }
+    | word64    { FTWord64 }
+    | int32     { FTInt32 }
+    | int64     { FTInt64 }
+    | text      { FTText }
+    | bool      { FTBool }
+    | double    { FTDouble }
+    | timeofday { FTTimeOfDay }
+    | day       { FTDay }
+    | utctime   { FTUTCTime }
+    | zonedtime { FTZonedTime }
 
 maybeMaybe : { False }
               | maybe {True }
 
 {
-
-fieldTypeWithLoc :: (Token,FieldType) -> ParserMonad (Location, FieldType)
-fieldTypeWithLoc (tk,ft) = mkLoc tk >>= \l -> return (l,ft)
 
 data ModDef = EntityDef Entity
            | ClassDef Class

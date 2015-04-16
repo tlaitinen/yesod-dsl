@@ -56,4 +56,16 @@ import Control.Applicative ((<$>), (<*>))
 import qualified Data.HashMap.Lazy as HML
 import qualified Data.HashMap.Strict as HMS
 import qualified Data.Text.Lazy.Builder as TLB
-~{imports m}
+~{allImports m}
+
+checkResult :: forall (m :: * -> *). (Monad m) => Text -> m Bool -> m (Maybe Text)
+checkResult msg f = do
+   result <- f
+   return $ if result then Nothing else (Just msg)
+
+class Validatable a where
+    validate :: forall master. (SqlBackend ~ YesodPersistBackend master,
+                                YesodPersist master)
+             => a -> HandlerT master IO [Text]
+
+

@@ -233,13 +233,7 @@ callStmts = do
     liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
     where 
         f (callId,(Call fn frs)) = do
-            ifrs <- mapM inputFieldRef $ map fst frs
-            types <- forM frs $ \(fr,mt) -> do
-                case mt of
-                    Just ft -> return $ formatType ft
-                    Nothing -> inputFieldRefType fr
-            ctx <- get
-            put $ ctx { ctxCalls = (fn,types):ctxCalls ctx}
+            ifrs <- mapM inputFieldRef frs
             return $ T.unpack $(codegenFile "codegen/get-call.cg")
         f _ = return ""     
 getHandlerReadRequestFields :: State Context String

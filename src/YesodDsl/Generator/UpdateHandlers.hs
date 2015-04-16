@@ -46,13 +46,7 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
                 ifr <- inputFieldRef fr
                 return $ T.unpack $(codegenFile "codegen/for.cg")    
             Call fn frs -> do
-                ifrs <- mapM inputFieldRef $ map fst frs
-                types <- forM frs $ \(fr,mt) -> do
-                    case mt of
-                        Just ft -> return $ formatType ft
-                        Nothing -> inputFieldRefType fr
-                ctx <- get
-                put $ ctx { ctxCalls = (fn,types):ctxCalls ctx}
+                ifrs <- mapM inputFieldRef frs
                 return $ T.unpack $(codegenFile "codegen/call.cg") 
             _ -> return ""
     ] :: [State Context String])
@@ -168,7 +162,7 @@ handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr') <- fromM
 handlerParamToInputFieldRefs (Insert _ (Just (_, io)) _) = [ fr | (_,fr) <- io ]
 handlerParamToInputFieldRefs (Insert _ _ _) = []
 handlerParamToInputFieldRefs (GetById _ ifr _) = [ifr]
-handlerParamToInputFieldRefs (Call _ ifrs) = map fst ifrs
+handlerParamToInputFieldRefs (Call _ ifrs) = ifrs
 handlerParamToInputFieldRefs _ = []
 
 updateHandlerMaybeCurrentTime :: [HandlerParam] -> String

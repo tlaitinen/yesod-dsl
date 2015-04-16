@@ -8,9 +8,6 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     ParserState, mkLoc, parseErrorCount, withSymbol, withGlobalSymbol, withSymbolNow,
     pError,
     hasReserved,
-    fieldValueToType,
-    fieldContentToType,
-    getSymbolType,
     getEntitySymbol,
     requireClass, 
     requireEntity,
@@ -18,7 +15,6 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     requireEntityId,
     requireEntityField,
     requireField,
-    requireFieldType,
     requireEnum,
     requireEnumValue,
     requireParam,
@@ -321,32 +317,10 @@ withGlobalSymbol :: Location -> String -> (Location -> Location -> SymType -> Pa
 withGlobalSymbol l n f = addGlobalPendingValidation $ \syms -> void $ withSymbol' syms () l n f    
 
 
-fieldValueToType :: FieldValue -> Maybe Type
-fieldValueToType fv = case fv of
-    StringValue _ -> Just $ TypeField FTText
-    IntValue _ -> Just $ TypeField FTInt32
-    FloatValue _ -> Just $ TypeField FTDouble
-    BoolValue _ -> Just $ TypeField FTBool
-    NothingValue -> Nothing
-    
-fieldContentToType :: FieldContent -> Type
-fieldContentToType fc = case fc of
-    NormalField ft _ -> TypeField ft
-    EntityField en -> TypeEntityId en
-    EnumField en _ -> TypeEnum en
-    CheckmarkField _ -> TypeCheckmark
-
 
 getEntitySymbol :: Location -> Location -> SymType -> ParserMonad (Maybe EntityName)
 getEntitySymbol _ _ (SEntity en) = return $ Just en
 getEntitySymbol _ _ _ = return Nothing
-
-getSymbolType :: Location -> Location -> SymType -> ParserMonad (Maybe Type)
-getSymbolType l1 l2 st = return $ case st of
-    SEnum et -> Just $ TypeEnum $ enumName et
-    SEntityId en -> Just $ TypeEntityId en
-    SField f -> Just $ fieldContentToType $ fieldContent f
-    _ -> Nothing
 
 requireClass :: (Class -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireClass f = f'

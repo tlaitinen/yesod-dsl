@@ -21,7 +21,6 @@ import YesodDsl.Generator.Models
 import YesodDsl.Generator.EntityFactories
 import YesodDsl.Generator.Classes
 import YesodDsl.Generator.Routes
-import YesodDsl.Generator.Interface
 import YesodDsl.Generator.Validation
 import YesodDsl.Generator.Handlers
 import YesodDsl.Generator.EsqueletoInstances
@@ -30,17 +29,33 @@ import YesodDsl.Generator.Fay
 import YesodDsl.SyncFile
 import Control.Monad.State
 import YesodDsl.Generator.Esqueleto
-imports :: Module -> String
-imports m = concatMap fmtImport $ modImports m
-    where
-        fmtImport i = T.unpack $(codegenFile "codegen/import.cg")    
-writeRoute :: Module -> Route -> IO Context
+import Data.Generics
+import Data.Generics.Uniplate.Data
+import qualified Data.Map as Map
+
+allImports :: Module -> String
+allImports m = concatMap fmtImport $ modImports m
+
+fmtImport :: Import -> String
+fmtImport i = T.unpack $(codegenFile "codegen/import.cg")    
+
+writeRoute :: Module -> Route -> IO ()
 writeRoute m r = do
-    let (content, ctx) = runState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r})
+    let (content, _) = runState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r})
     syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
         T.unpack $(codegenFile "codegen/route-header.cg") ++ content
-    return ctx
+    where
+        imports = concatMap fmtImport $ filter ((`elem` modules) . importModule) $ modImports m
+        modules = nub $ catMaybes $ [ 
+                            Map.lookup fn importedFunctions 
+                            | fn <- usedFunctions 
+                ] 
+        importedFunctions = Map.fromList [ (fn, importModule i) |
+                                            i <- modImports m,
+                                            fn <- importFunctions i ]
+                                            
+        usedFunctions = [ fn | Call fn _ <- universeBi r ] ++ [ fn | ExternExpr fn _ <- universeBi r ]
 generate :: FilePath -> Module -> IO ()
 generate path m = do
     syncCabal path m
@@ -52,13 +67,12 @@ generate path m = do
         T.unpack $(codegenFile "codegen/esqueleto-header.cg")
         ++ (esqueletoInstances m)        
 
-    ctxs <- forM (modRoutes m) (writeRoute m)
+    forM_ (modRoutes m) (writeRoute m)
     syncFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
         T.unpack $(codegenFile "codegen/header.cg")
             ++ models m
             ++ entityFactories m
             ++ classes m
-            ++ interface m ctxs
             ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))      
     syncFile (joinPath ["Handler", moduleName m, "Validation.hs"]) $
         T.unpack $(codegenFile "codegen/validation-header.cg")

@@ -1,5 +1,5 @@
 name:           yesod-dsl
-version:        0.1.1.22
+version:        0.1.1.23
 license:        BSD3
 license-file:   LICENSE
 author:         Tero Laitinen 
@@ -30,6 +30,7 @@ library
                  , strict
                  , Cabal
                  , syb
+                 , uniplate
     Build-tools:         alex, happy
     ghc-options: -Wall -O0
     exposed: True
@@ -51,7 +52,6 @@ library
            YesodDsl.Generator.Models
            YesodDsl.Generator.Routes
            YesodDsl.Generator.UpdateHandlers
-           YesodDsl.Generator.Interface
            YesodDsl.Generator.Validation
            YesodDsl.Generator.Require
            YesodDsl.Generator.Cabal

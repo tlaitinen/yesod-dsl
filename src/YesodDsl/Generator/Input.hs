@@ -11,59 +11,6 @@ import YesodDsl.Generator.Esqueleto
 import YesodDsl.Generator.Common
 import YesodDsl.Generator.Models
 import qualified Data.Map as Map
-formatType :: Type -> String
-formatType (TypeEntityId en) = en ++ "Id"
-formatType (TypeEnum en) = en 
-formatType (TypeList t) = "[" ++ formatType t ++ "]"
-formatType (TypeField ft) = fieldTypeToHsType ft
-formatType (TypeMaybe f) = "Maybe (" ++ formatType f ++ ")"
-
-
-inputFieldRefType :: InputFieldRef -> State Context String
-inputFieldRefType InputFieldAuthId = return $ "UserId"
-inputFieldRefType (InputFieldAuth fn) = do
-    m <- gets ctxModule
-    let mf = listToMaybe [ hsFieldType f | e <- modEntities m,
-                                           f <- entityFields e,
-                                           fieldName f == fn ]
-    case mf of
-        Just ft -> return ft
-        Nothing -> return "Unknown"
-inputFieldRefType (InputFieldLocalParam vn) = do
-    ps <- gets ctxHandlerParams
-    let en = fromMaybe "Unknown" $ listToMaybe $ concatMap f ps
-    return $ en ++ "Id"
-
-    where
-        f (Insert en _ (Just vn')) = if vn' == vn then [en] else []
-        f _ = []
-     
-
-inputFieldRefType (InputFieldLocalParamField vn fn) = do
-    ps <- gets ctxHandlerParams
-    let en = fromMaybe "Unknown" $ listToMaybe $ concatMap f ps
-    m <- gets ctxModule
-    let mf = lookupField m en fn
-    return $ case mf of
-        Just f -> hsFieldType f
-        Nothing -> "Unknown"
-    where 
-          f (GetById en _ vn') = if vn' == vn then [en] else []
-          f _ = []
-            
-inputFieldRefType (InputFieldPathParam i) = do
-    mr <- gets ctxRoute
-    case mr of
-        Just r -> do
-            let p = (routePathParams r) !! (i-1)
-            case p of
-                PathId _ en -> return $ en ++ "Id"
-                _ -> return ""
-        Nothing -> return ""
-inputFieldRefType ifr = do
-    types <- gets ctxTypes
-    return $ Map.findWithDefault "Unknown" ifr types
-
 inputFieldRef :: InputFieldRef -> State Context String
 inputFieldRef InputFieldAuthId = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-authid.cg")
 inputFieldRef (InputFieldAuth fn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
@@ -131,7 +78,7 @@ getJsonAttrs _ (Require sq) = let
     exprs = catMaybes $ [sqWhere sq] ++ [joinExpr j| j <- sqJoins sq]
     in concatMap exprToJsonAttrs exprs
 getJsonAttrs m (For vn fr ps) = maybeToList (inputFieldRefToJsonAttr fr ) ++ concatMap (getJsonAttrs m) ps
-getJsonAttrs _ (Call _ ifrs) = mapMaybe (inputFieldRefToJsonAttr . fst) ifrs
+getJsonAttrs _ (Call _ ifrs) = mapMaybe inputFieldRefToJsonAttr  ifrs
 getJsonAttrs _ _ = []
 
 

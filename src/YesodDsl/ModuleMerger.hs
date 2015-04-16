@@ -2,10 +2,10 @@ module YesodDsl.ModuleMerger (mergeModules) where
 import YesodDsl.AST
 import Data.List
 import Data.Maybe
+import Data.Generics
     
 mergeModules :: [(FilePath,Module)] -> Module
-mergeModules ms = foldl merge emptyModule ms'
-    where ms' = map updateLocation ms
+mergeModules ms = foldl merge emptyModule $ map updateLocation ms
 
 merge :: Module -> Module -> Module
 merge m1 m2 = Module {
@@ -19,29 +19,8 @@ merge m1 m2 = Module {
     }
 
 updateLocation :: (FilePath,Module) -> Module
-updateLocation (path,m) = m {
-        modEntities = map updateEntityLoc (modEntities m),
-        modClasses  = map updateClassLoc  (modClasses m),
-        modEnums    = map updateEnumLoc  (modEnums m),
-        modRoutes   = map updateRouteLoc  (modRoutes m),
-        modDefines  = map updateDefineLoc (modDefines m)
-    } 
-    where 
-        updateEntityLoc e = e { entityLoc = updateLoc path (entityLoc e) }
-        updateClassLoc i = i { classLoc = updateLoc path (classLoc i) }
-        updateEnumLoc e = e { enumLoc = updateLoc path (enumLoc e) }
-        updateRouteLoc r = r {
-            routeLoc = updateLoc path (routeLoc r),
-            routeHandlers = map updateHandlerLoc (routeHandlers r)
-        }
-        updateHandlerLoc h = h {
-            handlerLoc = updateLoc path (handlerLoc h)
-        }
-        updateDefineLoc d = d {
-            defineLoc = updateLoc path (defineLoc d)
-        }
- 
-updateLoc :: FilePath -> Location -> Location
-updateLoc path (Loc _ l c) = Loc path l c
+updateLocation (path,m) = everywhere (mkT (updateLoc path)) m
+    where
+        updateLoc path (Loc _ l c) = Loc path l c
 
 

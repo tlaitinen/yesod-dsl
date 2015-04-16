@@ -24,7 +24,6 @@ import Prelude
 type ~{moduleName m}Route = Route ~{moduleName m}
  
 instance (YesodAuthPersist master,
-          ~{moduleName m}Interface master,
           AuthId master ~ Key User,
           AuthEntity master ~ User,
           YesodPersistBackend master ~ SqlBackend) => YesodSubDispatch ~{moduleName m} (HandlerT master IO) where

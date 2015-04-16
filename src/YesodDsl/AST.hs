@@ -126,14 +126,7 @@ data ValExpr = FieldExpr FieldRef
            | ApplyExpr FunctionName [ParamName]
            deriving (Show, Eq, Data, Typeable)
   
-data Type = TypeEntityId EntityName       
-          | TypeEnum EnumName
-          | TypeList Type
-          | TypeField FieldType
-          | TypeMaybe Type
-          | TypeCheckmark 
-          deriving (Show, Eq, Data, Typeable)
-          
+         
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | Select SelectQuery 
@@ -145,7 +138,7 @@ data HandlerParam = Public
                   | Return [OutputField]
                   | Require SelectQuery
                   | For VariableName InputFieldRef [HandlerParam]
-                  | Call FunctionName [(InputFieldRef,Maybe Type)]
+                  | Call FunctionName [InputFieldRef]
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)

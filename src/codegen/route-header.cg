@@ -56,4 +56,4 @@ import Blaze.ByteString.Builder.ByteString (fromByteString)
 import Control.Applicative ((<$>), (<*>))  
 import qualified Data.HashMap.Lazy as HML
 import qualified Data.HashMap.Strict as HMS
-~{imports m}
+~{imports}

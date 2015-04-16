@@ -36,7 +36,6 @@ data Context = Context {
     ctxExprType :: Maybe String,
     ctxExprMaybeLevel :: Int,
     ctxExprListValue :: Bool,
-    ctxCalls :: [ (FunctionName, [TypeName]) ],
     ctxTypes :: Map.Map InputFieldRef TypeName
 }
 emptyContext :: Module -> Context
@@ -48,7 +47,6 @@ emptyContext m = Context {
     ctxExprType = Nothing,
     ctxExprMaybeLevel = 0,
     ctxExprListValue = False,
-    ctxCalls = [],
     ctxTypes = Map.empty
 }
 
@@ -298,7 +296,7 @@ localCtx f st = do
     put $ f ctx
     r <- st
     ctx' <- get
-    put $ ctx { ctxCalls = ctxCalls ctx' }
+    put ctx
     return r
 
 

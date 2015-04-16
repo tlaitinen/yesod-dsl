@@ -1,4 +1,4 @@
-~{hsHandlerMethod ht}~{hsRouteName (routePath r)} :: forall master. (~{moduleName m}Interface master, 
+~{hsHandlerMethod ht}~{hsRouteName (routePath r)} :: forall master. (
     YesodAuthPersist master,
     AuthEntity master ~ User,
     AuthId master ~ Key User,

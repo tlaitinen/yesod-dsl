@@ -34,13 +34,10 @@ service may well be expressed succinctly using **yesod-dsl**.
 cabal install yesod-dsl
 ```
 
-Note that the current version is experimental and all of the DSL syntax is
-probably not handled correctly. However, if the generated code compiles, it
-probably does the right thing. I've been running a site generated with
-yesod-dsl (using PostgreSQL) for over a year now without problems. If the
-generated code does not compile, please post an issue with the related .ydsl
-files.
-
+Note that the current version is experimental and all of the DSL syntax may not
+be handled correctly. However, if the generated code compiles, it probably does
+the right thing. If it does not compile, please post an issue with the related
+.ydsl files.
 
 ## DSL syntax
 
@@ -51,6 +48,7 @@ example:
 module Example;
 
 import "versioned.ydsl";
+import Handler.Utils (nonEmpty);
 
 class Named {
     name Text check nonEmpty;
