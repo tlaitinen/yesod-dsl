@@ -55,7 +55,10 @@ writeRoute m r = do
                                             i <- modImports m,
                                             fn <- importFunctions i ]
                                             
-        usedFunctions = [ fn | Call fn _ <- universeBi r ] ++ [ fn | ExternExpr fn _ <- universeBi r ]
+        usedFunctions = [ fn | Call fn _ <- universeBi r ] ++ [ fn | ExternExpr fn _ <- universeBi r ] 
+                        ++ concat [ catMaybes [ mm | (_,_,mm) <- ifs ] 
+                                    | Update _ _ (Just ifs) <- universeBi r ] 
+                        ++ concat [ catMaybes [ mm | (_,_,mm) <- ifs ] | Insert _ (Just (Just _, ifs)) _ <- universeBi r ]
 generate :: FilePath -> Module -> IO ()
 generate path m = do
     syncCabal path m

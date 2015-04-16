@@ -174,7 +174,7 @@ data Join = Join {
     joinExpr   :: Maybe BoolExpr
 } deriving (Show, Eq, Data, Typeable)
 
-type InputField = (ParamName, InputFieldRef)
+type InputField = (ParamName, InputFieldRef, Maybe FunctionName)
 
 data CheckmarkValue = CheckmarkActive | CheckmarkInactive
                     deriving (Show, Eq, Ord, Data, Typeable)

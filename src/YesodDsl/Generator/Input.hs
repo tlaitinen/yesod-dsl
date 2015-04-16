@@ -37,7 +37,7 @@ inputFieldRefToJsonAttr (InputFieldNormal fn) = Just fn
 inputFieldRefToJsonAttr _ = Nothing
 
 inputFieldToJsonAttr :: InputField -> Maybe FieldName
-inputFieldToJsonAttr (_,fr) = inputFieldRefToJsonAttr fr
+inputFieldToJsonAttr (_,fr,_) = inputFieldRefToJsonAttr fr
 inputFieldToJsonAttr _ = Nothing
 
 valExprToJsonAttr :: ValExpr -> [FieldName]

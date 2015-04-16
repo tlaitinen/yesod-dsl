@@ -75,36 +75,38 @@ mapJsonInputField ifields isNew (e,f) = do
         maybeJust False v = v
         maybeInput = matchInputField ifields (fieldName f)
         notNothing = case maybeInput of
-            Just (InputFieldConst NothingValue) -> False
+            Just (InputFieldConst NothingValue, _) -> False
             _ -> True 
         notInputField = case maybeInput of
-            Just (InputFieldNormal _) -> False
+            Just (InputFieldNormal _, _) -> False
             _ -> True
         promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
+
+        mapper mmapper = maybe "" ((" $ " ++) . (++ " $ ")) mmapper
         mkContent = case maybeInput of
-            Just (ifr@(InputFieldNormal fn)) -> do
+            Just (ifr@(InputFieldNormal fn), mm) -> do
                 addCtxType ifr (hsFieldType f)
-                return $ Just $ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-            Just InputFieldAuthId -> return $ Just $  T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
-            Just (InputFieldAuth fn) -> return $ Just $ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
-            Just (InputFieldPathParam i) -> return $ Just $ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
-            Just (InputFieldConst v) -> return $ Just $ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
-            Just (InputFieldNow) -> return $ Just $ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
-            Just (InputFieldLocalParam vn) -> return $ Just $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
-            Just (InputFieldLocalParamField vn fn) -> do
+                return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+            Just (InputFieldAuthId, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+            Just (InputFieldAuth fn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
+            Just (InputFieldPathParam i, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
+            Just (InputFieldConst v, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+            Just (InputFieldNow, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
+            Just (InputFieldLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+            Just (InputFieldLocalParamField vn fn, mm) -> do
                 ps <- gets ctxHandlerParams
                 let en = fromJust $ listToMaybe $ concatMap f ps
-                return $ Just $ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
+                return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
                 where
                       f (GetById en _ vn') = if vn' == vn then [en] else []
                       f _ = []
-            Just (InputFieldCheckmark v) -> return $ Just $ case v of
+            Just (InputFieldCheckmark v, mm) -> return $ Just $ mapper mm ++ case v of
                 CheckmarkActive -> "Active"
                 CheckmarkInactive -> "Inactive"
             Nothing -> return $ if isNew then Just $ defaultFieldValue f
                                 else Nothing
-matchInputField :: [InputField] -> FieldName -> Maybe InputFieldRef
-matchInputField ifields fn =  listToMaybe [ inp | (pn,inp) <- ifields, pn == fn ]
+matchInputField :: [InputField] -> FieldName -> Maybe (InputFieldRef, Maybe FunctionName)
+matchInputField ifields fn =  listToMaybe [ (inp,mm) | (pn,inp,mm) <- ifields, pn == fn ]
 prepareJsonInputField :: FieldName -> String
 prepareJsonInputField fn = T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
 
@@ -158,8 +160,8 @@ updateHandlerReadJsonFields = do
         jsonAttrs m ps = nub $ concatMap (getJsonAttrs m) ps
 
 handlerParamToInputFieldRefs :: HandlerParam -> [InputFieldRef]
-handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr') <- fromMaybe [] io]
-handlerParamToInputFieldRefs (Insert _ (Just (_, io)) _) = [ fr | (_,fr) <- io ]
+handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr',_) <- fromMaybe [] io]
+handlerParamToInputFieldRefs (Insert _ (Just (_, io)) _) = [ fr | (_,fr,_) <- io ]
 handlerParamToInputFieldRefs (Insert _ _ _) = []
 handlerParamToInputFieldRefs (GetById _ ifr _) = [ifr]
 handlerParamToInputFieldRefs (Call _ ifrs) = ifrs

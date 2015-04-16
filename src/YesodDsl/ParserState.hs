@@ -160,7 +160,7 @@ validateInsert  l e (Just (Nothing, ifs)) = do
     case [ fieldName f | f <- entityFields e, 
                          (not . fieldOptional) f, 
                          isNothing (fieldDefault f) ] 
-                         L.\\ [ fn | (fn,_) <- ifs ] of
+                         L.\\ [ fn | (fn,_,_) <- ifs ] of
         fs@(_:_) -> pError l $ "Missing required fields without default value: " ++ (show fs)
         _ -> return ()
 validateInsert _ _ _ = return ()

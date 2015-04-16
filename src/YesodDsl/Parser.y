@@ -663,8 +663,17 @@ inputJsonField : lowerIdTk equals inputRef {%
             let s1 = tkString $1
             withSymbol l1 "target entity" $ 
                 requireEntityField l1 s1 $ \_ -> return ()
-            return (s1, $3) 
+            return (s1, $3, Nothing) 
      }
+    | lowerIdTk equals functionRef lparen inputRef rparen {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            withSymbol l1 "target entity" $ 
+                requireEntityField l1 s1 $ \_ -> return ()
+            return (s1, $5, Just $3)
+    }
+
 
 inputRefList:  { [] }
             | inputRefList inputRef  { $1 ++ [$2] }
@@ -928,12 +937,12 @@ derives : upperId { [$1] }
         | derives comma upperId { $3 : $1 }
 
 checks : { [] }
-        | check functionIdList semicolon { $2 }
+        | check functionRefList semicolon { $2 }
 
-functionIdList: functionId { [$1] }
-              | functionIdList comma functionId { $1 ++ [$3] }
+functionRefList: functionRef { [$1] }
+              | functionRefList comma functionRef { $1 ++ [$3] }
 
-functionId: lowerIdTk {%
+functionRef: lowerIdTk {%
     do
         l <- mkLoc $1
         let n = tkString $1
