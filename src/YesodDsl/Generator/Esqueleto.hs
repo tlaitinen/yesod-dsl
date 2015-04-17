@@ -302,44 +302,45 @@ localCtx f st = do
 
 
 hsBoolExpr :: BoolExpr -> State Context String
-hsBoolExpr expr = case expr of
-    AndExpr e1 e2 -> do
-        r1 <- hsBoolExpr e1
-        r2 <- hsBoolExpr e2
-        return $ "(" ++ r1 ++ ") &&. (" ++ r2 ++ ")"
-    OrExpr e1 e2 -> do
-        r1 <- hsBoolExpr e1
-        r2 <- hsBoolExpr e2 
-        return $ "(" ++ r1 ++ ") ||. (" ++ r2 ++ ")"
-    NotExpr e -> do
-        r <- hsBoolExpr e
-        return $ "not_ (" ++ r ++ ")"
-    BinOpExpr e1 op e2 -> do
-        e1m <- exprMaybeLevel e1
-        e2m <- exprMaybeLevel e2
-        e1rt <- exprReturnType e1
-        e2rt <- exprReturnType e2
-        r1 <- localCtx 
-                (\ctx -> ctx { 
-                    ctxExprMaybeLevel = max 0 $ e2m - e1m ,
-                    ctxExprType = e2rt
-                } )
-                (hsValExpr e1)
-        r2 <- localCtx 
-                (\ctx -> ctx { 
-                    ctxExprType = case op of
-                        Ilike -> Just "Text"
-                        Like -> Just "Text"
-                        _ -> e1rt,
-                    ctxExprMaybeLevel = max 0 $ e1m - e2m,
-                    ctxExprListValue = op `elem` [In, NotIn]
-                }) 
-               (hsValExpr e2)
-        return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
-    ExistsExpr sq -> subQuery "exists" sq
-    ExternExpr ee ps -> do
-        ps' <- mapM externExprParam ps
-        return $ intercalate " " $ [ee] ++ map ((++ ")"). ("("++)) ps'
+hsBoolExpr expr = localCtx (\ctx -> ctx { ctxExprListValue = False}) $
+    case expr of
+        AndExpr e1 e2 -> do
+            r1 <- hsBoolExpr e1
+            r2 <- hsBoolExpr e2
+            return $ "(" ++ r1 ++ ") &&. (" ++ r2 ++ ")"
+        OrExpr e1 e2 -> do
+            r1 <- hsBoolExpr e1
+            r2 <- hsBoolExpr e2 
+            return $ "(" ++ r1 ++ ") ||. (" ++ r2 ++ ")"
+        NotExpr e -> do
+            r <- hsBoolExpr e
+            return $ "not_ (" ++ r ++ ")"
+        BinOpExpr e1 op e2 -> do
+            e1m <- exprMaybeLevel e1
+            e2m <- exprMaybeLevel e2
+            e1rt <- exprReturnType e1
+            e2rt <- exprReturnType e2
+            r1 <- localCtx 
+                    (\ctx -> ctx { 
+                        ctxExprMaybeLevel = max 0 $ e2m - e1m ,
+                        ctxExprType = e2rt
+                    } )
+                    (hsValExpr e1)
+            r2 <- localCtx 
+                    (\ctx -> ctx { 
+                        ctxExprType = case op of
+                            Ilike -> Just "Text"
+                            Like -> Just "Text"
+                            _ -> e1rt,
+                        ctxExprMaybeLevel = max 0 $ e1m - e2m,
+                        ctxExprListValue = op `elem` [In, NotIn]
+                    }) 
+                   (hsValExpr e2)
+            return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
+        ExistsExpr sq -> subQuery "exists" sq
+        ExternExpr ee ps -> do
+            ps' <- mapM externExprParam ps
+            return $ intercalate " " $ [ee] ++ map ((++ ")"). ("("++)) ps'
     where
         externExprParam (FieldRefParam fr) = hsFieldRef fr
         externExprParam (VerbatimParam v) = return v 

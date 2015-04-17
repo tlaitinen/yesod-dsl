@@ -46,9 +46,9 @@ valExprToJsonAttr (ConcatManyExpr ves) = concatMap valExprToJsonAttr ves
 valExprToJsonAttr (ValBinOpExpr ve1 _ ve2) = concatMap valExprToJsonAttr [ve1,ve2]
 valExprToJsonAttr (FloorExpr ve) = valExprToJsonAttr ve
 valExprToJsonAttr (CeilingExpr ve) = valExprToJsonAttr ve
-valExprToJsonAttr (SubQueryExpr sq) = fromMaybe [] $ do
+valExprToJsonAttr (SubQueryExpr sq) = (fromMaybe [] $ do
     expr <- sqWhere sq
-    return $ exprToJsonAttrs expr
+    return $ exprToJsonAttrs expr) ++ (concatMap exprToJsonAttrs $ mapMaybe joinExpr $ sqJoins sq)
 valExprToJsonAttr _ = []
 
 exprToJsonAttrs :: BoolExpr -> [FieldName]
