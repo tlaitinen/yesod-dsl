@@ -192,7 +192,6 @@ valExprRefs (FloorExpr ve) = valExprRefs ve
 valExprRefs (CeilingExpr ve) = valExprRefs ve
 valExprRefs (ExtractExpr _ ve) = valExprRefs ve
 valExprRefs (SubQueryExpr sq) = sqFieldRefs sq
-valExprRefs (ApplyExpr _ _) = []
 
 exprFieldRefs :: BoolExpr -> [FieldRef]
 exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]

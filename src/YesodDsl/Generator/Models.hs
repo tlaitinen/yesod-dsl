@@ -49,9 +49,9 @@ persistFieldType f = baseFieldType f
     where 
           maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
-          maybeDefaultNull (Field _ True _ _ (EntityField _)) = " default=NULL"
+          maybeDefaultNull (Field _ True _ _ (EntityField _) _) = " default=NULL"
           maybeDefaultNull _ = ""
-          maybeCheckmarkNullable (Field _ _ _ _ (CheckmarkField _)) = " nullable"
+          maybeCheckmarkNullable (Field _ _ _ _ (CheckmarkField _) _) = " nullable"
           maybeCheckmarkNullable _ = ""
 
 

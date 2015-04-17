@@ -114,7 +114,6 @@ tokens :-
     "$request" { mkT TRequest }
     "require" { mkT TRequire }
     "internal" { mkT TInternal }
-    "define" { mkT TDefine }
     "extract" { mkT TExtract }
     "concat" { mkT TConcat }
      "return" { mkT TReturn }
@@ -216,7 +215,6 @@ data TokenType = TSemicolon
            | TDelete
            | TPublic
            | TSelect
-           | TDefine
            | TFrom
            | TAnd
            | TOr

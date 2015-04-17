@@ -13,7 +13,6 @@ data Module = Module {
     modClasses   :: [Class],       
     modEnums     :: [EnumType],    
     modRoutes    :: [Route],       
-    modDefines   :: [Define],
     modImports   :: [Import]
 } deriving (Show, Data, Typeable)
 
@@ -27,7 +26,6 @@ emptyModule = Module {
     modClasses = [],
     modEnums = [],
     modRoutes = [],
-    modDefines = [],
     modImports = []
 }
 
@@ -54,22 +52,6 @@ data Location = Loc FilePath Int Int deriving (Eq,Data,Typeable)
 
 instance Show Location where
     show (Loc path row col) = path ++ ":" ++ show row ++ ":" ++ show col
-
-
-
--- | macro definition, currently used only to define parametrized 
--- sub-select-queries
-data Define = Define {
-    defineName :: String,
-    defineLoc :: Location,
-    defineParams :: [ParamName],
-    defineContent :: DefineContent
-} deriving (Show, Eq, Data, Typeable)
-
--- | macro-like definition, currently only for commonly used parametrized 
--- sub-queries
-data DefineContent = DefineSubQuery SelectQuery 
-                     deriving (Show, Eq, Data, Typeable)
 
 
 data Unique = Unique {
@@ -123,7 +105,6 @@ data ValExpr = FieldExpr FieldRef
            | CeilingExpr ValExpr
            | ExtractExpr FieldName ValExpr
            | SubQueryExpr SelectQuery 
-           | ApplyExpr FunctionName [ParamName]
            deriving (Show, Eq, Data, Typeable)
   
          
@@ -281,11 +262,12 @@ data FieldContent = NormalField FieldType [FieldOption]
    
 
 data Field = Field {
-    fieldLoc      :: Location,
-    fieldOptional :: Bool,
-    fieldInternal :: Bool,
-    fieldName     :: FieldName,
-    fieldContent  :: FieldContent
+    fieldLoc       :: Location,
+    fieldOptional  :: Bool,
+    fieldInternal  :: Bool,
+    fieldName      :: FieldName,
+    fieldContent   :: FieldContent,
+    fieldClassName :: Maybe (ClassName,FieldName)
 } deriving (Show,Eq, Data, Typeable)
 
 

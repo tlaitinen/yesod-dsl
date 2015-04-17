@@ -59,7 +59,6 @@ library
            YesodDsl.Generator.Fay
            YesodDsl.Generator.EntityFactories
            YesodDsl.SyncFile
-           YesodDsl.ExpandMacros
 
 
 executable  yesod-dsl

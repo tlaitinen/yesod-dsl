@@ -11,8 +11,8 @@ classLookup :: [Class] -> ClassName -> Maybe Class
 classLookup classes name =  find (\i -> name == className i) classes
 
 
-expandClassField :: Module -> Entity ->  Field -> [Field]
-expandClassField m e f@(Field _ _ internal _ (EntityField iName)) 
+expandClassField :: Module -> ClassName -> Entity ->  Field -> [Field]
+expandClassField m cn e f@(Field _ _ internal _ (EntityField iName) _) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to class not allowed"
     | otherwise = [ mkField re | re <- modEntities m,  
                                  iName `elem` (entityInstances re) ]
@@ -21,9 +21,10 @@ expandClassField m e f@(Field _ _ internal _ (EntityField iName))
             fieldOptional = True,
             fieldInternal = internal,
             fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
-            fieldContent = EntityField (entityName re)
+            fieldContent = EntityField (entityName re),
+            fieldClassName = Just (cn, fieldName f)
         } 
-expandClassField _ _ _ = []
+expandClassField _ _ _ _ = []
 
 expandClassRefFields :: Module -> Entity -> Field -> [Field]
 expandClassRefFields m e f = expand (fieldContent f)
@@ -34,7 +35,7 @@ expandClassRefFields m e f = expand (fieldContent f)
                 }
             ]
         expand (EntityField name) = case classLookup (modClasses m) name of
-            Just _ -> expandClassField m e f
+            Just _ -> expandClassField m name e f 
             Nothing -> [f]
         expand _ = [f]                           
             
@@ -56,7 +57,7 @@ implInEntity m classes' e = e {
         maybeCompare Nothing Nothing = EQ
         validClasses = mapMaybe (classLookup classes) $ entityInstances e
         extraFields = concatMap classFields validClasses
-        isClassField (Field _ _ _ _ (EntityField iName)) = iName `elem` (map className $ modClasses m)
+        isClassField (Field _ _ _ _ (EntityField iName) _) = iName `elem` (map className $ modClasses m)
         isClassField _ = False
         addEntityNameToUnique e (Unique name fields) = Unique (entityName e ++ name) fields
         

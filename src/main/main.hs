@@ -9,7 +9,6 @@ import YesodDsl.ClassImplementer
 import YesodDsl.Generator
 import Control.Monad
 import System.IO
-import YesodDsl.ExpandMacros
 
 data Flag = Version 
           | FayPath String deriving Eq

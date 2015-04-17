@@ -40,7 +40,6 @@ data SymType = SEnum EnumType
              | SClass Class
              | SEntity EntityName
              | SEntityId EntityName
-             | SDefine Define
              | SField Field
              | SFieldType FieldType
              | SUnique Unique
@@ -57,7 +56,6 @@ instance Show SymType where
         SClass _   -> "class"
         SEntity _  -> "entity"
         SEntityId _ -> "entity id"
-        SDefine _  -> "define"
         SField _   -> "field"
         SFieldType _ -> "field type"
         SUnique _  -> "unique"

@@ -1,0 +1,2 @@
+instance ~{entityName e}~{upperFirst fn}Field ~{fieldEntityName f} where
+    ~{lowerFirst $ entityName e}~{upperFirst fn}Field _ = ~{entityName e}~{upperFirst $ fieldName f}

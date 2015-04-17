@@ -5,7 +5,6 @@ import YesodDsl.Lexer
 import YesodDsl.AST
 import YesodDsl.ModuleMerger
 import YesodDsl.ClassImplementer
-import YesodDsl.ExpandMacros
 import Control.Monad.Trans.Class
 import System.IO
 import Data.Maybe
@@ -133,7 +132,6 @@ import Data.List
     require { Tk _ TRequire }
     internal { Tk _ TInternal }
     underscore { Tk _ TUnderScore }
-    define { Tk _ TDefine }
     for { Tk _ TFor }
     extract { Tk _ TExtract }
     concat { Tk _ TConcat }
@@ -160,7 +158,6 @@ dbModule : maybeModuleName
                                     ((reverse . getClasses) $4)
                                     ((reverse . getEnums) $4)
                                     ((reverse . getRoutes) $4)
-                                    ((reverse . getDefines) $4)
                                     (rights $3)
                return $ mergeModules $ (path,m):lefts $3
            }
@@ -211,24 +208,6 @@ def : routeDef     { RouteDef $1 }
       | entityDef      { EntityDef $1 } 
       | classDef      { ClassDef $1 }
       | enumDef       { EnumDef $1 }
-      | defineDef     { DefineDef $1 }
-
-defineDef : define lowerIdTk pushScope lparen maybeEmptyParamList rparen equals defineContent popScope semicolon {% 
-    do
-        l <- mkLoc $2 
-        let n = tkString $2
-        let d = Define n l $5 $8
-        declare l n (SDefine d) 
-        lift $ putStrLn $ show l ++ ": Define support is being deprecated. Please switch to external functions."
-        return d
-    } 
-
-maybeEmptyParamList: { [] }
-         | paramList { $1 } 
-
-paramList : paramDef { [$1] }
-          | paramList comma paramDef { $1 ++ [$3] }
-
 paramDef: lowerIdTk {%
     do
         l <- mkLoc $1
@@ -243,9 +222,7 @@ maybeEmptyLowerIdList : { [] }
 lowerIdList : lowerIdTk { [tkString $1] }
             | lowerIdList comma lowerIdTk { (tkString $3) : $1 }
 
-defineContent : selectQuery
-               { DefineSubQuery $1 }
-      
+     
 enumDef : enum upperIdTk equals pushScope enumValues popScope semicolon 
          {% 
     do
@@ -785,7 +762,6 @@ valexpr : lparen valexpr rparen { $2 }
         }
         | lparen pushScope selectQuery popScope rparen
                    { SubQueryExpr $3 }
-        | lowerIdTk lparen maybeEmptyLowerIdList rparen { ApplyExpr (tkString $1) $3 }
 
 valexprlist: valexpr { [$1] }        
            | valexprlist comma valexpr { $3 : $1 }
@@ -842,7 +818,7 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $6) n (NormalField $4 (reverse $5)) 
+            let f = Field l $2 (FieldInternal `elem` $6) n (NormalField $4 (reverse $5)) Nothing 
             declare l n (SField f)
             return f
         } 
@@ -852,7 +828,7 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
             let n = tkString $1
             l3 <- mkLoc $3
             let s3 = tkString $3
-            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField s3)
+            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField s3) Nothing
             withGlobalSymbol l3 s3 requireEntityOrClass
             declare l n (SField f)
             return f}
@@ -860,7 +836,7 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
         do  
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $4) n $3
+            let f = Field l $2 (FieldInternal `elem` $4) n $3 Nothing
             declare l n (SField f)
             return f
             }
@@ -868,7 +844,7 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l False (FieldInternal `elem` $4) n (CheckmarkField $3)
+            let f = Field l False (FieldInternal `elem` $4) n (CheckmarkField $3) Nothing
             declare l n (SField f)
             return f
             }      
@@ -984,7 +960,6 @@ data ModDef = EntityDef Entity
            | ClassDef Class
            | EnumDef EnumType
            | RouteDef Route
-           | DefineDef Define
            deriving (Show)
 
 data FieldFlag = FieldInternal deriving (Eq)
@@ -999,10 +974,6 @@ getEnums defs = mapMaybe (\d -> case d of (EnumDef e) -> Just e; _ -> Nothing) d
 
 getRoutes :: [ModDef] -> [Route]
 getRoutes defs = mapMaybe (\d -> case d of (RouteDef e) -> Just e; _ -> Nothing) defs
-
-getDefines :: [ModDef] -> [Define]
-getDefines defs = mapMaybe (\d -> case d of (DefineDef e) -> Just e; _ -> Nothing) defs
-
 
 data ParseError = ParseError String deriving (Show, Typeable)
 instance Exception ParseError
@@ -1023,7 +994,7 @@ parseModule ps path = catch
        
 parse path = do
     (m,ps) <- parseModule initParserState path
-    let ast = expandMacros $ implementClasses m
+    let ast = implementClasses m
     errors <- postValidation ast ps
     if errors == 0
         then return $ Just ast
