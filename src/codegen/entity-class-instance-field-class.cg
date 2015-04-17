@@ -1,4 +1,4 @@
 class ~{entityName e}~{upperFirst fn}Field e where
-    ~{lowerFirst $ entityName e}~{upperFirst fn}Field :: SqlExpr (Database.Esqueleto.Value (Key e)) -> EntityField ~{entityName e} (Maybe (Key e)) 
+    ~{lowerFirst $ entityName e}~{upperFirst fn}Field :: Key e -> EntityField ~{entityName e} (Maybe (Key e)) 
 
 ~{concatMap fieldInstance fs}    
