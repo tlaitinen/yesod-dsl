@@ -27,7 +27,6 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     beginHandler,
     statement,
     lastStatement,
-    addCheck,
     postValidation) where
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
@@ -182,14 +181,6 @@ lastStatement l s = do
            psLastStatement ps, Just (l,s) 
        ]
     }
-
-addCheck :: Location -> String -> FieldType -> ParserMonad ()
-addCheck l n ft = do
-    checks <- gets psChecks
-    forM_ [ c | c@(l',n',ft') <- checks, ft' /= ft, n' == n ] $ \(l',n',ft') ->
-        pError l $ "'" ++ n ++ "' is for " ++ show ft ++ " but '" 
-            ++ n' ++ "' in " ++ show l' ++ " is for " ++ show ft' 
-    modify $ \ps -> ps { psChecks = psChecks ps ++ [(l,n,ft)] }
 
 postValidation :: Module -> ParserState -> IO Int
 postValidation m ps = do
