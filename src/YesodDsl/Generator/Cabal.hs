@@ -49,7 +49,7 @@ modifyDesc m d = d {
     where 
         modifyCtree ctree = Just $ ctree {
             condTreeData = modifyLib (condTreeData ctree),
-            condTreeConstraints = ensureDeps (condTreeConstraints ctree)
+            condTreeConstraints = nub $ ensureDeps (condTreeConstraints ctree)
         }
         modifyLib l = l {
             exposedModules = modifyExposed (exposedModules l)            

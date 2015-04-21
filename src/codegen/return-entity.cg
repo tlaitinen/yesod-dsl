@@ -1,1 +1,0 @@
-    return $ A.object [ "result" .=  map JSONWrapper result, "totalCount" .= ((\(Database.Esqueleto.Value v) -> v) (head count)) ]
