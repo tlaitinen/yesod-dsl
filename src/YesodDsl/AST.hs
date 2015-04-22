@@ -143,6 +143,7 @@ sqAliases sq = (en,vn,False) : [ (joinEntity j, joinAlias j,
                              | j <- sqJoins sq]
     where (en,vn) = sqFrom sq                             
 
+
 data SelectField = SelectAllFields VariableName
                  | SelectField VariableName FieldName (Maybe VariableName)
                  | SelectIdField VariableName (Maybe VariableName)

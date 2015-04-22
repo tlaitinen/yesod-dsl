@@ -4,8 +4,6 @@ import YesodDsl.Lexer
 import YesodDsl.Parser
 import System.Environment
 import System.Console.GetOpt
-import YesodDsl.ModuleMerger
-import YesodDsl.ClassImplementer
 import YesodDsl.Generator
 import Control.Monad
 import System.IO

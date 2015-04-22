@@ -43,6 +43,7 @@ library
            YesodDsl.Parser
            YesodDsl.ParserState 
            YesodDsl.AST 
+           YesodDsl.Simplify
            YesodDsl.Generator 
            YesodDsl.ClassImplementer 
            YesodDsl.ModuleMerger 

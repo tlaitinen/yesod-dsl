@@ -65,13 +65,6 @@ defaultSortFields sq = do
     staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
     return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where 
-          fromSelectField (SelectAllFields vn) = do
-              m <- gets ctxModule
-              en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
-              return [ (e,vn, f, fieldName f)
-                 | e <- modEntities m, 
-                   entityName e == en,
-                   f <- entityFields e]
           fromSelectField (SelectField vn fn an) = do
               m <- gets ctxModule
               en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
@@ -170,12 +163,6 @@ getHandlerReturn sq = do
         resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
     return $ T.unpack $(codegenFile "codegen/get-handler-return.cg")
     where 
-          expand (SelectAllFields vn) = do
-            en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
-            m <- gets ctxModule
-            let e = fromJust $ lookupEntity m en 
-            return $ map fieldName $ [ f | f <- entityFields e, 
-                                           (not . fieldInternal) f ]
           expand (SelectField _ fn an') = return [ maybe fn id an' ]
           expand (SelectIdField _ an') = return [ maybe "id" id an' ]
           expand (SelectValExpr ve an) = return [ an ]

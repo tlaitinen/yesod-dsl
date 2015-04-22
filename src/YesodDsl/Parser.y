@@ -5,6 +5,7 @@ import YesodDsl.Lexer
 import YesodDsl.AST
 import YesodDsl.ModuleMerger
 import YesodDsl.ClassImplementer
+import YesodDsl.Simplify
 import Control.Monad.Trans.Class
 import System.IO
 import Data.Maybe
@@ -997,7 +998,7 @@ parse path = do
     let ast = implementClasses m
     errors <- postValidation ast ps
     if errors == 0
-        then return $ Just ast
+        then return $ Just $ simplify ast
         else do
             hPutStrLn stderr $ show errors ++ " errors"
             return Nothing

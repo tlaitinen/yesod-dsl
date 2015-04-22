@@ -245,14 +245,6 @@ selectFieldExprs sf = do
     m <- gets ctxModule
 
     case sf of
-        (SelectAllFields vn) -> do
-            men <- ctxLookupEntity vn
-            let me = men >>= \en -> lookupEntity m en
-            return $ case me of
-                Just e -> [ FieldExpr $ FieldRefNormal vn (fieldName f) 
-                    |  f <- entityFields e,
-                       fieldInternal f == False ]
-                Nothing -> []
         (SelectField vn fn _) -> return [ FieldExpr $ FieldRefNormal vn fn]
         (SelectIdField vn _) -> return [ FieldExpr $ FieldRefId vn ]
         (SelectValExpr ve _) -> return [ ve ]
