@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YesodDsl.Generator (generate, hsRouteName, genFay) where
+module YesodDsl.Generator (generate, hsRouteName, genFay, genJson) where
 import Prelude hiding (readFile)
 import System.IO (FilePath, writeFile)
 import System.IO.Strict (readFile)
@@ -26,6 +26,7 @@ import YesodDsl.Generator.Handlers
 import YesodDsl.Generator.EsqueletoInstances
 import YesodDsl.Generator.Cabal
 import YesodDsl.Generator.Fay
+import YesodDsl.Generator.Json
 import YesodDsl.SyncFile
 import Control.Monad.State
 import YesodDsl.Generator.Esqueleto
@@ -92,6 +93,8 @@ generate path m = do
                             
 
 genFay :: FilePath -> Module -> IO ()
-genFay path m = do
-    syncFile path $ fay m
+genFay path m = syncFile path $ fay m
+ 
+genJson :: FilePath -> Module -> IO ()
+genJson path m = syncFile path $ moduleToJson m
 

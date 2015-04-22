@@ -11,10 +11,13 @@ import Control.Monad
 import System.IO
 
 data Flag = Version 
+          | JsonPath String 
           | FayPath String deriving Eq
+          
 options :: [OptDescr Flag]
 options = [
     Option ['f'] ["fay"] (ReqArg FayPath "FILE") "translate DSL definition to Fay compatible code and store it in FILE",
+    Option [] ["json"] (ReqArg JsonPath "FILE") "translate DSL definition to JSON object",
     Option ['v'] ["version"] (NoArg Version) "print version number"
   ]
 
@@ -44,4 +47,5 @@ main = do
                             forM_ o (processFlag ast)
                         Nothing -> return ()
         processFlag ast (FayPath path) = genFay path ast
+        processFlag ast (JsonPath path) = genJson path ast
         processFlag _ _ = return ()

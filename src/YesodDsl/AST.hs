@@ -96,6 +96,9 @@ data BoolExpr = AndExpr BoolExpr BoolExpr
 data FunctionParam = FieldRefParam FieldRef
                    | VerbatimParam String
     deriving (Show, Eq, Data, Typeable)
+
+type MaybeLevel = Int
+    
 data ValExpr = FieldExpr FieldRef
            | ConstExpr FieldValue 
            | ConcatManyExpr [ValExpr]
