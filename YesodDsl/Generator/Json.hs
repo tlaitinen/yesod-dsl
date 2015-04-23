@@ -60,7 +60,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                                     "name" .= fn,
                                     "type" .= Null
                                 ] 
-                            | fn <- concatMap (getJsonAttrs m) $ handlerParams h 
+                            | fn <- concatMap getJsonAttrs $ handlerParams h 
                         ]
                     ] |  h <- routeHandlers r
                 ]

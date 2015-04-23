@@ -19,6 +19,7 @@ import YesodDsl.Generator.Models
 import YesodDsl.Generator.Require
 import YesodDsl.Generator.Input
 import Control.Monad.State
+import Data.Generics.Uniplate.Data
 getHandlerParam :: HandlerParam -> State Context String
 getHandlerParam DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
@@ -170,41 +171,9 @@ getHandlerReturn sq = do
           expand (SelectParamField _ _ _) = return []
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
 
-valExprRefs :: ValExpr -> [FieldRef]
-valExprRefs (FieldExpr fr) = [fr]
-valExprRefs (ConstExpr _) = []
-valExprRefs (ConcatManyExpr ves) = concatMap valExprRefs ves
-valExprRefs (ValBinOpExpr ve1 _ ve2) = concatMap valExprRefs [ve1,ve2]
-valExprRefs RandomExpr = []
-valExprRefs (FloorExpr ve) = valExprRefs ve
-valExprRefs (CeilingExpr ve) = valExprRefs ve
-valExprRefs (ExtractExpr _ ve) = valExprRefs ve
-valExprRefs (SubQueryExpr sq) = sqFieldRefs sq
-
-exprFieldRefs :: BoolExpr -> [FieldRef]
-exprFieldRefs (AndExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
-exprFieldRefs (OrExpr e1 e2) = concatMap exprFieldRefs [e1,e2]
-exprFieldRefs (NotExpr e) = exprFieldRefs e
-exprFieldRefs (BinOpExpr ve1 _ ve2) = valExprRefs ve1 ++ (valExprRefs ve2)
-exprFieldRefs (ExistsExpr sq) = sqFieldRefs sq          
-exprFieldRefs (ExternExpr _ ps) = mapMaybe f ps
-    where
-        f (FieldRefParam fr) = Just fr
-        f _ = Nothing
-
-joinFieldRefs :: Join -> [FieldRef]
-joinFieldRefs j = maybe [] exprFieldRefs (joinExpr j)
-
-sqFieldRefs :: SelectQuery -> [FieldRef]
-sqFieldRefs sq = concatMap joinFieldRefs (sqJoins sq) ++ case sqWhere sq of
-    Just e -> exprFieldRefs e
-    _ -> []
 
 getHandlerParamFieldRefs :: HandlerParam-> [FieldRef]
-getHandlerParamFieldRefs h = case h of
-    (Select sq) -> sqFieldRefs sq
-    (IfFilter (_,joins,e,_)) -> concatMap joinFieldRefs joins ++ exprFieldRefs e
-    _ -> []
+getHandlerParamFieldRefs  = universeBi 
 
 getHandlerMaybeAuth :: [HandlerParam] -> String
 getHandlerMaybeAuth ps 
@@ -233,7 +202,7 @@ getHandlerReadRequestFields = do
         else return $
             concatMap prepareRequestInputField attrs
     where
-        jsonAttrs m ps = nub $ concatMap (getJsonAttrs m) ps
+        jsonAttrs m ps = nub $ concatMap getJsonAttrs ps
         prepareRequestInputField fn = T.unpack $(codegenFile "codegen/prepare-request-input-field.cg")
 
 

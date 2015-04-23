@@ -14,6 +14,7 @@ import YesodDsl.Generator.Common
 import YesodDsl.Generator.Models
 import YesodDsl.Generator.Require
 import YesodDsl.Generator.Input
+import Data.Generics.Uniplate.Data
 import Control.Monad.State
 import qualified Data.Map as Map
 
@@ -155,27 +156,20 @@ updateHandlerReadJsonFields = do
             (T.unpack $(codegenFile "codegen/json-body.cg")) 
             ++ concatMap prepareJsonInputField attrs
     where
-        jsonAttrs m ps = nub $ concatMap (getJsonAttrs m) ps
+        jsonAttrs m ps = nub $ concatMap getJsonAttrs ps
 
-handlerParamToInputFieldRefs :: HandlerParam -> [InputFieldRef]
-handlerParamToInputFieldRefs (Update _ fr io) = [fr] ++ [ fr' | (_,fr',_) <- fromMaybe [] io]
-handlerParamToInputFieldRefs (Insert _ (Just (_, io)) _) = [ fr | (_,fr,_) <- io ]
-handlerParamToInputFieldRefs (Insert _ _ _) = []
-handlerParamToInputFieldRefs (GetById _ ifr _) = [ifr]
-handlerParamToInputFieldRefs (Call _ ifrs) = ifrs
-handlerParamToInputFieldRefs _ = []
 
 updateHandlerMaybeCurrentTime :: [HandlerParam] -> String
 updateHandlerMaybeCurrentTime ps = if  InputFieldNow  `elem` inputFields 
     then (T.unpack $(codegenFile "codegen/prepare-now.cg"))
     else ""
-    where inputFields = concatMap handlerParamToInputFieldRefs ps
+    where inputFields = concatMap universeBi ps
 
 updateHandlerMaybeAuth :: [HandlerParam] -> String
 updateHandlerMaybeAuth ps 
     | (not . null) (filter isAuthField inputFields) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
-    where inputFields = concatMap handlerParamToInputFieldRefs ps
+    where inputFields = concatMap universeBi ps
           isAuthField (InputFieldAuth _) = True
           isAuthField _ = False
 
