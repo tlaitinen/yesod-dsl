@@ -42,7 +42,7 @@ fmtImport i = T.unpack $(codegenFile "codegen/import.cg")
 
 writeRoute :: Module -> Route -> IO ()
 writeRoute m r = do
-    let (content, _) = runState (liftM concat $ mapM handler (routeHandlers r)) ((emptyContext m) { ctxRoute = Just r})
+    let (content, _) = runState (liftM concat $ mapM (handler r) (routeHandlers r)) (emptyContext m)
     syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
         T.unpack $(codegenFile "codegen/route-header.cg") ++ content

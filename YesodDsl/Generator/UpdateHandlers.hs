@@ -59,10 +59,6 @@ defaultFieldValue f = case fieldDefault f of
     Nothing -> if fieldOptional f
         then "Nothing"
         else let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-addCtxType :: InputFieldRef -> TypeName -> State Context ()
-addCtxType ifr typeName = do
-    ctx <- get
-    put $ ctx { ctxTypes = Map.insert ifr typeName $ ctxTypes ctx }
 
 mapJsonInputField :: [InputField] -> Bool -> (Entity,Field) -> State Context (Maybe String)
 mapJsonInputField ifields isNew (e,f) = do
@@ -88,7 +84,6 @@ mapJsonInputField ifields isNew (e,f) = do
         mapper mmapper = maybe "" ((" $ " ++) . (++ " $ ")) mmapper
         mkContent = case maybeInput of
             Just (ifr@(InputFieldNormal fn), mm) -> do
-                addCtxType ifr (hsFieldType f)
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             Just (InputFieldAuthId, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
             Just (InputFieldAuth fn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")

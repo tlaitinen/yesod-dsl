@@ -29,12 +29,11 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
-handler :: Handler -> State Context String
-handler (Handler _ ht ps) = do
+handler :: Route -> Handler -> State Context String
+handler r (Handler _ ht ps) = do
     ctx <- get 
-    put $ ctx { ctxHandlerParams = ps, ctxTypes = Map.empty }
+    put $ ctx { ctxHandlerParams = ps }
     m <- gets ctxModule
-    r <- gets ctxRoute >>= return . fromJust
  
     result <- liftM concat $ sequence [
             return $ T.unpack $(codegenFile "codegen/handler-header.cg"),

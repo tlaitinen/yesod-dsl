@@ -31,23 +31,19 @@ type TypeName = String
 data Context = Context {
     ctxNames :: [(EntityName, VariableName, MaybeFlag)],
     ctxModule :: Module,
-    ctxRoute :: Maybe Route,
     ctxHandlerParams :: [HandlerParam],
     ctxExprType :: Maybe String,
     ctxExprMaybeLevel :: Int,
-    ctxExprListValue :: Bool,
-    ctxTypes :: Map.Map InputFieldRef TypeName
+    ctxExprListValue :: Bool
 }
 emptyContext :: Module -> Context
 emptyContext m = Context {
     ctxNames = [],
     ctxModule = m,
-    ctxRoute = Nothing,
     ctxHandlerParams = [],
     ctxExprType = Nothing,
     ctxExprMaybeLevel = 0,
-    ctxExprListValue = False,
-    ctxTypes = Map.empty
+    ctxExprListValue = False
 }
 
 ctxLookupEntity :: VariableName -> State Context (Maybe EntityName)
