@@ -22,13 +22,16 @@ updateHandlerRunDB :: (Int,HandlerParam) -> State Context String
 updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
         updateHandlerDecode (pId,p) >>= return . (indent 4),
         case p of
-            GetById en fr vn -> do
+            GetById (Right e) fr vn -> do
+                let en = entityName e
                 ifr <- inputFieldRef fr
                 return $ T.unpack $(codegenFile "codegen/get-by-id.cg")
-            Update en fr io -> do
+            Update (Right e) fr io -> do
+                let en = entityName e
                 ifr <- inputFieldRef fr
                 return $ T.unpack $(codegenFile "codegen/replace.cg")
-            Insert en io mbv -> do
+            Insert (Right e) io mbv -> do
+                let en = entityName e
                 return $ T.unpack $(codegenFile "codegen/insert.cg")
                     where 
                     maybeBindResult (Just vn) = "result_" ++ vn ++ " <- "
@@ -36,7 +39,7 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
             DeleteFrom en vn Nothing -> return $
                 let maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
                 in T.unpack $(codegenFile "codegen/delete.cg")
-            DeleteFrom en vn (Just e) -> do
+            DeleteFrom (Right en) vn (Just e) -> do
                 withScope [(en,vn,False)] $ do
                     maybeExpr <- hsBoolExpr e
                     return $ T.unpack $(codegenFile "codegen/delete.cg")
@@ -98,7 +101,7 @@ mapJsonInputField ifields isNew (e,f) = do
                 let en = fromJust $ listToMaybe $ concatMap f ps
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
                 where
-                      f (GetById en _ vn') = if vn' == vn then [en] else []
+                      f (GetById er _ vn') = if vn' == vn then [entityRefName er] else []
                       f _ = []
             Just (InputFieldCheckmark v, mm) -> return $ Just $ mapper mm ++ case v of
                 CheckmarkActive -> "Active"
@@ -113,12 +116,12 @@ prepareJsonInputField fn = T.unpack $(codegenFile "codegen/prepare-input-field-n
  
 updateHandlerDecode :: (Int,HandlerParam) -> State Context String
 updateHandlerDecode (pId,p) = case p of
-    Update en fr io -> do
+    Update (Right e) fr io -> do
         m <- gets ctxModule
-        readInputObject (fromJust $ lookupEntity m en) (io >>= \io' -> Just (Nothing, io')) (Just fr)
-    Insert en io _ -> do
+        readInputObject e (io >>= \io' -> Just (Nothing, io')) (Just fr)
+    Insert (Right e) io _ -> do
         m <- gets ctxModule
-        readInputObject (fromJust $ lookupEntity m en) io Nothing
+        readInputObject e io Nothing
     _ -> return ""
     where 
         readInputObject :: Entity -> Maybe (Maybe VariableName, [InputField]) -> Maybe InputFieldRef -> State Context String

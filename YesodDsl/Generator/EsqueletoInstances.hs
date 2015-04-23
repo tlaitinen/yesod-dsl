@@ -20,7 +20,7 @@ maxInstances m = safeMaximum $ map sqFieldNumber
           isSelectQuery _ = False
           sqFieldNumber (Select sq) = let
               ctx = (emptyContext m) {
-                  ctxNames = sqAliases sq
+                  ctxNames = map (\(e,vn,mf) -> (entityName e, vn, mf)) $ sqAliases sq
               }
               in evalState ((liftM concat $ mapM selectFieldExprs (sqFields sq))
                         >>= \fes -> return $ length fes) ctx

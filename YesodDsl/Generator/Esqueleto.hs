@@ -278,8 +278,8 @@ subQuery sqFunc sq = withScope (sqAliases sq) $ do
         makeInline = (++" ;") . lstrip . rstrip
         (en, vn) = sqFrom sq
 
-withScope :: [(EntityName, VariableName, MaybeFlag)] -> State Context a -> State Context a 
-withScope names = localCtx (\ctx -> ctx { ctxNames = ctxNames ctx ++ names })
+withScope :: [(Entity, VariableName, MaybeFlag)] -> State Context a -> State Context a 
+withScope names = localCtx (\ctx -> ctx { ctxNames = ctxNames ctx ++ [ (entityName e, vn, mf) | (e, vn, mf) <- names ] })
 
 
 localCtx :: (Context -> Context) -> (State Context a) -> (State Context a)

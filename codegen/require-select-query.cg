@@ -1,6 +1,6 @@
     _ <- do
         result <- select $ from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
-~{indent 12 $ joinExprs}            let ~{selectVar}Id' = ~{selectVar} ^. ~{selectEntity}Id
+~{indent 12 $ joinExprs}            let ~{selectVar}Id' = ~{selectVar} ^. ~{entityRefName selectEntity}Id
 ~{indent 12 $ maybeWhere}
             limit 1
             return ~{selectVar}

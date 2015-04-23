@@ -5,6 +5,7 @@ import Data.Maybe
 import Data.List
 import Data.Char
 import Data.Data (Data)
+import Data.Either
 import Data.Typeable (Typeable)
 
 data Module = Module {
@@ -109,16 +110,20 @@ data ValExpr = FieldExpr FieldRef
            | ExtractExpr FieldName ValExpr
            | SubQueryExpr SelectQuery 
            deriving (Show, Eq, Data, Typeable)
-  
+
+type EntityRef = Either EntityName Entity
+entityRefName :: EntityRef -> EntityName
+entityRefName (Left en) = en
+entityRefName (Right e) = entityName e
          
 data HandlerParam = Public 
                   | DefaultFilterSort
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
-                  | DeleteFrom EntityName VariableName (Maybe BoolExpr)
-                  | GetById EntityName InputFieldRef VariableName
-                  | Update EntityName InputFieldRef (Maybe [InputField])
-                  | Insert EntityName (Maybe (Maybe VariableName, [InputField])) (Maybe VariableName)
+                  | DeleteFrom EntityRef VariableName (Maybe BoolExpr)
+                  | GetById EntityRef InputFieldRef VariableName
+                  | Update EntityRef InputFieldRef (Maybe [InputField])
+                  | Insert EntityRef (Maybe (Maybe VariableName, [InputField])) (Maybe VariableName)
                   | Return [OutputField]
                   | Require SelectQuery
                   | For VariableName InputFieldRef [HandlerParam]
@@ -129,7 +134,7 @@ type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
 
 data SelectQuery = SelectQuery {
     sqFields       :: [SelectField],
-    sqFrom         :: (EntityName, VariableName),
+    sqFrom         :: (EntityRef, VariableName),
     sqJoins        :: [Join],
     sqWhere        :: Maybe BoolExpr,
     sqOrderBy        :: [(FieldRef, SortDir)],
@@ -137,11 +142,10 @@ data SelectQuery = SelectQuery {
 } deriving (Show, Eq, Data, Typeable)    
 
 type MaybeFlag = Bool
-sqAliases :: SelectQuery -> [(EntityName, VariableName, MaybeFlag)]
-sqAliases sq = (en,vn,False) : [ (joinEntity j, joinAlias j, 
-                                  isOuterJoin (joinType j)) 
-                             | j <- sqJoins sq]
-    where (en,vn) = sqFrom sq                             
+sqAliases :: SelectQuery -> [(Entity, VariableName, MaybeFlag)]
+sqAliases sq = catMaybes $ (either (\_ -> Nothing) (\e -> Just (e,vn,False)) er) : [ either (\_ -> Nothing) (\e -> Just (e, joinAlias j, isOuterJoin $ joinType j)) $ joinEntity j 
+                             | j <- sqJoins sq ]
+    where (er,vn) = sqFrom sq                             
 
 
 data SelectField = SelectAllFields VariableName
@@ -154,7 +158,7 @@ data SelectField = SelectAllFields VariableName
     
 data Join = Join {
     joinType   :: JoinType,
-    joinEntity :: EntityName,
+    joinEntity :: EntityRef,
     joinAlias  :: VariableName,
     joinExpr   :: Maybe BoolExpr
 } deriving (Show, Eq, Data, Typeable)
@@ -168,8 +172,8 @@ data InputFieldRef = InputFieldNormal FieldName
                    | InputFieldAuthId
                    | InputFieldAuth FieldName
                    | InputFieldPathParam Int
-                   | InputFieldLocalParam VariableName
-                   | InputFieldLocalParamField VariableName FieldName
+                   | InputFieldLocalParam VariableName 
+                   | InputFieldLocalParamField VariableName FieldName 
                    | InputFieldConst FieldValue
                    | InputFieldNow
                    | InputFieldCheckmark CheckmarkValue

@@ -16,7 +16,7 @@ requireStmts  = do
         f (requireId,(Require sq)) = do
 
             ctx <- get
-            put $ ctx { ctxNames = sqAliases sq }
+            put $ ctx { ctxNames = map (\(e,vn,mf) -> (entityName e, vn, mf)) $ sqAliases sq }
             mw <- case sqWhere sq of
                 Just expr -> do
                     e <- hsBoolExpr expr 

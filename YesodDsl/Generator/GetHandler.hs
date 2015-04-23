@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 module YesodDsl.Generator.GetHandler where
-
+import Data.Either
 import System.IO (FilePath, writeFile)
 import System.FilePath (joinPath)    
 import System.Directory (createDirectoryIfMissing)
@@ -48,7 +48,8 @@ defaultFilterFields sq = do
     fs <- ctxFields
     fields' <- liftM concat $ mapM defaultFilterField fs
 
-    let (en,vn) = sqFrom sq 
+    let (er,vn) = sqFrom sq 
+        en = entityRefName er
     let fields = (T.unpack $(codegenFile "codegen/default-filter-id-field.cg")
                  ++ fields')
     return $ T.unpack $(codegenFile "codegen/default-filter-fields.cg")
@@ -93,7 +94,7 @@ implicitJoinExpr _ = return ""
 
 baseIfFilter :: VariableName -> IfFilterParams -> State Context String
 baseIfFilter selectVar (pn,joins,bExpr,useFlag) = withScope 
-    [ (joinEntity j, joinAlias j, isOuterJoin $ joinType j) | j <- joins ] $ do
+    (catMaybes [ either (\_ -> Nothing) (\e -> Just (e, joinAlias j, isOuterJoin $ joinType j)) $ joinEntity j | j <- joins]) $ do
         joinExprs <- liftM concat $ mapM implicitJoinExpr joins
         expr <- hsBoolExpr bExpr
         return $ T.unpack $ if useFlag
@@ -155,7 +156,7 @@ getHandlerSelect = do
 getHandlerReturn :: SelectQuery -> State Context String
 getHandlerReturn sq = do
     ctx <- get
-    put $ ctx { ctxNames = sqAliases sq }
+    put $ ctx { ctxNames = map (\(e,vn,mf) -> (entityName e, vn, mf)) $ sqAliases sq }
     fieldNames' <- liftM concat $ mapM expand $ sqFields sq
     put $ ctx 
     let fieldNames = zip fieldNames' ([1..]::[Int])

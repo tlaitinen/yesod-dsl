@@ -21,7 +21,7 @@ inputFieldRef (InputFieldLocalParamField vn fn) = do
     let en = fromJust $ listToMaybe $ concatMap f ps
     return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
     where 
-          f (GetById en _ vn') = if vn' == vn then [en] else []
+          f (GetById er _ vn') = if vn' == vn then [entityRefName er] else []
           f _ = []
             
 inputFieldRef (InputFieldPathParam i) = return $ T.unpack $(codegenFile "codegen/input-field-path-param.cg")
@@ -66,13 +66,9 @@ exprToJsonAttrs (ExternExpr ee ps) = concatMap f ps
 
 getJsonAttrs :: Module -> HandlerParam -> [FieldName]
 getJsonAttrs _ (Update _ fr (Just fields)) = maybeToList (inputFieldRefToJsonAttr fr) ++ (mapMaybe inputFieldToJsonAttr fields)
-getJsonAttrs m (Update en fr Nothing) = maybeToList (inputFieldRefToJsonAttr fr) ++ case lookupEntity m en of
-    Just e -> [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
-    _ -> []
+getJsonAttrs m (Update (Right e) fr Nothing) = maybeToList (inputFieldRefToJsonAttr fr) ++ [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
 getJsonAttrs _ (Insert _ (Just (_,fields)) _) = mapMaybe inputFieldToJsonAttr fields
-getJsonAttrs m (Insert en Nothing _) =  case lookupEntity m en of
-    Just e -> [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
-    _ -> []
+getJsonAttrs m (Insert (Right e) Nothing _) = [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
 getJsonAttrs _ (DeleteFrom _ _ (Just e)) = exprToJsonAttrs e
 getJsonAttrs _ (Require sq) = let
     exprs = catMaybes $ [sqWhere sq] ++ [joinExpr j| j <- sqJoins sq]

@@ -400,7 +400,7 @@ declareFromEntity: upperIdTk as lowerIdTk {%
             let (s1,s3) = (tkString $1, tkString $3)
             declare l3 s3 (SEntity s1)
             withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-            return (s1,s3)
+            return (Left s1,s3)
     }
 selectQuery:
     select 
@@ -462,7 +462,7 @@ handlerParam : public {%
             l <- mkLoc $1
             statement l "update"
             requireHandlerType l "update" (/=GetHandler)
-            return $ Update (tkString $3) $6 $7
+            return $ Update (Left $ tkString $3) $6 $7
     } 
     | delete pushScope from declareFromEntity maybeWhere popScope {% 
         do
@@ -479,7 +479,7 @@ handlerParam : public {%
             let (l1,s1) = $1
             declare l1 s1 $ SEntity $3
             requireHandlerType l "get" (/=GetHandler)
-            return $ GetById $3 $6 s1
+            return $ GetById (Left $3) $6 s1
     }
     | maybeBindResult insert pushScope targetEntity maybeFromInputJson popScope {%
         do
@@ -491,7 +491,7 @@ handlerParam : public {%
                 Just (l1,s1) -> declare l1 s1 $ SEntity s4
                 Nothing -> return ()
             l4 <- mkLoc $4
-            let i = Insert s4 $5 s1 
+            let i = Insert (Left s4) $5 s1 
             withSymbol l4 s4 $ requireEntity $ \e -> validateInsert l e $5
             requireHandlerType l "insert" (/=GetHandler)
             return i
@@ -661,7 +661,7 @@ inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
             do
                 l1 <- mkLoc $1
                 let n1 = tkString $1
-                return $ InputFieldLocalParam n1
+                return $ InputFieldLocalParam n1 
         }
         | lowerIdTk dot lowerIdTk {%
             do
