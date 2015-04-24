@@ -20,6 +20,7 @@ import YesodDsl.Generator.Require
 import YesodDsl.Generator.Input
 import Control.Monad.State
 import Data.Generics.Uniplate.Data
+import qualified Data.Map as Map
 getHandlerParam :: HandlerParam -> State Context String
 getHandlerParam DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
@@ -27,18 +28,23 @@ getHandlerParam (IfFilter (pn,_,_,useFlag)) = return $ T.unpack $(codegenFile "c
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
 getHandlerParam _ = return ""      
 
-ctxFields :: State Context [(Entity, VariableName, Field)]
+ctxFields :: State Context [(Entity, VariableName, Field, VariableName)]
 ctxFields = do
     m <- gets ctxModule
     names <- gets ctxNames
-    return [ (e,vn,f) | e <- modEntities m,
+    let fields = [ (e,vn,f) | e <- modEntities m,
                      (en,vn,_) <- names,
                      entityName e == en,
                      f <- entityFields e ]
+        usage = Map.fromListWith (+) [ (fieldName f,1) | (_,_,f) <- fields ]
+    return $ [
+            (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 then fieldName f else vn ++ "." ++ fieldName f)
+            | (e,vn,f) <- fields 
+        ]    
 
 
-defaultFilterField :: (Entity, VariableName, Field) -> State Context String
-defaultFilterField (e,vn,f) = do
+defaultFilterField :: (Entity, VariableName, Field,VariableName) -> State Context String
+defaultFilterField (e,vn,f,alias) = do
     baseMaybeLevel <- ctxMaybeLevel vn
     let maybeLevel = baseMaybeLevel + boolToInt (fieldOptional f)
         isMaybe = baseMaybeLevel > 0
