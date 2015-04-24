@@ -336,7 +336,7 @@ requireEntityId f = f'
 requireEntityField :: Location -> FieldName -> ((Entity,Field) -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireEntityField l fn fun = fun'
     where fun' _ _ (SEntity en) = addEntityValidation (en, \e -> 
-            case L.find (\f -> fieldName f == fn) $ entityFields e of
+            case L.find (\f -> fieldName f == fn) $ entityFields e ++ entityClassFields e of
               Just f -> fun (e,f)
               Nothing -> pError l ("Reference to undeclared field '" 
                             ++ fn ++ "' of entity '" ++ entityName e ++ "'"))

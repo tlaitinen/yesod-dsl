@@ -1,11 +1,98 @@
+{-# LANGUAGE TupleSections #-}
 module YesodDsl.ClassImplementer (implementClasses) where
 import Data.List
 import YesodDsl.AST
+import System.IO.Unsafe
 import Data.Maybe
+import Data.Generics
+import Data.Generics.Uniplate.Data
+import Control.Applicative
+import qualified Data.Map as Map
+import qualified Data.List as L
+
 implementClasses :: Module -> Module
-implementClasses m = m {
+implementClasses m = let m' = m {
         modEntities  = [ implInEntity m (modClasses m) e | e <- modEntities m ]
+    } in m' {
+        modRoutes = everywhere (mkT $ trSq m') $ modRoutes m'
     }
+
+trSq :: Module -> SelectQuery -> SelectQuery
+trSq m sq = sq {
+        sqFields = concatMap trSelectField $ sqFields sq,
+        sqJoins =  map snd newJoins,
+        sqWhere = everywhere (mkT trExpr) $ sqWhere sq
+    }
+    where
+        vnMap :: [(VariableName, (VariableName, Maybe EntityName))]
+        vnMap = mapMaybe fst newJoins
+        aliases = map (\(er,vn) -> (entityRefName er, vn)) $ sqFrom sq : [ (joinEntity j,joinAlias j) | j <- sqJoins sq ]
+        newAliases vn = Map.findWithDefault [(vn,Nothing)] vn $ Map.fromListWith (++) $ [ (s,[d]) | (s,d) <- vnMap ]
+        allAliases = aliases ++ catMaybes [ men >>= Just . (,vn) | (_,(vn,men)) <- vnMap ]
+        newJoins = concatMap expandJoin $ sqJoins sq
+        expandJoin j = fromMaybe [(Nothing, j)] $ do
+            c <- classLookup (modClasses m) $ entityRefName $ joinEntity j
+            Just $ [ 
+                    let a = joinAlias j
+                        a' = joinAlias j ++ "_" ++ entityName e
+                    in (Just (a, (a', Just $ entityName e)), j {
+                        joinAlias = a',
+                        joinEntity = (Left $ entityName e),
+                        joinExpr = joinExpr j >>= Just . (everywhere $ (mkT $ trClassField (entityName e)) . (mkT $ trVar a a'))
+                    }) | e <- modEntities m, className c `elem` entityInstances e
+                ]
+        
+        trClassField en fr = case fr of
+            FieldRefNormal vn fn -> fromMaybe fr $ do
+                (en',_) <- L.find ((==vn) . snd) aliases
+                f <- lookupField m en' (lowerFirst en ++ upperFirst fn)
+                Just $ FieldRefNormal vn $ fieldName f
+            _ -> fr    
+                
+        trVar srcVn dstVn fr = case fr of
+            FieldRefNormal vn fn -> if vn == srcVn then FieldRefNormal dstVn fn else fr
+            FieldRefId vn -> if vn == srcVn then FieldRefId dstVn else fr
+            _ -> fr
+        aliasName :: FieldName -> Maybe VariableName -> Maybe EntityName -> Maybe VariableName    
+
+        aliasName fn man (Just en) = Just $ fromMaybe (fn ++ en) $ man >>= Just . (++en)
+        aliasName fn man Nothing = man
+    
+        trSelectField sf = 
+            case sf of
+                SelectAllFields vn -> [
+                        SelectAllFields vn'
+                        | (vn',_) <- newAliases vn
+                    ]
+                SelectField vn fn man -> [
+                        SelectField vn' fn $ aliasName fn man men
+                        | (vn',men) <- newAliases vn,
+                          validField (vn',fn)
+                    ]
+                SelectIdField vn man -> [
+                        SelectIdField vn' $ aliasName "id" man men
+                        | (vn',men) <- newAliases vn
+                    ]
+                SelectParamField vn pn man -> [
+                        SelectParamField vn' pn $ aliasName pn man men
+                        | (vn',men) <- newAliases vn
+                    ]
+                SelectValExpr _ _ -> [sf]  
+
+        trExpr e = 
+            let r = catMaybes [
+                        let e' = everywhere (mkT $ trVar s d) e
+                        in if e' /= e && validExpr e' then Just e' else Nothing
+                        | (s,(d,_)) <- vnMap
+                    ] 
+                in if null r then e else foldl1 OrExpr r
+                      
+        validExpr e = let fs = [ (vn,fn) | FieldRefNormal vn fn <- universeBi e ]
+                      in all validField fs   
+        validField (vn,fn) = fromMaybe False $ do
+            (en,_) <- L.find ((==vn) . snd) allAliases
+            e <- lookupField m en fn
+            Just True
 
 classLookup :: [Class] -> ClassName -> Maybe Class
 classLookup classes name =  find (\i -> name == className i) classes
@@ -52,9 +139,9 @@ implInEntity m classes' e = e {
                                                  (elemIndex (className c2) instances))
                          classes'
         maybeCompare (Just a1) (Just a2) = compare a1 a2
-        maybeCompare (Just _) Nothing = LT
-        maybeCompare Nothing (Just _) = GT
-        maybeCompare Nothing Nothing = EQ
+        maybeCompare (Just _) Nothing = Prelude.LT
+        maybeCompare Nothing (Just _) = Prelude.GT
+        maybeCompare Nothing Nothing = Prelude.EQ
         validClasses = mapMaybe (classLookup classes) $ entityInstances e
         extraFields = concatMap classFields validClasses
         isClassField (Field _ _ _ _ (EntityField iName) _) = iName `elem` (map className $ modClasses m)

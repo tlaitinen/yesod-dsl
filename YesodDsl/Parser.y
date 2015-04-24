@@ -399,7 +399,7 @@ declareFromEntity: upperIdTk as lowerIdTk {%
             l3 <- mkLoc $3
             let (s1,s3) = (tkString $1, tkString $3)
             declare l3 s3 (SEntity s1)
-            withSymbol l1 s1 $ requireEntity $ \_ -> return ()
+            withSymbol l1 s1 $ requireEntityOrClass
             return (Left s1,s3)
     }
 selectQuery:

@@ -27,7 +27,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         "entities" .= [
             object [
                 "name" .= entityName e,
-                "fields" .= [ fieldJson f | f <- entityFields e, fieldInternal f ]
+                "fields" .= [ fieldJson f | f <- entityFields e, fieldInternal f == False ]
             ] | e <- modEntities m
         ],
         "enums" .= [
@@ -52,7 +52,6 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                 ],
                 "handlers" .= [
                     object [
-
                         "public" .= (Public `elem` (handlerParams h)),
                         "type" .= (show $ handlerType h),
                         "inputs" .= [ 
@@ -61,7 +60,8 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                                     "type" .= Null
                                 ] 
                             | fn <- concatMap getJsonAttrs $ handlerParams h 
-                        ]
+                        ],
+                        "outputs" .= (concatMap outputs $ handlerParams h)
                     ] |  h <- routeHandlers r
                 ]
             ] | r <- modRoutes m
@@ -69,23 +69,34 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         
     ]
     where
-    {-
         outputs hp = case hp of
             Select sq -> [
                     object [
-                        "name" .= "todo"
+                        "name" .= selectFieldName sf
                     ] | sf <- sqFields sq
-              ]
-              -}
+                ]
+            Return ofs -> [
+                    object [
+                        "name" .= pn,
+                        "type" .= Null
+                    ] | (pn,ofr) <- ofs 
+                ]   
+            _ -> []
+        selectFieldName sf = case sf of
+            SelectField _ fn mvn -> fromMaybe fn mvn
+            SelectIdField _ mvn -> fromMaybe "id" mvn
+            SelectParamField _ pn mvn -> fromMaybe pn mvn
+            SelectValExpr _ vn -> vn
+            _ -> ""        
 
         fieldJson f = object [
                 "name" .= fieldName f,
                 "optional" .= fieldOptional f,
                 "default" .= (fieldDefault f >>= fieldValueJson),
                 "references" .= (case fieldContent f of
-                    NormalField _ _ -> Null
                     EntityField en -> toJSON en
-                    EnumField en _ -> toJSON en),
+                    EnumField en _ -> toJSON en
+                    _ -> Null),
                 "type" .= (case fieldContent f of
                     NormalField ft _ -> case ft of
                         FTWord32 -> "integer"
@@ -100,7 +111,8 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         FTUTCTime -> "utctime"
                         FTZonedTime -> "zonedtime"
                     EntityField en -> "integer"
-                    EnumField en _ -> ("string" :: String))
+                    EnumField en _ -> ("string" :: String)
+                    CheckmarkField _ -> "boolean")
             ]
         fieldValueJson fv = Just $ case fv of
             StringValue s -> toJSON s
