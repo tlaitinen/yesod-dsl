@@ -44,7 +44,7 @@ type EnumValue = String
 type FunctionName = String
 type FieldName = String 
 
-data FieldType = FTWord32 | FTWord64 | FTInt32 | FTInt64 | FTText 
+data FieldType = FTWord32 | FTWord64 | FTInt | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
                | FTZonedTime deriving (Eq,Show,Data,Typeable)
 
@@ -117,6 +117,7 @@ entityRefName (Left en) = en
 entityRefName (Right e) = entityName e
          
 data HandlerParam = Public 
+                  | ParamDefault ParamName FieldValue
                   | DefaultFilterSort
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
@@ -290,6 +291,7 @@ data FieldValue = StringValue String
                 | NothingValue
                 | CheckmarkFieldValue CheckmarkValue
                 | EnumFieldValue EnumName EnumValue
+                | EmptyList
                 deriving (Show, Eq, Ord, Data, Typeable)
 fieldValueToSql :: FieldValue -> String    
 fieldValueToSql fv = case fv of
@@ -301,6 +303,7 @@ fieldValueToSql fv = case fv of
     CheckmarkFieldValue CheckmarkActive -> "True"
     CheckmarkFieldValue CheckmarkInactive -> "NULL"
     EnumFieldValue _ ev ->  "'" ++ ev ++ "'"
+    EmptyList -> "'[]'"
    
 fieldValueToEsqueleto :: FieldValue -> String    
 fieldValueToEsqueleto fv = case fv of
@@ -312,6 +315,7 @@ fieldValueToEsqueleto fv = case fv of
     CheckmarkFieldValue CheckmarkActive -> "Active"
     CheckmarkFieldValue CheckmarkInactive -> "Inactive"
     EnumFieldValue en ev -> en ++ ev
+    EmptyList -> "[]"
 
 fieldValueToHs :: FieldValue -> String
 fieldValueToHs fv = case fv of
@@ -323,6 +327,7 @@ fieldValueToHs fv = case fv of
     CheckmarkFieldValue CheckmarkActive -> "Active"
     CheckmarkFieldValue CheckmarkInactive -> "Inactive"
     EnumFieldValue en ev ->  en ++ ev
+    EmptyList -> "[]"
 
 
         

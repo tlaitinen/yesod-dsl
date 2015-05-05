@@ -106,8 +106,10 @@ mapJsonInputField ifields isNew (e,f) = do
                                 else Nothing
 matchInputField :: [InputField] -> FieldName -> Maybe (InputFieldRef, Maybe FunctionName)
 matchInputField ifields fn =  listToMaybe [ (inp,mm) | (pn,inp,mm) <- ifields, pn == fn ]
-prepareJsonInputField :: FieldName -> String
-prepareJsonInputField fn = T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
+prepareJsonInputField :: (FieldName,Maybe FieldValue) -> String
+prepareJsonInputField (fn,Nothing) = T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
+prepareJsonInputField (fn, Just d) = T.unpack $(codegenFile "codegen/prepare-input-field-normal-default.cg")
+
 
  
 updateHandlerDecode :: (Int,HandlerParam) -> State Context String
@@ -150,13 +152,15 @@ updateHandlerReadJsonFields = do
     m <- gets ctxModule
     ps <- gets ctxHandlerParams
     let attrs = jsonAttrs m ps
+    let defaults = getParamDefaults ps
     if null attrs
         then return ""
         else return $
             (T.unpack $(codegenFile "codegen/json-body.cg")) 
-            ++ concatMap prepareJsonInputField attrs
+            ++ concatMap (\attr -> prepareJsonInputField (attr, Map.lookup attr defaults)) attrs
     where
         jsonAttrs m ps = nub $ concatMap getJsonAttrs ps
+
 
 
 updateHandlerMaybeCurrentTime :: [HandlerParam] -> String

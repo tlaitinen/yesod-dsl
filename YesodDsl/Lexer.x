@@ -78,6 +78,7 @@ tokens :-
     "Word32" { mkT TWord32 }
     "Word64" { mkT TWord64 }
     "Int32" { mkT TInt32 }
+    "Int" { mkT TIntType }
     "Int64" { mkT TInt64 }
     "Text" { mkT TText }
     "Bool" { mkT TBool }
@@ -190,6 +191,7 @@ data TokenType = TSemicolon
            | TWord32
            | TWord64
            | TInt32
+           | TIntType
            | TInt64
            | TText
            | TBool

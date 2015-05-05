@@ -11,6 +11,7 @@ import Data.Char
 import YesodDsl.Generator.Common
 import Data.Aeson.Encode.Pretty
 import Data.Aeson
+import qualified Data.Vector as V
 import qualified Data.Text.Lazy.Encoding as LTE
 import YesodDsl.Generator.Input
 
@@ -102,6 +103,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         FTWord32 -> "integer"
                         FTWord64 -> "integer"
                         FTInt32 -> "integer"
+                        FTInt -> "integer"
                         FTInt64 -> "integer"
                         FTText -> "string"
                         FTBool -> "boolean"
@@ -122,8 +124,6 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
             NothingValue -> Null
             CheckmarkFieldValue cv -> toJSON $ show cv
             EnumFieldValue _ ev -> toJSON ev
-
-                
-    
+            EmptyList -> Array V.empty
 
 

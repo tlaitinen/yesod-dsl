@@ -22,6 +22,7 @@ fieldTypeToHsType ft = case ft of
     FTWord32 -> "Word32"
     FTWord64 -> "Word64"
     FTInt32 -> "Int32"
+    FTInt -> "Int"
     FTInt64 -> "Int64"
     FTText -> "Text"
     FTBool -> "Bool"

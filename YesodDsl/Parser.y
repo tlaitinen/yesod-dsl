@@ -66,6 +66,7 @@ import Data.List
     word32   { Tk _ TWord32 }
     word64   { Tk _ TWord64 }
     int32    { Tk _ TInt32 }
+    int { Tk _ TIntType }
     int64    { Tk _ TInt64 }
     text { Tk _ TText }
     bool { Tk _ TBool }
@@ -384,7 +385,7 @@ fieldRef :
             return $ FieldRefAuth n3 
     }
     | localParam { FieldRefLocalParam }
-    | request dot lowerIdTk { FieldRefRequest $ tkString $3 }
+    | request dot lowerIdTk { FieldRefRequest (tkString $3) }
     | lowerIdTk {%
         do
             l1 <- mkLoc $1
@@ -392,7 +393,7 @@ fieldRef :
             withSymbol l1 s1 $ \_ _ _ -> return ()
             return $ FieldRefNamedLocalParam s1
     }
- 
+
 declareFromEntity: upperIdTk as lowerIdTk {%
         do
             l1 <- mkLoc $1
@@ -449,6 +450,13 @@ handlerParam : public {%
             statement l "public"
             return Public 
     }
+    | default for request dot lowerIdTk value  {%
+        do
+            l5 <- mkLoc $5
+            let t5 = tkString $5
+            declare l5 (concat ["default for param \"", t5, "\""]) SReserved
+            return $ ParamDefault t5 $6 
+        }
     | select selectQueryContent {%
         do
             l <- mkLoc $1
@@ -656,7 +664,7 @@ inputJsonField : lowerIdTk equals inputRef {%
 inputRefList:  { [] }
             | inputRefList inputRef  { $1 ++ [$2] }
 
-inputRef: request dot lowerIdTk { InputFieldNormal $ tkString $3 }
+inputRef: request dot lowerIdTk { InputFieldNormal (tkString $3)  }
         | lowerIdTk {%
             do
                 l1 <- mkLoc $1
@@ -902,7 +910,8 @@ value : stringval { StringValue $1 }
       | true { BoolValue True }
       | false { BoolValue False }
       | nothing { NothingValue }
-
+      | lbracket rbracket { EmptyList }
+      
       
 uniques : { [] }
         | uniques uniqueDef semicolon { $2 : $1 }
@@ -943,6 +952,7 @@ fieldType:
     word32      { FTWord32 }
     | word64    { FTWord64 }
     | int32     { FTInt32 }
+    | int       { FTInt }
     | int64     { FTInt64 }
     | text      { FTText }
     | bool      { FTBool }

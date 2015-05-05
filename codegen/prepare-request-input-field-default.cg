@@ -7,6 +7,4 @@
                         "message" .= ("Could not parse value from the parameter ~{fn} in the query string" :: Text),
                         "error ".= ("Parse error" :: Text)
                     ]
-            Nothing -> sendResponseStatus status400 $ A.object [
-                    "message" .= ("Expected parameter ~{fn} in the query string" :: Text)
-                ]        
+            Nothing -> return $ ~{fieldValueToHs d}

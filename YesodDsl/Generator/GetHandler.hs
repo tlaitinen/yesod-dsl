@@ -178,14 +178,12 @@ getHandlerReturn sq = do
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
 
 
-getHandlerParamFieldRefs :: HandlerParam-> [FieldRef]
-getHandlerParamFieldRefs  = universeBi 
 
 getHandlerMaybeAuth :: [HandlerParam] -> String
 getHandlerMaybeAuth ps 
     | (not . null) (filter isAuthField fieldRefs) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
-        where fieldRefs = concatMap getHandlerParamFieldRefs ps
+        where fieldRefs = concatMap universeBi ps
               isAuthField (FieldRefAuth _) = True
               isAuthField _ =False
    
@@ -203,14 +201,15 @@ getHandlerReadRequestFields = do
     m <- gets ctxModule
     ps <- gets ctxHandlerParams
     let attrs = jsonAttrs m ps
+        defaults = getParamDefaults ps
     if null attrs
         then return ""
         else return $
-            concatMap prepareRequestInputField attrs
+            concatMap (\attr -> prepareRequestInputField attr (Map.lookup attr defaults)) attrs
     where
         jsonAttrs m ps = nub $ concatMap getJsonAttrs ps
-        prepareRequestInputField fn = T.unpack $(codegenFile "codegen/prepare-request-input-field.cg")
-
+        prepareRequestInputField fn Nothing = T.unpack $(codegenFile "codegen/prepare-request-input-field.cg")
+        prepareRequestInputField fn (Just d) = T.unpack $(codegenFile "codegen/prepare-request-input-field-default.cg")
 
 getHandler :: State Context String
 getHandler = do

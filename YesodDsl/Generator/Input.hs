@@ -36,3 +36,5 @@ getJsonAttrs hp = [ fn | FieldRefRequest fn <- universeBi hp ]
                 ++ (concat [ [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
                     | Insert (Right e) Nothing _ <- universeBi hp ])
 
+getParamDefaults :: [HandlerParam] -> Map.Map ParamName FieldValue
+getParamDefaults ps = Map.fromList [ (pn,fv) | ParamDefault pn fv <- universeBi ps ]

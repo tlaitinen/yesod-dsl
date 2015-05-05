@@ -1,5 +1,3 @@
-    yReq <- getRequest
-    let wReq = reqWaiRequest yReq
     jsonResult <- parseJsonBody
     jsonBody <- case jsonResult of
          A.Error err -> sendResponseStatus status400 $ A.object [ "message" .= ( "Could not decode JSON object from request body : " ++ err) ]
