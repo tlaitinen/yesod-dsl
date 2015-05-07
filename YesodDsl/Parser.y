@@ -333,6 +333,7 @@ fieldRefList : { [ ] }
              | fieldRefList fieldRef { $1 ++ [$2] }
 fieldRef : 
     value { FieldRefConst $1 }
+    | now lparen rparen { FieldRefNow }
     | lowerIdTk dot idField {%
         do
             l1 <- mkLoc $1
@@ -346,8 +347,11 @@ fieldRef :
             let s1 = tkString $1
             l3 <- mkLoc $3
             let s3 = tkString $3
-            withSymbol l1 s1 $ requireEntityField l3 s3 $ \_ -> return () 
-            return $ FieldRefNormal s1 s3
+                a = FieldRefNormal s1 s3
+                b = FieldRefLocalParamField s1 s3
+            withSymbol l1 s1 $ requireEntityFieldSelectedOrResult l3 s3
+            m <- symbolMatches s1 $ \st -> case st of SEntityResult _ -> True; _ -> False
+            return $ if m then b else a
     }
     | upperIdTk dot upperIdTk {%
         do
@@ -357,16 +361,6 @@ fieldRef :
             let s3 = tkString $3
             withSymbol l1 s1 $ requireEnumValue l3 s3
             return $ FieldRefEnum s1 s3
-    }
-    | lowerIdTk dot lbrace lowerIdTk rbrace {%
-        do
-            l1 <- mkLoc $1
-            let s1 = tkString $1
-            l4 <- mkLoc $4
-            let s4 = tkString $4
-            withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-            withSymbol l4 s4 $ requireParam
-            return $ FieldRefParamField s1 s4 
     }
     | pathParam {%
         do
@@ -466,12 +460,15 @@ handlerParam : public {%
             statement l "select"
             return $ Select $2
     }
-    | update pushScope targetEntity identified by inputRef maybeWithInputJson popScope {%
+    | update pushScope targetEntity identified by fieldRef maybeWithInputJson popScope {%
         do
             l <- mkLoc $1
             statement l "update"
             requireHandlerType l "update" (/=GetHandler)
-            return $ Update (Left $ tkString $3) $6 $7
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            withSymbol l3 s3 $ requireEntity $ \_ -> return ()
+            return $ Update (Left $ s3) $6 $7
     } 
     | delete pushScope from declareFromEntity maybeWhere popScope {% 
         do
@@ -481,12 +478,12 @@ handlerParam : public {%
             let (en,vn) = $4 
             return $ DeleteFrom en vn $5 
     }
-    | bindResult get upperId identified by inputRef {% 
+    | bindResult get upperId identified by fieldRef {% 
         do
             l <- mkLoc $2
             statement l "get"
             let (l1,s1) = $1
-            declare l1 s1 $ SEntity $3
+            declare l1 s1 $ SEntityResult $3
             requireHandlerType l "get" (/=GetHandler)
             return $ GetById (Left $3) $6 s1
     }
@@ -497,7 +494,7 @@ handlerParam : public {%
             let s1 = $1 >>= \(l1,s1') -> return s1'
             let s4 = tkString $4
             case $1 of
-                Just (l1,s1) -> declare l1 s1 $ SEntity s4
+                Just (l1,s1) -> declare l1 s1 $ SEntityResult s4
                 Nothing -> return ()
             l4 <- mkLoc $4
             let i = Insert (Left s4) $5 s1 
@@ -539,14 +536,14 @@ handlerParam : public {%
             statement l "require"
             return $ Require (SelectQuery [] $3 $4 (Just $6) [] (0,0)) 
     }
-    | for pushScope lowerIdParam in inputRef lbrace handlerParams rbrace popScope {%
+    | for pushScope lowerIdParam in fieldRef lbrace handlerParams rbrace popScope {%
         do
             l <- mkLoc $1
             statement l "for"
             requireHandlerType l "for" (/=GetHandler)
             return $ For $3 $5 $7 
     }
-    | lowerIdTk inputRefList {% 
+    | lowerIdTk fieldRefList {% 
         do 
             l <- mkLoc $1
             statement l (tkString $1)
@@ -638,13 +635,13 @@ maybeFromInputJson: from inputJson { Just (Nothing, $2) }
                      l2 <- mkLoc $2
                      let s2 = tkString $2
                      tgt <- withSymbolNow Nothing l2 "target entity" $ getEntitySymbol
-                     withSymbolNow () l2 s2 $ requireEntity $ \e -> when (Just (entityName e) /= tgt) $ pError l2 $ "Reference to " ++ (entityName e) ++ " (expected " ++ (fromMaybe "" tgt) ++ ")"
+                     withSymbolNow () l2 s2 $ requireEntityResult $ \e -> when (Just (entityName e) /= tgt) $ pError l2 $ "Reference to " ++ (entityName e) ++ " (expected " ++ (fromMaybe "" tgt) ++ ")"
                      return $ Just (Just s2, $3)
              }
              | { Nothing }
               
 inputJson:  lbrace inputJsonFields rbrace { $2 }
-inputJsonField : lowerIdTk equals inputRef {%
+inputJsonField : lowerIdTk equals fieldRef {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
@@ -652,7 +649,7 @@ inputJsonField : lowerIdTk equals inputRef {%
                 requireEntityField l1 s1 $ \_ -> return ()
             return (s1, $3, Nothing) 
      }
-    | lowerIdTk equals functionRef lparen inputRef rparen {%
+    | lowerIdTk equals functionRef lparen fieldRef rparen {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
@@ -661,42 +658,6 @@ inputJsonField : lowerIdTk equals inputRef {%
             return (s1, $5, Just $3)
     }
 
-
-inputRefList:  { [] }
-            | inputRefList inputRef  { $1 ++ [$2] }
-
-inputRef: request dot lowerIdTk { InputFieldNormal (tkString $3)  }
-        | lowerIdTk {%
-            do
-                l1 <- mkLoc $1
-                let n1 = tkString $1
-                return $ InputFieldLocalParam n1 
-        }
-        | lowerIdTk dot lowerIdTk {%
-            do
-                l1 <- mkLoc $1
-                l3 <- mkLoc $3
-                let (s1,s3) = (tkString $1, tkString $3)
-                withSymbol l1 s1 $ requireEntityField l3 s3 $ \_ -> return ()
-                return $ InputFieldLocalParamField s1 s3
-        }
-        | pathParam {%
-        do
-            l1 <- mkLoc $1
-            let i1 = tkInt $1
-            return $ InputFieldPathParam i1
-         }
-        | auth dot idField { InputFieldAuthId }
-        | auth dot lowerIdTk {% 
-          do 
-                l1 <- mkLoc $1
-                l3 <- mkLoc $3
-                let n3 = tkString $3
-                withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
-                return $ InputFieldAuth n3
-           }
-        | value { InputFieldConst $1 } 
-        | now lparen rparen { InputFieldNow }
 
 
 inputJsonFields : inputJsonField { [$1] }

@@ -122,13 +122,13 @@ data HandlerParam = Public
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
                   | DeleteFrom EntityRef VariableName (Maybe BoolExpr)
-                  | GetById EntityRef InputFieldRef VariableName
-                  | Update EntityRef InputFieldRef (Maybe [InputField])
+                  | GetById EntityRef FieldRef VariableName
+                  | Update EntityRef FieldRef (Maybe [InputField])
                   | Insert EntityRef (Maybe (Maybe VariableName, [InputField])) (Maybe VariableName)
                   | Return [OutputField]
                   | Require SelectQuery
-                  | For VariableName InputFieldRef [HandlerParam]
-                  | Call FunctionName [InputFieldRef]
+                  | For VariableName FieldRef [HandlerParam]
+                  | Call FunctionName [FieldRef]
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
@@ -164,21 +164,11 @@ data Join = Join {
     joinExpr   :: Maybe BoolExpr
 } deriving (Show, Eq, Data, Typeable)
 
-type InputField = (ParamName, InputFieldRef, Maybe FunctionName)
+type InputField = (ParamName, FieldRef, Maybe FunctionName)
 
 data CheckmarkValue = Active | Inactive
                     deriving (Show, Eq, Ord, Data, Typeable)
-
-data InputFieldRef = InputFieldNormal FieldName -- FieldRefRequest 
-                   | InputFieldAuthId           -- FieldRefAuthId
-                   | InputFieldAuth FieldName   -- FieldRefAuth
-                   | InputFieldPathParam Int    -- FieldRefPathParam 
-                   | InputFieldLocalParam VariableName  -- FieldRefLocalParam
-                   | InputFieldLocalParamField VariableName FieldName  -- FieldRefParamField
-                   | InputFieldConst FieldValue -- FieldRefConst
-                   | InputFieldNow              -- FieldRefNow
-                    deriving (Show, Eq, Ord, Data, Typeable)
-                    
+   
 type OutputField = (ParamName, OutputFieldRef)
 data OutputFieldRef = OutputFieldLocalParam VariableName 
     deriving (Show,Eq, Data, Typeable)
@@ -236,11 +226,11 @@ data FieldRef = FieldRefId VariableName
               | FieldRefAuthId
               | FieldRefAuth FieldName
               | FieldRefLocalParam
+              | FieldRefLocalParamField VariableName FieldName
               | FieldRefEnum EnumName FieldName
               | FieldRefPathParam Int 
               | FieldRefRequest FieldName
               | FieldRefNamedLocalParam VariableName
-              | FieldRefParamField VariableName FieldName
               | FieldRefConst FieldValue 
               | FieldRefNow -- temporarily here
               deriving (Show, Eq, Data, Typeable) 

@@ -133,10 +133,10 @@ hsFieldRef FieldRefAuthId = do
     return $ valueOrValueList lv j ++ " authId"
 hsFieldRef (FieldRefPathParam p) = normalFieldRef $ "p" ++ show p
 hsFieldRef FieldRefLocalParam    = normalFieldRef $ "localParam"
+hsFieldRef (FieldRefLocalParamField vn fn) = normalFieldRef $ "( {- TODO -} " ++ fn ++ " result_" ++ vn
 hsFieldRef (FieldRefRequest fn)  = normalFieldRef $ "attr_" ++ fn
 hsFieldRef (FieldRefEnum en vn)  = normalFieldRef $ en ++ vn
 hsFieldRef (FieldRefNamedLocalParam vn) = normalFieldRef $ "result_" ++ vn
-hsFieldRef (FieldRefParamField vn pn) = return $ "{- param field " ++ vn ++ " " ++ pn ++ "-}"
 hsFieldRef (FieldRefConst (fv@(NothingValue))) = return $ fieldValueToEsqueleto fv
 hsFieldRef (FieldRefConst fv) = return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
 hsOrderBy :: (FieldRef, SortDir) -> State Context String

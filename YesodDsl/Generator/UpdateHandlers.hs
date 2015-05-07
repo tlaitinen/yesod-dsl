@@ -75,24 +75,24 @@ mapJsonInputField ifields isNew (e,f) = do
         maybeJust False v = v
         maybeInput = matchInputField ifields (fieldName f)
         notNothing = case maybeInput of
-            Just (InputFieldConst NothingValue, _) -> False
+            Just (FieldRefConst NothingValue, _) -> False
             _ -> True 
         notInputField = case maybeInput of
-            Just (InputFieldNormal _, _) -> False
+            Just (FieldRefRequest _, _) -> False
             _ -> True
         promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
 
         mapper mmapper = maybe "" ((" $ " ++) . (++ " $ ")) mmapper
         mkContent = case maybeInput of
-            Just (ifr@(InputFieldNormal fn), mm) -> do
+            Just (ifr@(FieldRefRequest fn), mm) -> do
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-            Just (InputFieldAuthId, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
-            Just (InputFieldAuth fn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
-            Just (InputFieldPathParam i, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
-            Just (InputFieldConst v, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
-            Just (InputFieldNow, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
-            Just (InputFieldLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
-            Just (InputFieldLocalParamField vn fn, mm) -> do
+            Just (FieldRefAuthId, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+            Just (FieldRefAuth fn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
+            Just (FieldRefPathParam i, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
+            Just (FieldRefConst v, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+            Just (FieldRefNow, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
+            Just (FieldRefNamedLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+            Just (FieldRefLocalParamField vn fn, mm) -> do
                 ps <- gets ctxHandlerParams
                 let en = fromJust $ listToMaybe $ concatMap f ps
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
@@ -101,7 +101,7 @@ mapJsonInputField ifields isNew (e,f) = do
                       f _ = []
             Nothing -> return $ if isNew then Just $ defaultFieldValue f
                                 else Nothing
-matchInputField :: [InputField] -> FieldName -> Maybe (InputFieldRef, Maybe FunctionName)
+matchInputField :: [InputField] -> FieldName -> Maybe (FieldRef, Maybe FunctionName)
 matchInputField ifields fn =  listToMaybe [ (inp,mm) | (pn,inp,mm) <- ifields, pn == fn ]
 prepareJsonInputField :: (FieldName,Maybe FieldValue) -> String
 prepareJsonInputField (fn,Nothing) = T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
@@ -119,7 +119,7 @@ updateHandlerDecode (pId,p) = case p of
         readInputObject e io Nothing
     _ -> return ""
     where 
-        readInputObject :: Entity -> Maybe (Maybe VariableName, [InputField]) -> Maybe InputFieldRef -> State Context String
+        readInputObject :: Entity -> Maybe (Maybe VariableName, [InputField]) -> Maybe FieldRef -> State Context String
         readInputObject e (Just (mv, fields)) fr = do
             maybeExisting <- maybeSelectExisting e (mv,fields) fr
             fieldMappers <- mapFields e fields isNew
@@ -161,7 +161,7 @@ updateHandlerReadJsonFields = do
 
 
 updateHandlerMaybeCurrentTime :: [HandlerParam] -> String
-updateHandlerMaybeCurrentTime ps = if  InputFieldNow  `elem` inputFields 
+updateHandlerMaybeCurrentTime ps = if  FieldRefNow  `elem` inputFields 
     then (T.unpack $(codegenFile "codegen/prepare-now.cg"))
     else ""
     where inputFields = concatMap universeBi ps
@@ -171,7 +171,7 @@ updateHandlerMaybeAuth ps
     | (not . null) (filter isAuthField inputFields) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
     where inputFields = concatMap universeBi ps
-          isAuthField (InputFieldAuth _) = True
+          isAuthField (FieldRefAuth _) = True
           isAuthField _ = False
 
 updateHandlerReturnRunDB :: [HandlerParam] -> String
