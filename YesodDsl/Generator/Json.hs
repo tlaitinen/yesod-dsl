@@ -80,7 +80,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     object [
                         "name" .= pn,
                         "type" .= Null
-                    ] | (pn,ofr) <- ofs 
+                    ] | (pn,fr,_) <- ofs 
                 ]   
             _ -> []
         selectFieldName sf = case sf of

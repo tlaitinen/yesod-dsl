@@ -159,7 +159,7 @@ validateExtractField l s = if s `elem` validFields
                 "timezone_hour", "timezone_minute", "week", "year" 
             ]
 
-validateInsert :: Location -> Entity -> Maybe (Maybe VariableName, [InputField]) -> ParserMonad ()
+validateInsert :: Location -> Entity -> Maybe (Maybe VariableName, [FieldRefMapping]) -> ParserMonad ()
 validateInsert  l e (Just (Nothing, ifs)) = do
     case [ fieldName f | f <- entityFields e, 
                          (not . fieldOptional) f, 
@@ -308,6 +308,8 @@ withSymbolNow d l n f = do
 
 withSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
 withSymbol l n f = addPendingValidation $ \syms -> void $ withSymbol' syms () l n f    
+
+
 
 withGlobalSymbol :: Location -> String -> (Location -> Location -> SymType -> ParserMonad ()) -> ParserMonad ()
 withGlobalSymbol l n f = addGlobalPendingValidation $ \syms -> void $ withSymbol' syms () l n f    

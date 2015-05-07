@@ -123,9 +123,9 @@ data HandlerParam = Public
                   | IfFilter IfFilterParams
                   | DeleteFrom EntityRef VariableName (Maybe BoolExpr)
                   | GetById EntityRef FieldRef VariableName
-                  | Update EntityRef FieldRef (Maybe [InputField])
-                  | Insert EntityRef (Maybe (Maybe VariableName, [InputField])) (Maybe VariableName)
-                  | Return [OutputField]
+                  | Update EntityRef FieldRef (Maybe [FieldRefMapping])
+                  | Insert EntityRef (Maybe (Maybe VariableName, [FieldRefMapping])) (Maybe VariableName)
+                  | Return [FieldRefMapping]
                   | Require SelectQuery
                   | For VariableName FieldRef [HandlerParam]
                   | Call FunctionName [FieldRef]
@@ -164,15 +164,11 @@ data Join = Join {
     joinExpr   :: Maybe BoolExpr
 } deriving (Show, Eq, Data, Typeable)
 
-type InputField = (ParamName, FieldRef, Maybe FunctionName)
+type FieldRefMapping = (ParamName, FieldRef, Maybe FunctionName)
 
 data CheckmarkValue = Active | Inactive
                     deriving (Show, Eq, Ord, Data, Typeable)
    
-type OutputField = (ParamName, OutputFieldRef)
-data OutputFieldRef = OutputFieldLocalParam VariableName 
-    deriving (Show,Eq, Data, Typeable)
-
 data SortDir = SortAsc | SortDesc deriving (Show, Eq, Data, Typeable)                   
 
 data Handler = Handler {

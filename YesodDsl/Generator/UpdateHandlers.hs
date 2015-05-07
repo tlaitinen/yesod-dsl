@@ -61,7 +61,7 @@ defaultFieldValue f = case fieldDefault f of
         then "Nothing"
         else let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
 
-mapJsonInputField :: [InputField] -> Bool -> (Entity,Field) -> State Context (Maybe String)
+mapJsonInputField :: [FieldRefMapping] -> Bool -> (Entity,Field) -> State Context (Maybe String)
 mapJsonInputField ifields isNew (e,f) = do
     mcontent <- mkContent
     case mcontent of
@@ -101,7 +101,7 @@ mapJsonInputField ifields isNew (e,f) = do
                       f _ = []
             Nothing -> return $ if isNew then Just $ defaultFieldValue f
                                 else Nothing
-matchInputField :: [InputField] -> FieldName -> Maybe (FieldRef, Maybe FunctionName)
+matchInputField :: [FieldRefMapping] -> FieldName -> Maybe (FieldRef, Maybe FunctionName)
 matchInputField ifields fn =  listToMaybe [ (inp,mm) | (pn,inp,mm) <- ifields, pn == fn ]
 prepareJsonInputField :: (FieldName,Maybe FieldValue) -> String
 prepareJsonInputField (fn,Nothing) = T.unpack $(codegenFile "codegen/prepare-input-field-normal.cg")
@@ -119,7 +119,7 @@ updateHandlerDecode (pId,p) = case p of
         readInputObject e io Nothing
     _ -> return ""
     where 
-        readInputObject :: Entity -> Maybe (Maybe VariableName, [InputField]) -> Maybe FieldRef -> State Context String
+        readInputObject :: Entity -> Maybe (Maybe VariableName, [FieldRefMapping]) -> Maybe FieldRef -> State Context String
         readInputObject e (Just (mv, fields)) fr = do
             maybeExisting <- maybeSelectExisting e (mv,fields) fr
             fieldMappers <- mapFields e fields isNew
@@ -181,7 +181,8 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
     where
         isReturn (Return _) = True
         isReturn _ = False
-        trOutputField (pn,OutputFieldLocalParam vn) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
+        trOutputField (pn,FieldRefNamedLocalParam vn,mm) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
+        trOutputField (pn,fr,_) = error "not implemented yet, sorry"
 
 updateHandler :: State Context String
 updateHandler = do

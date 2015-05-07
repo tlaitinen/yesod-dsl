@@ -460,7 +460,7 @@ handlerParam : public {%
             statement l "select"
             return $ Select $2
     }
-    | update pushScope targetEntity identified by fieldRef maybeWithInputJson popScope {%
+    | update pushScope targetEntity identified by fieldRef maybeWithJson popScope {%
         do
             l <- mkLoc $1
             statement l "update"
@@ -487,7 +487,7 @@ handlerParam : public {%
             requireHandlerType l "get" (/=GetHandler)
             return $ GetById (Left $3) $6 s1
     }
-    | maybeBindResult insert pushScope targetEntity maybeFromInputJson popScope {%
+    | maybeBindResult insert pushScope targetEntity maybeFromJson popScope {%
         do
             l <- mkLoc $2
             statement l "insert"
@@ -523,7 +523,7 @@ handlerParam : public {%
             requireHandlerType l1 "if-then" (==GetHandler)
             return $ IfFilter ($3, $8, $10, False) 
     }
-    | return outputJson {% 
+    | return json {% 
         do
             l <- mkLoc $1
             lastStatement l "return"
@@ -626,11 +626,11 @@ orderByListitem : fieldRef orderByDir { ($1, $2) }
 orderByDir : asc { SortAsc }
         |desc  { SortDesc }
 
-maybeWithInputJson: with inputJson { Just $2 }
+maybeWithJson: with json { Just $2 }
              | { Nothing }
          
-maybeFromInputJson: from inputJson { Just (Nothing, $2) }
-             | from lowerIdTk inputJson {%
+maybeFromJson: from json { Just (Nothing, $2) }
+             | from lowerIdTk json {%
                  do
                      l2 <- mkLoc $2
                      let s2 = tkString $2
@@ -640,12 +640,13 @@ maybeFromInputJson: from inputJson { Just (Nothing, $2) }
              }
              | { Nothing }
               
-inputJson:  lbrace inputJsonFields rbrace { $2 }
-inputJsonField : lowerIdTk equals fieldRef {%
+json:  lbrace jsonFields rbrace { $2 }
+jsonField : lowerIdTk equals fieldRef {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
-            withSymbol l1 "target entity" $ 
+            te <- symbolMatches "target entity" $ \st -> case st of SEntity _ -> True; _ -> False 
+            when te $ withSymbol l1 "target entity" $ 
                 requireEntityField l1 s1 $ \_ -> return ()
             return (s1, $3, Nothing) 
      }
@@ -653,26 +654,18 @@ inputJsonField : lowerIdTk equals fieldRef {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
-            withSymbol l1 "target entity" $ 
+            te <- symbolMatches "target entity" $ \st -> case st of SEntity _ -> True; _ -> False 
+            when te $ withSymbol l1 "target entity" $ 
                 requireEntityField l1 s1 $ \_ -> return ()
             return (s1, $5, Just $3)
     }
 
 
 
-inputJsonFields : inputJsonField { [$1] }
-           | inputJsonFields comma inputJsonField  { $3:$1 }
+jsonFields : jsonField { [$1] }
+           | jsonFields comma jsonField  { $3:$1 }
 
-outputJson: lbrace maybeOutputJsonFields rbrace { $2 }
 
-maybeOutputJsonFields: { [] }
-                     | outputJsonFields { $1 }
-outputJsonFields: outputJsonField { [ $1 ] }
-                | outputJsonFields comma outputJsonField { $3:$1 }
-
-outputJsonField : lowerIdTk equals outputRef { (tkString $1,$3) }
-
-outputRef: lowerIdTk { OutputFieldLocalParam $ tkString $1 }
 
 binop : equals { Eq }
       | ne { Ne }
