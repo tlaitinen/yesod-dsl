@@ -94,6 +94,7 @@ data BoolExpr = AndExpr BoolExpr BoolExpr
           | ExistsExpr SelectQuery
           | ExternExpr FunctionName [FunctionParam]
           deriving (Show, Eq, Data, Typeable)
+
 data FunctionParam = FieldRefParam FieldRef
                    | VerbatimParam String
     deriving (Show, Eq, Data, Typeable)
@@ -101,7 +102,6 @@ data FunctionParam = FieldRefParam FieldRef
 type MaybeLevel = Int
     
 data ValExpr = FieldExpr FieldRef
-           | ConstExpr FieldValue 
            | ConcatManyExpr [ValExpr]
            | ValBinOpExpr ValExpr ValBinOp ValExpr 
            | RandomExpr
@@ -169,13 +169,13 @@ type InputField = (ParamName, InputFieldRef, Maybe FunctionName)
 data CheckmarkValue = CheckmarkActive | CheckmarkInactive
                     deriving (Show, Eq, Ord, Data, Typeable)
 
-data InputFieldRef = InputFieldNormal FieldName
-                   | InputFieldAuthId
-                   | InputFieldAuth FieldName
-                   | InputFieldPathParam Int
-                   | InputFieldLocalParam VariableName 
-                   | InputFieldLocalParamField VariableName FieldName 
-                   | InputFieldConst FieldValue
+data InputFieldRef = InputFieldNormal FieldName -- FieldRefRequest 
+                   | InputFieldAuthId           -- FieldRefAuthId
+                   | InputFieldAuth FieldName   -- FieldRefAuth
+                   | InputFieldPathParam Int    -- FieldRefPathParam 
+                   | InputFieldLocalParam VariableName  -- FieldRefLocalParam
+                   | InputFieldLocalParamField VariableName FieldName  -- FieldRefParamField
+                   | InputFieldConst FieldValue -- FieldRefConst
                    | InputFieldNow
                    | InputFieldCheckmark CheckmarkValue
                     deriving (Show, Eq, Ord, Data, Typeable)
@@ -242,6 +242,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefRequest FieldName
               | FieldRefNamedLocalParam VariableName
               | FieldRefParamField VariableName FieldName
+              | FieldRefConst FieldValue 
               deriving (Show, Eq, Data, Typeable) 
 
 entityFieldByName :: Entity -> FieldName -> Field

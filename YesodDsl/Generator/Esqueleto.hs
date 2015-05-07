@@ -137,6 +137,8 @@ hsFieldRef (FieldRefRequest fn)  = normalFieldRef $ "attr_" ++ fn
 hsFieldRef (FieldRefEnum en vn)  = normalFieldRef $ en ++ vn
 hsFieldRef (FieldRefNamedLocalParam vn) = normalFieldRef $ "result_" ++ vn
 hsFieldRef (FieldRefParamField vn pn) = return $ "{- param field " ++ vn ++ " " ++ pn ++ "-}"
+hsFieldRef (FieldRefConst (fv@(NothingValue))) = return $ fieldValueToEsqueleto fv
+hsFieldRef (FieldRefConst fv) = return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
 hsOrderBy :: (FieldRef, SortDir) -> State Context String
 hsOrderBy (f,d) = do
     content <- hsFieldRef f
@@ -163,16 +165,16 @@ hsValExpr ve = do
     where 
         maybePromoteJust c = case ve of
             SubQueryExpr _ -> return c
-            FieldExpr _ -> return c
+            FieldExpr fr -> case fr of
+                FieldRefConst _ -> do
+                    j <- gets ctxExprMaybeLevel
+                    return $ makeJust j c
+                _ -> return c
             _ -> do
                 j <- gets ctxExprMaybeLevel
                 return $ makeJust j c
         content = case ve of
             FieldExpr fr -> hsFieldRef fr
-            ConstExpr (fv@(NothingValue)) -> do
-                return $ fieldValueToEsqueleto fv
-            ConstExpr fv -> do
-                return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
             ConcatManyExpr ves -> resetMaybe $ do
                 rs <- mapM hsValExpr ves
                 return $ "(concat_ [" ++ intercalate ", " rs ++ "])"
@@ -198,13 +200,13 @@ fieldRefMaybeLevel (FieldRefNormal vn fn) = do
     m <- ctxMaybeLevel vn
     mf <- ctxLookupField vn fn
     return $ m + (boolToInt $ fromMaybe False $ mf >>= return . fieldOptional)
+fieldRefMaybeLevel (FieldRefConst NothingValue) = return 1
 fieldRefMaybeLevel _ = return 0
+
 
 exprMaybeLevel :: ValExpr -> State Context Int
 exprMaybeLevel ve = case ve of
     FieldExpr fr -> fieldRefMaybeLevel fr
-    ConstExpr NothingValue -> return 1
-    ConstExpr _ -> return 0
     ConcatManyExpr ves -> do
         es <- mapM exprMaybeLevel ves
         return $ maximum es

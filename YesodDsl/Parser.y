@@ -332,7 +332,8 @@ handlerdef : handlerType pushScope handlerParamsBlock popScope {%
 fieldRefList : { [ ] }
              | fieldRefList fieldRef { $1 ++ [$2] }
 fieldRef : 
-    lowerIdTk dot idField {%
+    value { FieldRefConst $1 }
+    | lowerIdTk dot idField {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
@@ -755,7 +756,6 @@ valbinop :
       | concatop { Concat }
 
 valexpr : lparen valexpr rparen { $2 }
-        | value { ConstExpr $1 }
         | fieldRef { FieldExpr $1 }
         | valexpr valbinop valexpr { ValBinOpExpr $1 $2 $3 }
         | concat lparen valexprlist rparen { ConcatManyExpr (reverse $3) }
