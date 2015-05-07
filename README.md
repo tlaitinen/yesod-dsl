@@ -7,14 +7,12 @@ framework](http://www.yesodweb.com/),
 [Esqueleto](http://hackage.haskell.org/package/esqueleto).
 
 ## Features
- * supports Yesod 1.4 and Persistent 2.1
- * boilerplate code for entity validation
- * supported field types : Word32, Word64, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime, Checkmark
- * filtering and sorting code compatible with ExtJS grids
+ * boilerplate code for entity validation, and filtering and sorting the results 
+ * supported field types : Word32, Word64, Int, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime, Checkmark
  * support code for implementing polymorphic relations and accessing common fields
 
 ## License
- * The code generator is distributed under the terms of [Simplified BSD license](src/LICENSE)
+ * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
 
 ## Why not using Yesod, Persistent and Esqueleto directly?
 
@@ -36,8 +34,8 @@ cabal install yesod-dsl
 
 Note that the current version is experimental and all of the DSL syntax may not
 be handled correctly. However, if the generated code compiles, it probably does
-the right thing. If it does not compile, please post an issue with the related
-.ydsl files.
+the right thing. If it does not compile, please post an issue with a minimal
+example reproducing the issue.
 
 ## DSL syntax
 
@@ -48,7 +46,7 @@ example:
 module Example;
 
 import "versioned.ydsl";
-import Handler.Utils (nonEmpty);
+import Handler.Utils (nonEmpty, maxTwoPendingComments);
 
 class Named {
     name Text check nonEmpty;
@@ -357,7 +355,7 @@ route /pathPiece[/pathPiece]* {
         [for paramName in inputValue {
             -- require, get, update, insert, delete, etc.
          };];
-        [externalFunctionName([inputValue[, inputValue]*]);]*
+        [externalFunctionName [inputValue ]*;]*
         [return { [fieldName = outputValue]
                   [, fieldName = outputValue]* };]
     }]*
@@ -390,7 +388,6 @@ valExpr: "string-constant"
        | ceiling(valExpr)
        | inputValue
        | enumName.enumValue
-       | defineName([param[, param]*])
 
 inputValue: $i
           | $auth.id
@@ -443,7 +440,6 @@ query string parameters by using *if param "paramName" = $$ then* statements.
 ## Using the generated subsite
 
 
-
 In order to use the generated subsite in a scaffolded Yesod site, it suffices to do the following steps:
  * import Handler.MyModule in Application.hs, and
  * define the instance MyModuleInterface App that implements field and entity check functions, and
@@ -480,17 +476,9 @@ Otherwise, the following steps are required:
     , tagged
     ```
 
-## Generated files
-
-Due to the GHC stage restriction (and ghc's tendency to blow up when optimizing
-large Haskell modules), the code generator generates a number of Haskell
-modules that constitute a Yesod subsite: Handler/ModuleName.hs,
-Handler/ModuleName/*.hs .
-
 ## Examples
 
-See [yesod-dsl wiki](https://github.com/tlaitinen/yesod-dsl/wiki) for examples
-and feel free to add yours.
+See [yesod-dsl wiki](https://github.com/tlaitinen/yesod-dsl/wiki) for examples.
 
 
 
