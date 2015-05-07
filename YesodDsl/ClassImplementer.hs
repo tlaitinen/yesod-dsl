@@ -73,10 +73,6 @@ trSq m sq = sq {
                         SelectIdField vn' $ aliasName "id" man men
                         | (vn',men) <- newAliases vn
                     ]
-                SelectParamField vn pn man -> [
-                        SelectParamField vn' pn $ aliasName pn man men
-                        | (vn',men) <- newAliases vn
-                    ]
                 SelectValExpr _ _ -> [sf]  
 
         trExpr e = 

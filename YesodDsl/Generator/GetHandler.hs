@@ -174,7 +174,6 @@ getHandlerReturn sq = do
           expand (SelectField _ fn an') = return [ maybe fn id an' ]
           expand (SelectIdField _ an') = return [ maybe "id" id an' ]
           expand (SelectValExpr ve an) = return [ an ]
-          expand (SelectParamField _ _ _) = return []
           mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
 
 

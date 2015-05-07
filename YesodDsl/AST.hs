@@ -152,7 +152,6 @@ sqAliases sq = catMaybes $ (either (\_ -> Nothing) (\e -> Just (e,vn,False)) er)
 data SelectField = SelectAllFields VariableName
                  | SelectField VariableName FieldName (Maybe VariableName)
                  | SelectIdField VariableName (Maybe VariableName)
-                 | SelectParamField VariableName ParamName (Maybe VariableName)
                  | SelectValExpr ValExpr VariableName
                  deriving (Show, Eq, Data, Typeable)
 

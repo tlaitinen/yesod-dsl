@@ -86,7 +86,6 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         selectFieldName sf = case sf of
             SelectField _ fn mvn -> fromMaybe fn mvn
             SelectIdField _ mvn -> fromMaybe "id" mvn
-            SelectParamField _ pn mvn -> fromMaybe pn mvn
             SelectValExpr _ vn -> vn
             _ -> ""        
 

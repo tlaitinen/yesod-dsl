@@ -586,11 +586,6 @@ selectField: lowerIdTk dot asterisk {%
             l1 <- mkLoc $1
             return (l1, SelectField (tkString $1) (tkString $3) $4) 
     }
-    | lowerIdTk dot lbrace lowerIdTk rbrace maybeSelectAlias {% 
-        do
-            l1 <- mkLoc $1
-            return (l1, SelectParamField (tkString $1) (tkString $4) $6)
-    }
     | valexpr as lowerIdTk {% 
         do
             l3 <- mkLoc $3
