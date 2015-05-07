@@ -46,7 +46,7 @@ type FieldName = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-               | FTZonedTime deriving (Eq,Show,Data,Typeable)
+               | FTCheckmark | FTZonedTime deriving (Eq,Show,Data,Typeable)
 
 -- | file name, row number, and column
 data Location = Loc FilePath Int Int deriving (Eq,Data,Typeable)
@@ -166,7 +166,7 @@ data Join = Join {
 
 type InputField = (ParamName, InputFieldRef, Maybe FunctionName)
 
-data CheckmarkValue = CheckmarkActive | CheckmarkInactive
+data CheckmarkValue = Active | Inactive
                     deriving (Show, Eq, Ord, Data, Typeable)
 
 data InputFieldRef = InputFieldNormal FieldName -- FieldRefRequest 
@@ -176,8 +176,7 @@ data InputFieldRef = InputFieldNormal FieldName -- FieldRefRequest
                    | InputFieldLocalParam VariableName  -- FieldRefLocalParam
                    | InputFieldLocalParamField VariableName FieldName  -- FieldRefParamField
                    | InputFieldConst FieldValue -- FieldRefConst
-                   | InputFieldNow
-                   | InputFieldCheckmark CheckmarkValue
+                   | InputFieldNow              -- FieldRefNow
                     deriving (Show, Eq, Ord, Data, Typeable)
                     
 type OutputField = (ParamName, OutputFieldRef)
@@ -243,6 +242,7 @@ data FieldRef = FieldRefId VariableName
               | FieldRefNamedLocalParam VariableName
               | FieldRefParamField VariableName FieldName
               | FieldRefConst FieldValue 
+              | FieldRefNow -- temporarily here
               deriving (Show, Eq, Data, Typeable) 
 
 entityFieldByName :: Entity -> FieldName -> Field
@@ -267,7 +267,6 @@ type IsListFlag = Bool
 data FieldContent = NormalField FieldType [FieldOption]
                     | EntityField EntityName 
                     | EnumField EnumName (Maybe EnumValue)
-                    | CheckmarkField (Maybe CheckmarkValue)
                 deriving (Show,Eq, Data, Typeable)
    
 
@@ -290,7 +289,7 @@ data FieldValue = StringValue String
                 | FloatValue Double
                 | BoolValue Bool
                 | NothingValue
-                | CheckmarkFieldValue CheckmarkValue
+                | CheckmarkValue CheckmarkValue
                 | EnumFieldValue EnumName EnumValue
                 | EmptyList
                 deriving (Show, Eq, Ord, Data, Typeable)
@@ -301,8 +300,8 @@ fieldValueToSql fv = case fv of
     (FloatValue d) -> show d
     (BoolValue b) -> show b
     NothingValue -> "NULL"
-    CheckmarkFieldValue CheckmarkActive -> "True"
-    CheckmarkFieldValue CheckmarkInactive -> "NULL"
+    CheckmarkValue Active -> "True"
+    CheckmarkValue Inactive -> "NULL"
     EnumFieldValue _ ev ->  "'" ++ ev ++ "'"
     EmptyList -> "'[]'"
    
@@ -313,8 +312,8 @@ fieldValueToEsqueleto fv = case fv of
     (FloatValue d) -> show d
     (BoolValue b) -> show b
     NothingValue -> "nothing"
-    CheckmarkFieldValue CheckmarkActive -> "Active"
-    CheckmarkFieldValue CheckmarkInactive -> "Inactive"
+    CheckmarkValue Active -> "Active"
+    CheckmarkValue Inactive -> "Inactive"
     EnumFieldValue en ev -> en ++ ev
     EmptyList -> "[]"
 
@@ -325,8 +324,8 @@ fieldValueToHs fv = case fv of
     FloatValue d -> show d
     BoolValue b -> show b
     NothingValue -> "Nothing"
-    CheckmarkFieldValue CheckmarkActive -> "Active"
-    CheckmarkFieldValue CheckmarkInactive -> "Inactive"
+    CheckmarkValue Active -> "Active"
+    CheckmarkValue Inactive -> "Inactive"
     EnumFieldValue en ev ->  en ++ ev
     EmptyList -> "[]"
 
@@ -336,7 +335,6 @@ fieldOptions :: Field -> [FieldOption]
 fieldOptions f = fieldContentOptions (fieldContent f)
     where fieldContentOptions (NormalField  _ options) = options
           fieldContentOptions (EnumField en (Just ev)) = [ FieldDefault (EnumFieldValue en ev) ]
-          fieldContentOptions (CheckmarkField (Just cv)) = [ FieldDefault (CheckmarkFieldValue cv) ]
           fieldContentOptions _ = []
     
 fieldDefault :: Field -> Maybe FieldValue

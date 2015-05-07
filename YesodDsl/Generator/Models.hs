@@ -31,6 +31,7 @@ fieldTypeToHsType ft = case ft of
     FTDay -> "Day"
     FTUTCTime -> "UTCTime"
     FTZonedTime -> "ZonedTime"
+    FTCheckmark -> "Checkmark"
 
 
 baseFieldType :: Field -> String
@@ -38,7 +39,6 @@ baseFieldType f = case fieldContent f of
     (NormalField ft _) -> fieldTypeToHsType ft
     (EntityField en) -> en ++ "Id"
     (EnumField en _) -> en
-    (CheckmarkField _) -> "Checkmark"
 
 
 persistFieldType :: Field -> String
@@ -46,13 +46,13 @@ persistFieldType f = baseFieldType f
                    ++ " " ++ (boolToMaybe . fieldOptional) f
                    ++ (maybeDefault . fieldDefault) f
                    ++ (maybeDefaultNull f)
-                   ++ (maybeCheckmarkNullable f)
+                   ++ (maybeCheckmarkNullable $ fieldContent f)
     where 
           maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
           maybeDefaultNull (Field _ True _ _ (EntityField _) _) = " default=NULL"
           maybeDefaultNull _ = ""
-          maybeCheckmarkNullable (Field _ _ _ _ (CheckmarkField _) _) = " nullable"
+          maybeCheckmarkNullable (NormalField FTCheckmark _) = " nullable"
           maybeCheckmarkNullable _ = ""
 
 

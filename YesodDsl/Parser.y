@@ -697,10 +697,7 @@ inputRef: request dot lowerIdTk { InputFieldNormal (tkString $3)  }
            }
         | value { InputFieldConst $1 } 
         | now lparen rparen { InputFieldNow }
-        | checkmarkValue { InputFieldCheckmark $1 }
 
-checkmarkValue: checkmarkActive { CheckmarkActive }
-              | checkmarkInactive { CheckmarkInactive }
 
 inputJsonFields : inputJsonField { [$1] }
            | inputJsonFields comma inputJsonField  { $3:$1 }
@@ -849,14 +846,7 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScop
             declare l n (SField f)
             return f
             }
-      | lowerIdTk checkmark maybeDefaultCheckmarkValue fieldFlags {%
-        do
-            l <- mkLoc $1
-            let n = tkString $1
-            let f = Field l False (FieldInternal `elem` $4) n (CheckmarkField $3) Nothing
-            declare l n (SField f)
-            return f
-            }      
+
 enumFieldContent: 
     upperIdTk default upperIdTk {%
         do
@@ -876,8 +866,6 @@ enumFieldContent:
             return $ EnumField s1 Nothing
     }
 
-maybeDefaultCheckmarkValue: { Nothing }
-    | default checkmarkValue { Just $2 }
         
 
 fieldOptions : { [] }
@@ -911,6 +899,8 @@ value : stringval { StringValue $1 }
       | false { BoolValue False }
       | nothing { NothingValue }
       | lbracket rbracket { EmptyList }
+      | checkmarkActive { CheckmarkValue Active }
+      | checkmarkInactive { CheckmarkValue Inactive }
       
       
 uniques : { [] }
@@ -961,6 +951,7 @@ fieldType:
     | day       { FTDay }
     | utctime   { FTUTCTime }
     | zonedtime { FTZonedTime }
+    | checkmark { FTCheckmark }
 
 maybeMaybe : { False }
               | maybe {True }

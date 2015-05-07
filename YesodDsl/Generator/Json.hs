@@ -98,7 +98,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     EntityField en -> toJSON en
                     EnumField en _ -> toJSON en
                     _ -> Null),
-                "type" .= (case fieldContent f of
+                "type" .= case fieldContent f of
                     NormalField ft _ -> case ft of
                         FTWord32 -> "integer"
                         FTWord64 -> "integer"
@@ -112,9 +112,9 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         FTDay -> "day"
                         FTUTCTime -> "utctime"
                         FTZonedTime -> "zonedtime"
+                        FTCheckmark -> "boolean"
                     EntityField en -> "integer"
                     EnumField en _ -> ("string" :: String)
-                    CheckmarkField _ -> "boolean")
             ]
         fieldValueJson fv = Just $ case fv of
             StringValue s -> toJSON s
@@ -122,7 +122,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
             FloatValue f -> toJSON f
             BoolValue b -> toJSON b
             NothingValue -> Null
-            CheckmarkFieldValue cv -> toJSON $ show cv
+            CheckmarkValue cv -> toJSON $ show cv
             EnumFieldValue _ ev -> toJSON ev
             EmptyList -> Array V.empty
 

@@ -99,9 +99,6 @@ mapJsonInputField ifields isNew (e,f) = do
                 where
                       f (GetById er _ vn') = if vn' == vn then [entityRefName er] else []
                       f _ = []
-            Just (InputFieldCheckmark v, mm) -> return $ Just $ mapper mm ++ case v of
-                CheckmarkActive -> "Active"
-                CheckmarkInactive -> "Inactive"
             Nothing -> return $ if isNew then Just $ defaultFieldValue f
                                 else Nothing
 matchInputField :: [InputField] -> FieldName -> Maybe (InputFieldRef, Maybe FunctionName)
