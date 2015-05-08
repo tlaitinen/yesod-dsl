@@ -332,14 +332,14 @@ handlerdef : handlerType pushScope handlerParamsBlock popScope {%
 fieldRefList : { [ ] }
              | fieldRefList fieldRef { $1 ++ [$2] }
 fieldRef : 
-    value { FieldRefConst $1 }
-    | now lparen rparen { FieldRefNow }
+    value { Const $1 }
+    | now lparen rparen { Now }
     | lowerIdTk dot idField {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
             withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-            return $ FieldRefId s1
+            return $ SqlId (Var s1 Nothing False)
     }
     | lowerIdTk dot lowerIdTk {% 
         do 
@@ -347,8 +347,8 @@ fieldRef :
             let s1 = tkString $1
             l3 <- mkLoc $3
             let s3 = tkString $3
-                a = FieldRefNormal s1 s3
-                b = FieldRefLocalParamField s1 s3
+                a = SqlField (Var s1 Nothing False) s3
+                b = LocalParamField (Var s1 Nothing False) s3
             withSymbol l1 s1 $ requireEntityFieldSelectedOrResult l3 s3
             m <- symbolMatches s1 $ \st -> case st of SEntityResult _ -> True; _ -> False
             return $ if m then b else a
@@ -360,7 +360,7 @@ fieldRef :
             l3 <- mkLoc $3
             let s3 = tkString $3
             withSymbol l1 s1 $ requireEnumValue l3 s3
-            return $ FieldRefEnum s1 s3
+            return $ EnumValueRef s1 s3
     }
     | pathParam {%
         do
@@ -368,8 +368,8 @@ fieldRef :
             let i1 = tkInt $1
             withSymbolNow Nothing l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return Nothing
 
-            return $ FieldRefPathParam i1 }
-    | auth dot idField { FieldRefAuthId }
+            return $ PathParam i1 }
+    | auth dot idField { AuthId }
     | auth dot lowerIdTk {%
         do 
 
@@ -377,16 +377,16 @@ fieldRef :
             l3 <- mkLoc $3
             let n3 = tkString $3
             withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
-            return $ FieldRefAuth n3 
+            return $ AuthField n3 
     }
-    | localParam { FieldRefLocalParam }
-    | request dot lowerIdTk { FieldRefRequest (tkString $3) }
+    | localParam { LocalParam }
+    | request dot lowerIdTk { RequestField (tkString $3) }
     | lowerIdTk {%
         do
             l1 <- mkLoc $1
             let s1 = tkString $1
             withSymbol l1 s1 $ \_ _ _ -> return ()
-            return $ FieldRefNamedLocalParam s1
+            return $ NamedLocalParam s1
     }
 
 declareFromEntity: upperIdTk as lowerIdTk {%
@@ -574,17 +574,17 @@ moreSelectFields: { [] }
 selectField: lowerIdTk dot asterisk {%
         do
             l1 <- mkLoc $1
-            return (l1, SelectAllFields $ tkString $1)
+            return (l1, SelectAllFields $ Var (tkString $1) Nothing False)
     }
     | lowerIdTk dot idField maybeSelectAlias {% 
         do
             l1 <- mkLoc $1
-            return (l1, SelectIdField (tkString $1) $4) 
+            return (l1, SelectIdField (Var (tkString $1) Nothing False) $4) 
     }
     | lowerIdTk dot lowerIdTk maybeSelectAlias {%
         do
             l1 <- mkLoc $1
-            return (l1, SelectField (tkString $1) (tkString $3) $4) 
+            return (l1, SelectField (Var (tkString $1) Nothing False) (tkString $3) $4) 
     }
     | valexpr as lowerIdTk {% 
         do

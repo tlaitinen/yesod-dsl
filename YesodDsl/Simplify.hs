@@ -32,10 +32,10 @@ simplify m = everywhere ((mkT sValExpr) . (mkT sBoolExpr)
 
         mapEntityRef l@(Left en) = fromMaybe l $ lookupEntity m en >>= Just . Right
         mapEntityRef x = x    
-        expand sq (SelectAllFields vn) = fromMaybe [] $ do
+        expand sq (SelectAllFields (Var vn _ _)) = fromMaybe [] $ do
             (e,_,mf) <- L.find (\(_,vn',_) -> vn == vn') (sqAliases sq)
             Just $ [
-                    SelectField vn (fieldName f) Nothing
+                    SelectField (Var vn Nothing False) (fieldName f) Nothing
                     | f <- entityFields e, fieldInternal f == False
                 ]
         expand _ x = [x]         

@@ -73,7 +73,7 @@ defaultSortFields sq = do
     staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
     return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where 
-          fromSelectField (SelectField vn fn an) = do
+          fromSelectField (SelectField (Var vn _ _) fn an) = do
               m <- gets ctxModule
               en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
               return [ (e,vn, f, maybe (fieldName f) id an)
@@ -87,7 +87,7 @@ defaultSortFields sq = do
 
 
 isMaybeFieldRef :: FieldRef -> State Context Bool
-isMaybeFieldRef (FieldRefNormal vn fn) = do
+isMaybeFieldRef (SqlField (Var vn _ _) fn) = do
     mf <- ctxLookupField vn fn 
     return (fromMaybe False $ mf >>= return . fieldOptional)
 isMaybeFieldRef _  = return False
@@ -183,7 +183,7 @@ getHandlerMaybeAuth ps
     | (not . null) (filter isAuthField fieldRefs) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
         where fieldRefs = concatMap universeBi ps
-              isAuthField (FieldRefAuth _) = True
+              isAuthField (AuthField _) = True
               isAuthField _ =False
    
 callStmts :: State Context String

@@ -116,29 +116,29 @@ normalFieldRef content = do
     return $ brackets (isJust et) $ valueOrValueList lv j ++" " ++ annotateType  lv et content
 
 hsFieldRef :: FieldRef -> State Context String
-hsFieldRef (FieldRefId vn) = do
+hsFieldRef (SqlId (Var vn _ _)) = do
     j <- gets ctxExprMaybeLevel
     m <- ctxMaybeLevel vn
     men <- ctxLookupEntity vn 
     return $ makeJust j $ vn ++ projectField (m > 0) ++ fromMaybe "(Nothing)" men ++ "Id"
-hsFieldRef (FieldRefNormal vn fn) = do
+hsFieldRef (SqlField (Var vn _ _) fn) = do
     j <- gets ctxExprMaybeLevel
     m <- ctxMaybeLevel vn
     men <- ctxLookupEntity vn
     return $ makeJust j $ vn ++ projectField (m > 0) ++ fromMaybe "(Nothing)" men
                  ++ (upperFirst fn)
-hsFieldRef FieldRefAuthId = do
+hsFieldRef AuthId = do
     j <- gets ctxExprMaybeLevel
     lv <- gets ctxExprListValue
     return $ valueOrValueList lv j ++ " authId"
-hsFieldRef (FieldRefPathParam p) = normalFieldRef $ "p" ++ show p
-hsFieldRef FieldRefLocalParam    = normalFieldRef $ "localParam"
-hsFieldRef (FieldRefLocalParamField vn fn) = normalFieldRef $ "( {- TODO -} " ++ fn ++ " result_" ++ vn
-hsFieldRef (FieldRefRequest fn)  = normalFieldRef $ "attr_" ++ fn
-hsFieldRef (FieldRefEnum en vn)  = normalFieldRef $ en ++ vn
-hsFieldRef (FieldRefNamedLocalParam vn) = normalFieldRef $ "result_" ++ vn
-hsFieldRef (FieldRefConst (fv@(NothingValue))) = return $ fieldValueToEsqueleto fv
-hsFieldRef (FieldRefConst fv) = return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
+hsFieldRef (PathParam p) = normalFieldRef $ "p" ++ show p
+hsFieldRef LocalParam    = normalFieldRef $ "localParam"
+hsFieldRef (LocalParamField (Var vn _ _) fn) = normalFieldRef $ "( {- TODO -} " ++ fn ++ " result_" ++ vn
+hsFieldRef (RequestField fn)  = normalFieldRef $ "attr_" ++ fn
+hsFieldRef (EnumValueRef en vn)  = normalFieldRef $ en ++ vn
+hsFieldRef (NamedLocalParam vn) = normalFieldRef $ "result_" ++ vn
+hsFieldRef (Const (fv@(NothingValue))) = return $ fieldValueToEsqueleto fv
+hsFieldRef (Const fv) = return $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
 hsOrderBy :: (FieldRef, SortDir) -> State Context String
 hsOrderBy (f,d) = do
     content <- hsFieldRef f
@@ -166,7 +166,7 @@ hsValExpr ve = do
         maybePromoteJust c = case ve of
             SubQueryExpr _ -> return c
             FieldExpr fr -> case fr of
-                FieldRefConst _ -> do
+                Const _ -> do
                     j <- gets ctxExprMaybeLevel
                     return $ makeJust j c
                 _ -> return c
@@ -195,12 +195,12 @@ hsValExpr ve = do
             SubQueryExpr sq -> subQuery "subList_select" sq
 
 fieldRefMaybeLevel :: FieldRef -> State Context Int
-fieldRefMaybeLevel (FieldRefId vn) = ctxMaybeLevel vn
-fieldRefMaybeLevel (FieldRefNormal vn fn) = do
+fieldRefMaybeLevel (SqlId (Var vn _ _)) = ctxMaybeLevel vn
+fieldRefMaybeLevel (SqlField (Var vn _ _) fn) = do
     m <- ctxMaybeLevel vn
     mf <- ctxLookupField vn fn
     return $ m + (boolToInt $ fromMaybe False $ mf >>= return . fieldOptional)
-fieldRefMaybeLevel (FieldRefConst NothingValue) = return 1
+fieldRefMaybeLevel (Const NothingValue) = return 1
 fieldRefMaybeLevel _ = return 0
 
 
@@ -243,8 +243,8 @@ selectFieldExprs sf = do
     m <- gets ctxModule
 
     case sf of
-        (SelectField vn fn _) -> return [ FieldExpr $ FieldRefNormal vn fn]
-        (SelectIdField vn _) -> return [ FieldExpr $ FieldRefId vn ]
+        (SelectField vn fn _) -> return [ FieldExpr $ SqlField vn fn]
+        (SelectIdField vn _) -> return [ FieldExpr $ SqlId vn ]
         (SelectValExpr ve _) -> return [ ve ]
 
 selectReturnFields :: SelectQuery -> State Context String

@@ -149,9 +149,9 @@ sqAliases sq = catMaybes $ (either (\_ -> Nothing) (\e -> Just (e,vn,False)) er)
     where (er,vn) = sqFrom sq                             
 
 
-data SelectField = SelectAllFields VariableName
-                 | SelectField VariableName FieldName (Maybe VariableName)
-                 | SelectIdField VariableName (Maybe VariableName)
+data SelectField = SelectAllFields VariableRef
+                 | SelectField VariableRef FieldName (Maybe VariableName)
+                 | SelectIdField VariableRef (Maybe VariableName)
                  | SelectValExpr ValExpr VariableName
                  deriving (Show, Eq, Data, Typeable)
 
@@ -216,19 +216,22 @@ instance Show PathPiece where
     show (PathText s) = s
     show (PathId _ en) = "#" ++ en ++ "Id"
     
-data FieldRef = FieldRefId VariableName
-              | FieldRefNormal VariableName FieldName
-              | FieldRefAuthId
-              | FieldRefAuth FieldName
-              | FieldRefLocalParam
-              | FieldRefLocalParamField VariableName FieldName
-              | FieldRefEnum EnumName FieldName
-              | FieldRefPathParam Int 
-              | FieldRefRequest FieldName
-              | FieldRefNamedLocalParam VariableName
-              | FieldRefConst FieldValue 
-              | FieldRefNow -- temporarily here
+data FieldRef = SqlId VariableRef
+              | SqlField VariableRef FieldName 
+              | AuthId
+              | AuthField FieldName
+              | LocalParam
+              | LocalParamField VariableRef FieldName
+              | EnumValueRef EnumName FieldName
+              | PathParam Int 
+              | RequestField FieldName
+              | NamedLocalParam VariableName
+              | Const FieldValue 
+              | Now -- temporarily here
               deriving (Show, Eq, Data, Typeable) 
+
+data VariableRef = Var VariableName (Maybe Entity) MaybeFlag
+                 deriving (Show, Eq, Data, Typeable)
 
 entityFieldByName :: Entity -> FieldName -> Field
 entityFieldByName e fn = maybe (error $ "No field " ++ fn ++ " in " ++ entityName e) id

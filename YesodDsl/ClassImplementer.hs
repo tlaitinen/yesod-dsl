@@ -43,15 +43,15 @@ trSq m sq = sq {
                 ]
         
         trClassField en fr = case fr of
-            FieldRefNormal vn fn -> fromMaybe fr $ do
+            SqlField v'@(Var vn _ _) fn -> fromMaybe fr $ do
                 (en',_) <- L.find ((==vn) . snd) aliases
                 f <- lookupField m en' (lowerFirst en ++ upperFirst fn)
-                Just $ FieldRefNormal vn $ fieldName f
+                Just $ SqlField v' $ fieldName f
             _ -> fr    
                 
         trVar srcVn dstVn fr = case fr of
-            FieldRefNormal vn fn -> if vn == srcVn then FieldRefNormal dstVn fn else fr
-            FieldRefId vn -> if vn == srcVn then FieldRefId dstVn else fr
+            SqlField (Var vn _ _) fn -> if vn == srcVn then SqlField (Var dstVn Nothing False) fn else fr
+            SqlId (Var vn _ _) -> if vn == srcVn then SqlId (Var dstVn Nothing False) else fr
             _ -> fr
         aliasName :: FieldName -> Maybe VariableName -> Maybe EntityName -> Maybe VariableName    
 
@@ -60,17 +60,17 @@ trSq m sq = sq {
     
         trSelectField sf = 
             case sf of
-                SelectAllFields vn -> [
-                        SelectAllFields vn'
+                SelectAllFields (Var vn _ _) -> [
+                        SelectAllFields (Var vn' Nothing False)
                         | (vn',_) <- newAliases vn
                     ]
-                SelectField vn fn man -> [
-                        SelectField vn' fn $ aliasName fn man men
+                SelectField (Var vn _ _) fn man -> [
+                        SelectField (Var vn' Nothing False) fn $ aliasName fn man men
                         | (vn',men) <- newAliases vn,
                           validField (vn',fn)
                     ]
-                SelectIdField vn man -> [
-                        SelectIdField vn' $ aliasName "id" man men
+                SelectIdField (Var vn _ _) man -> [
+                        SelectIdField (Var vn' Nothing False) $ aliasName "id" man men
                         | (vn',men) <- newAliases vn
                     ]
                 SelectValExpr _ _ -> [sf]  
@@ -83,7 +83,7 @@ trSq m sq = sq {
                     ] 
                 in if null r then e else foldl1 OrExpr r
                       
-        validExpr e = let fs = [ (vn,fn) | FieldRefNormal vn fn <- universeBi e ]
+        validExpr e = let fs = [ (vn,fn) | SqlField (Var vn _ _) fn <- universeBi e ]
                       in all validField fs   
         validField (vn,fn) = fromMaybe False $ do
             (en,_) <- L.find ((==vn) . snd) allAliases

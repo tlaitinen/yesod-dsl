@@ -75,24 +75,24 @@ mapJsonInputField ifields isNew (e,f) = do
         maybeJust False v = v
         maybeInput = matchInputField ifields (fieldName f)
         notNothing = case maybeInput of
-            Just (FieldRefConst NothingValue, _) -> False
+            Just (Const NothingValue, _) -> False
             _ -> True 
         notInputField = case maybeInput of
-            Just (FieldRefRequest _, _) -> False
+            Just (RequestField _, _) -> False
             _ -> True
         promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
 
         mapper mmapper = maybe "" ((" $ " ++) . (++ " $ ")) mmapper
         mkContent = case maybeInput of
-            Just (ifr@(FieldRefRequest fn), mm) -> do
+            Just (ifr@(RequestField fn), mm) -> do
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-            Just (FieldRefAuthId, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
-            Just (FieldRefAuth fn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
-            Just (FieldRefPathParam i, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
-            Just (FieldRefConst v, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
-            Just (FieldRefNow, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
-            Just (FieldRefNamedLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
-            Just (FieldRefLocalParamField vn fn, mm) -> do
+            Just (AuthId, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+            Just (AuthField fn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
+            Just (PathParam i, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
+            Just (Const v, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+            Just (Now, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
+            Just (NamedLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+            Just (LocalParamField (Var vn _ _) fn, mm) -> do
                 ps <- gets ctxStmts
                 let en = fromJust $ listToMaybe $ concatMap f ps
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
@@ -161,7 +161,7 @@ updateHandlerReadJsonFields = do
 
 
 updateHandlerMaybeCurrentTime :: [Stmt] -> String
-updateHandlerMaybeCurrentTime ps = if  FieldRefNow  `elem` inputFields 
+updateHandlerMaybeCurrentTime ps = if  Now  `elem` inputFields 
     then (T.unpack $(codegenFile "codegen/prepare-now.cg"))
     else ""
     where inputFields = concatMap universeBi ps
@@ -171,7 +171,7 @@ updateHandlerMaybeAuth ps
     | (not . null) (filter isAuthField inputFields) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
     where inputFields = concatMap universeBi ps
-          isAuthField (FieldRefAuth _) = True
+          isAuthField (AuthField _) = True
           isAuthField _ = False
 
 updateHandlerReturnRunDB :: [Stmt] -> String
@@ -181,7 +181,7 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
     where
         isReturn (Return _) = True
         isReturn _ = False
-        trOutputField (pn,FieldRefNamedLocalParam vn,mm) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
+        trOutputField (pn,NamedLocalParam vn,mm) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
         trOutputField (pn,fr,_) = error "not implemented yet, sorry"
 
 updateHandler :: State Context String
