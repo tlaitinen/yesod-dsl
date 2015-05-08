@@ -53,16 +53,16 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                 ],
                 "handlers" .= [
                     object [
-                        "public" .= (Public `elem` (handlerParams h)),
+                        "public" .= (Public `elem` (handlerStmts h)),
                         "type" .= (show $ handlerType h),
                         "inputs" .= [ 
                                 object [
                                     "name" .= fn,
                                     "type" .= Null
                                 ] 
-                            | fn <- concatMap getJsonAttrs $ handlerParams h 
+                            | fn <- concatMap getJsonAttrs $ handlerStmts h 
                         ],
-                        "outputs" .= (concatMap outputs $ handlerParams h)
+                        "outputs" .= (concatMap outputs $ handlerStmts h)
                     ] |  h <- routeHandlers r
                 ]
             ] | r <- modRoutes m

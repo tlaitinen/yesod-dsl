@@ -19,7 +19,7 @@ import Control.Monad.State
 import qualified Data.Map as Map
 
 
-updateHandlerRunDB :: (Int,HandlerParam) -> State Context String
+updateHandlerRunDB :: (Int,Stmt) -> State Context String
 updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
         updateHandlerDecode (pId,p) >>= return . (indent 4),
         case p of
@@ -93,7 +93,7 @@ mapJsonInputField ifields isNew (e,f) = do
             Just (FieldRefNow, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
             Just (FieldRefNamedLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
             Just (FieldRefLocalParamField vn fn, mm) -> do
-                ps <- gets ctxHandlerParams
+                ps <- gets ctxStmts
                 let en = fromJust $ listToMaybe $ concatMap f ps
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
                 where
@@ -109,7 +109,7 @@ prepareJsonInputField (fn, Just d) = T.unpack $(codegenFile "codegen/prepare-inp
 
 
  
-updateHandlerDecode :: (Int,HandlerParam) -> State Context String
+updateHandlerDecode :: (Int,Stmt) -> State Context String
 updateHandlerDecode (pId,p) = case p of
     Update (Right e) fr io -> do
         m <- gets ctxModule
@@ -147,7 +147,7 @@ updateHandlerDecode (pId,p) = case p of
 updateHandlerReadJsonFields :: State Context String
 updateHandlerReadJsonFields = do
     m <- gets ctxModule
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     let attrs = jsonAttrs m ps
     let defaults = getParamDefaults ps
     if null attrs
@@ -160,13 +160,13 @@ updateHandlerReadJsonFields = do
 
 
 
-updateHandlerMaybeCurrentTime :: [HandlerParam] -> String
+updateHandlerMaybeCurrentTime :: [Stmt] -> String
 updateHandlerMaybeCurrentTime ps = if  FieldRefNow  `elem` inputFields 
     then (T.unpack $(codegenFile "codegen/prepare-now.cg"))
     else ""
     where inputFields = concatMap universeBi ps
 
-updateHandlerMaybeAuth :: [HandlerParam] -> String
+updateHandlerMaybeAuth :: [Stmt] -> String
 updateHandlerMaybeAuth ps 
     | (not . null) (filter isAuthField inputFields) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
@@ -174,7 +174,7 @@ updateHandlerMaybeAuth ps
           isAuthField (FieldRefAuth _) = True
           isAuthField _ = False
 
-updateHandlerReturnRunDB :: [HandlerParam] -> String
+updateHandlerReturnRunDB :: [Stmt] -> String
 updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
     Just (Return ofrs) -> T.unpack $(codegenFile "codegen/rundb-return-fields.cg")
     _ -> T.unpack $(codegenFile "codegen/rundb-return-none.cg")
@@ -186,7 +186,7 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
 
 updateHandler :: State Context String
 updateHandler = do
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
 
     liftM concat $ sequence ([
             updateHandlerReadJsonFields,

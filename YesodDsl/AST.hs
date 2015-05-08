@@ -116,7 +116,7 @@ entityRefName :: EntityRef -> EntityName
 entityRefName (Left en) = en
 entityRefName (Right e) = entityName e
          
-data HandlerParam = Public 
+data Stmt = Public 
                   | ParamDefault ParamName FieldValue
                   | DefaultFilterSort
                   | Select SelectQuery 
@@ -127,7 +127,7 @@ data HandlerParam = Public
                   | Insert EntityRef (Maybe (Maybe VariableName, [FieldRefMapping])) (Maybe VariableName)
                   | Return [FieldRefMapping]
                   | Require SelectQuery
-                  | For VariableName FieldRef [HandlerParam]
+                  | For VariableName FieldRef [Stmt]
                   | Call FunctionName [FieldRef]
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
@@ -173,7 +173,7 @@ data SortDir = SortAsc | SortDesc deriving (Show, Eq, Data, Typeable)
 data Handler = Handler {
     handlerLoc	  :: Location,
     handlerType   :: HandlerType,
-    handlerParams :: [HandlerParam] 
+    handlerStmts :: [Stmt] 
 } deriving (Show, Eq, Data, Typeable)
 
 data Entity = Entity {

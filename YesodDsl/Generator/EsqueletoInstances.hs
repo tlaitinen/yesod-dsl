@@ -15,7 +15,7 @@ maxInstances :: Module -> Int
 maxInstances m = safeMaximum $ map sqFieldNumber
                       $ filter isSelectQuery [ hp | r <- modRoutes m, 
                                                h <- routeHandlers r,
-                                               hp <- handlerParams h]
+                                               hp <- handlerStmts h]
     where isSelectQuery (Select _) = True
           isSelectQuery _ = False
           sqFieldNumber (Select sq) = let

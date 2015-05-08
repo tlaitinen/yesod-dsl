@@ -31,7 +31,7 @@ type TypeName = String
 data Context = Context {
     ctxNames :: [(EntityName, VariableName, MaybeFlag)],
     ctxModule :: Module,
-    ctxHandlerParams :: [HandlerParam],
+    ctxStmts :: [Stmt],
     ctxExprType :: Maybe String,
     ctxExprMaybeLevel :: Int,
     ctxExprListValue :: Bool
@@ -40,7 +40,7 @@ emptyContext :: Module -> Context
 emptyContext m = Context {
     ctxNames = [],
     ctxModule = m,
-    ctxHandlerParams = [],
+    ctxStmts = [],
     ctxExprType = Nothing,
     ctxExprMaybeLevel = 0,
     ctxExprListValue = False

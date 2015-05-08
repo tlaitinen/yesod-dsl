@@ -10,7 +10,7 @@ import YesodDsl.Generator.Esqueleto
 import Control.Monad.State
 requireStmts :: State Context String
 requireStmts  = do
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
     where 
         f (requireId,(Require sq)) = do

@@ -21,12 +21,12 @@ import YesodDsl.Generator.Input
 import Control.Monad.State
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
-getHandlerParam :: HandlerParam -> State Context String
-getHandlerParam DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
+getStmt :: Stmt -> State Context String
+getStmt DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getHandlerParam (IfFilter (pn,_,_,useFlag)) = return $ T.unpack $(codegenFile "codegen/get-filter-param.cg")
+getStmt (IfFilter (pn,_,_,useFlag)) = return $ T.unpack $(codegenFile "codegen/get-filter-param.cg")
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
-getHandlerParam _ = return ""      
+getStmt _ = return ""      
 
 ctxFields :: State Context [(Entity, VariableName, Field, VariableName)]
 ctxFields = do
@@ -113,7 +113,7 @@ baseIfFilter selectVar (pn,joins,bExpr,useFlag) = withScope
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
 getSelectQuery :: State Context (Maybe SelectQuery)
 getSelectQuery = do
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     return $ ((listToMaybe . (filter isSelect)) ps) >>= \(Select sq) -> return sq
     where
         isSelect (Select _) = True
@@ -122,7 +122,7 @@ getSelectQuery = do
 getHandlerSelect :: State Context String
 getHandlerSelect = do
     ctx <- get
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     msq <- getSelectQuery
     case msq of
         Just sq -> withScope (sqAliases sq) $ do
@@ -178,7 +178,7 @@ getHandlerReturn sq = do
 
 
 
-getHandlerMaybeAuth :: [HandlerParam] -> String
+getHandlerMaybeAuth :: [Stmt] -> String
 getHandlerMaybeAuth ps 
     | (not . null) (filter isAuthField fieldRefs) = T.unpack $(codegenFile "codegen/load-auth.cg")
     | otherwise = ""
@@ -188,7 +188,7 @@ getHandlerMaybeAuth ps
    
 callStmts :: State Context String
 callStmts = do
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
     where 
         f (callId,(Call fn frs)) = do
@@ -198,7 +198,7 @@ callStmts = do
 getHandlerReadRequestFields :: State Context String
 getHandlerReadRequestFields = do
     m <- gets ctxModule
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     let attrs = jsonAttrs m ps
         defaults = getParamDefaults ps
     if null attrs
@@ -212,10 +212,10 @@ getHandlerReadRequestFields = do
 
 getHandler :: State Context String
 getHandler = do
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     liftM concat $ sequence [
             return $ getHandlerMaybeAuth ps,
-            liftM concat $ mapM getHandlerParam ps,
+            liftM concat $ mapM getStmt ps,
             getHandlerReadRequestFields,
             requireStmts,
             callStmts,

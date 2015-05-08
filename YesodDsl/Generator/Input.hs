@@ -18,7 +18,7 @@ inputFieldRef (FieldRefAuth fn) = return $ rstrip $ T.unpack $(codegenFile "code
 inputFieldRef (FieldRefNamedLocalParam vn) = return $ rstrip $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
  
 inputFieldRef (FieldRefLocalParamField vn fn) = do
-    ps <- gets ctxHandlerParams
+    ps <- gets ctxStmts
     let en = fromJust $ listToMaybe $ concatMap f ps
     return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
     where 
@@ -29,11 +29,11 @@ inputFieldRef (FieldRefPathParam i) = return $ T.unpack $(codegenFile "codegen/i
 inputFieldRef (FieldRefRequest pn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-normal.cg")
 inputFieldRef ifr = return $ show ifr
 
-getJsonAttrs :: HandlerParam -> [FieldName]
+getJsonAttrs :: Stmt -> [FieldName]
 getJsonAttrs (Insert (Right e) Nothing _) = [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
 getJsonAttrs hp = [ fn | FieldRefRequest fn <- universeBi hp ]
                 ++ (concat [ [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
                     | Insert (Right e) Nothing _ <- universeBi hp ])
 
-getParamDefaults :: [HandlerParam] -> Map.Map ParamName FieldValue
+getParamDefaults :: [Stmt] -> Map.Map ParamName FieldValue
 getParamDefaults ps = Map.fromList [ (pn,fv) | ParamDefault pn fv <- universeBi ps ]

@@ -32,7 +32,7 @@ hsHandlerMethod DeleteHandler = "delete"
 handler :: Route -> Handler -> State Context String
 handler r (Handler _ ht ps) = do
     ctx <- get 
-    put $ ctx { ctxHandlerParams = ps }
+    put $ ctx { ctxStmts = ps }
     m <- gets ctxModule
  
     result <- liftM concat $ sequence [
