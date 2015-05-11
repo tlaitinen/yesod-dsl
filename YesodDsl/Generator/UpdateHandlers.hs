@@ -92,13 +92,9 @@ mapJsonInputField ifields isNew (e,f) = do
             Just (Const v, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
             Just (Now, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
             Just (NamedLocalParam vn, mm) -> return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
-            Just (LocalParamField (Var vn _ _) fn, mm) -> do
-                ps <- gets ctxStmts
-                let en = fromJust $ listToMaybe $ concatMap f ps
+            Just (LocalParamField (Var vn (Right e) _) fn, mm) -> do
+                let en = entityName e 
                 return $ Just $ mapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
-                where
-                      f (GetById er _ vn') = if vn' == vn then [entityRefName er] else []
-                      f _ = []
             Nothing -> return $ if isNew then Just $ defaultFieldValue f
                                 else Nothing
 matchInputField :: [FieldRefMapping] -> FieldName -> Maybe (FieldRef, Maybe FunctionName)

@@ -8,6 +8,7 @@ import Data.Data (Data)
 import Data.Either
 import Data.Typeable (Typeable)
 
+
 data Module = Module {
     modName      :: Maybe String,  
     modEntities  :: [Entity],      
@@ -230,7 +231,7 @@ data FieldRef = SqlId VariableRef
               | Now -- temporarily here
               deriving (Show, Eq, Data, Typeable) 
 
-data VariableRef = Var VariableName (Maybe Entity) MaybeFlag
+data VariableRef = Var VariableName EntityRef MaybeFlag
                  deriving (Show, Eq, Data, Typeable)
 
 entityFieldByName :: Entity -> FieldName -> Field
@@ -339,7 +340,10 @@ fieldChecks f = map (\(FieldCheck func) -> func) $ filter isCheck (fieldOptions 
 
 lookupEntity :: Module -> EntityName -> Maybe Entity
 lookupEntity m en = listToMaybe [ e | e <- modEntities m, entityName e == en ]
-         
+
+lookupField' :: Entity -> FieldName -> Maybe Field         
+lookupField' e fn = find ((==fn) . fieldName) $ entityFields e
+
 lookupField :: Module -> EntityName -> FieldName -> Maybe Field
 lookupField m en fn = listToMaybe [ f | e <- modEntities m,
                                     f <- entityFields e,

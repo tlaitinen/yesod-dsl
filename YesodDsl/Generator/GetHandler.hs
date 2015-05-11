@@ -28,26 +28,24 @@ getStmt (IfFilter (pn,_,_,useFlag)) = return $ T.unpack $(codegenFile "codegen/g
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
 getStmt _ = return ""      
 
-ctxFields :: State Context [(Entity, VariableName, Field, VariableName)]
+ctxFields :: State Context [(Entity, VariableName, Field, VariableName, MaybeFlag)]
 ctxFields = do
     m <- gets ctxModule
     names <- gets ctxNames
-    let fields = [ (e,vn,f) | e <- modEntities m,
-                     (en,vn,_) <- names,
+    let fields = [ (e,vn,f,mf) | e <- modEntities m,
+                     (en,vn,mf) <- names,
                      entityName e == en,
                      f <- entityFields e ]
-        usage = Map.fromListWith (+) [ (fieldName f,1) | (_,_,f) <- fields ]
+        usage = Map.fromListWith (+) [ (fieldName f,1) | (_,_,f,_) <- fields ]
     return $ [
-            (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 then fieldName f else vn ++ "." ++ fieldName f)
-            | (e,vn,f) <- fields 
+            (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 then fieldName f else vn ++ "." ++ fieldName f,mf)
+            | (e,vn,f,mf) <- fields 
         ]    
 
 
-defaultFilterField :: (Entity, VariableName, Field,VariableName) -> State Context String
-defaultFilterField (e,vn,f,alias) = do
-    baseMaybeLevel <- ctxMaybeLevel vn
-    let maybeLevel = baseMaybeLevel + boolToInt (fieldOptional f)
-        isMaybe = baseMaybeLevel > 0
+defaultFilterField :: (Entity, VariableName, Field,VariableName,MaybeFlag) -> State Context String
+defaultFilterField (e,vn,f,alias,isMaybe) = do
+    let maybeLevel = boolToInt isMaybe + boolToInt (fieldOptional f)
     return $ T.unpack $(codegenFile "codegen/default-filter-field.cg")
 
 defaultFilterFields :: SelectQuery -> State Context String
@@ -60,10 +58,8 @@ defaultFilterFields sq = do
     let fields = (T.unpack $(codegenFile "codegen/default-filter-id-field.cg")
                  ++ fields')
     return $ T.unpack $(codegenFile "codegen/default-filter-fields.cg")
-defaultSortField :: (Entity, VariableName, Field, ParamName) -> State Context String    
-defaultSortField (e,vn,f,pn) = do
-    maybeLevel <- ctxMaybeLevel vn
-    let isMaybe = maybeLevel > 0
+defaultSortField :: (Entity, VariableName, Field, ParamName, MaybeFlag) -> State Context String    
+defaultSortField (e,vn,f,pn,isMaybe) = do
     return $ T.unpack $(codegenFile "codegen/default-sort-field.cg")
 
 defaultSortFields :: SelectQuery -> State Context String
@@ -73,13 +69,11 @@ defaultSortFields sq = do
     staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
     return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where 
-          fromSelectField (SelectField (Var vn _ _) fn an) = do
+          fromSelectField (SelectField (Var vn (Right e) mf) fn an) = do
               m <- gets ctxModule
-              en <- ctxLookupEntity vn >>= return . (fromMaybe "(Nothing)")
-              return [ (e,vn, f, maybe (fieldName f) id an)
-                 | e <- modEntities m, 
-                   entityName e == en, 
-                   f <- entityFields e,
+              let en = entityName e
+              return [ (e,vn, f, maybe (fieldName f) id an,mf)
+                 | f <- entityFields e,
                    fieldName f == fn ]
           fromSelectField (SelectIdField en an) = return [] -- TODO
           fromSelectField _ = return []         
@@ -87,7 +81,7 @@ defaultSortFields sq = do
 
 
 isMaybeFieldRef :: FieldRef -> State Context Bool
-isMaybeFieldRef (SqlField (Var vn _ _) fn) = do
+isMaybeFieldRef (SqlField (Var vn (Right e) _) fn) = do
     mf <- ctxLookupField vn fn 
     return (fromMaybe False $ mf >>= return . fieldOptional)
 isMaybeFieldRef _  = return False

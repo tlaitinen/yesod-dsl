@@ -17,13 +17,9 @@ inputFieldRef AuthId = return $ rstrip $ T.unpack $(codegenFile "codegen/input-f
 inputFieldRef (AuthField fn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
 inputFieldRef (NamedLocalParam vn) = return $ rstrip $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
 
-inputFieldRef (LocalParamField (Var vn _ _) fn) = do
-    ps <- gets ctxStmts
-    let en = fromJust $ listToMaybe $ concatMap f ps
+inputFieldRef (LocalParamField (Var vn (Right e) _) fn) = do
+    let en = entityName e
     return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
-    where 
-          f (GetById er _ vn') = if vn' == vn then [entityRefName er] else []
-          f _ = []
            
 inputFieldRef (PathParam i) = return $ T.unpack $(codegenFile "codegen/input-field-path-param.cg")
 inputFieldRef (RequestField pn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-normal.cg")

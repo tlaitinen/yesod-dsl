@@ -6,7 +6,6 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     getPath, getParsed,
     setParserState, runParser, pushScope, popScope, declare, declareGlobal, SymType(..),
     ParserState, mkLoc, parseErrorCount, withSymbol, withGlobalSymbol, withSymbolNow,
-
     pError,
     hasReserved,
     getEntitySymbol,
@@ -40,6 +39,9 @@ import YesodDsl.Lexer
 import qualified Data.List as L
 import Data.Maybe
 import System.IO
+import Data.Generics
+import Data.Generics.Uniplate.Data
+
 data SymType = SEnum EnumType
              | SClass Class
              | SEntity EntityName

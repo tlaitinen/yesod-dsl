@@ -339,7 +339,7 @@ fieldRef :
             l1 <- mkLoc $1
             let s1 = tkString $1
             withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-            return $ SqlId (Var s1 Nothing False)
+            return $ SqlId (Var s1 (Left "") False)
     }
     | lowerIdTk dot lowerIdTk {% 
         do 
@@ -347,8 +347,8 @@ fieldRef :
             let s1 = tkString $1
             l3 <- mkLoc $3
             let s3 = tkString $3
-                a = SqlField (Var s1 Nothing False) s3
-                b = LocalParamField (Var s1 Nothing False) s3
+                a = SqlField (Var s1 (Left "") False) s3
+                b = LocalParamField (Var s1 (Left "") False) s3
             withSymbol l1 s1 $ requireEntityFieldSelectedOrResult l3 s3
             m <- symbolMatches s1 $ \st -> case st of SEntityResult _ -> True; _ -> False
             return $ if m then b else a
@@ -534,7 +534,7 @@ handlerParam : public {%
         do
             l <- mkLoc $1
             statement l "require"
-            return $ Require (SelectQuery [] $3 $4 (Just $6) [] (0,0)) 
+            return $ Require $ SelectQuery [] $3 $4 (Just $6) [] (0,0)
     }
     | for pushScope lowerIdParam in fieldRef lbrace handlerParams rbrace popScope {%
         do
@@ -574,17 +574,17 @@ moreSelectFields: { [] }
 selectField: lowerIdTk dot asterisk {%
         do
             l1 <- mkLoc $1
-            return (l1, SelectAllFields $ Var (tkString $1) Nothing False)
+            return (l1, SelectAllFields $ Var (tkString $1) (Left "") False)
     }
     | lowerIdTk dot idField maybeSelectAlias {% 
         do
             l1 <- mkLoc $1
-            return (l1, SelectIdField (Var (tkString $1) Nothing False) $4) 
+            return (l1, SelectIdField (Var (tkString $1) (Left "") False) $4) 
     }
     | lowerIdTk dot lowerIdTk maybeSelectAlias {%
         do
             l1 <- mkLoc $1
-            return (l1, SelectField (Var (tkString $1) Nothing False) (tkString $3) $4) 
+            return (l1, SelectField (Var (tkString $1) (Left "") False) (tkString $3) $4) 
     }
     | valexpr as lowerIdTk {% 
         do

@@ -2,11 +2,14 @@ module YesodDsl.Simplify (simplify) where
 
 import YesodDsl.AST
 import Data.Generics
+import Data.Either
+import Data.Generics.Uniplate.Data
 import qualified Data.List as L
 import Data.Maybe
+import qualified Data.Map as Map
 
 simplify :: Module -> Module
-simplify m = everywhere ((mkT sValExpr) . (mkT sBoolExpr)
+simplify m = everywhere ((mkT $ sHandler m) . (mkT sValExpr) . (mkT sBoolExpr)
                          . (mkT sStmt) . (mkT mapEntityRef)) m
     where
         sValExpr (SubQueryExpr sq) = SubQueryExpr $ mapSq sq
@@ -33,9 +36,30 @@ simplify m = everywhere ((mkT sValExpr) . (mkT sBoolExpr)
         mapEntityRef l@(Left en) = fromMaybe l $ lookupEntity m en >>= Just . Right
         mapEntityRef x = x    
         expand sq (SelectAllFields (Var vn _ _)) = fromMaybe [] $ do
-            (e,_,mf) <- L.find (\(_,vn',_) -> vn == vn') (sqAliases sq)
+            (e,_,_) <- L.find (\(_,vn',_) -> vn == vn') (sqAliases sq)
             Just $ [
-                    SelectField (Var vn Nothing False) (fieldName f) Nothing
+                    SelectField (Var vn (Left "") False) (fieldName f) Nothing
                     | f <- entityFields e, fieldInternal f == False
                 ]
         expand _ x = [x]         
+
+
+sHandler :: Module -> Handler -> Handler
+sHandler m h = everywhere ((mkT mapVarRef) . (mkT mapStmt) . (mkT mapSq)) h
+    where
+        baseAliases = Map.unions [ aliases sq | Select sq <- universeBi h ]
+        mapStmt df@(DeleteFrom er vn mbe) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [ er >>= \e -> Right (vn, (e, False)) ] ]) df
+        mapStmt i@(IfFilter (_,js,be,_)) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [  joinEntity j >>= \e -> Right (joinAlias j,(e, isOuterJoin $ joinType j)) | j <- js ] ]) i
+        mapStmt i = i 
+        mapSq sq = everywhere (mkT $ mapSqVarRef $ aliases sq) sq
+        aliases sq = Map.fromList $ [ (vn,(er,mf)) | (er,vn,mf) <- sqAliases sq ]
+        mapSqVarRef aliases v@(Var vn (Left "") _) = case Map.lookup vn aliases of
+            Just (e,mf) -> Var vn (Right e) mf
+            _ -> Var vn (lookupEntityRef vn) False
+        mapSqVarRef _ v = v
+        lookupEntityRef vn = case listToMaybe [ er | GetById er _ vn' <- universeBi h, vn' == vn ] of
+            Just er -> er
+            Nothing -> Left ""
+
+        mapVarRef (Var vn (Left "") _) = Var vn (lookupEntityRef vn) False
+

@@ -50,8 +50,8 @@ trSq m sq = sq {
             _ -> fr    
                 
         trVar srcVn dstVn fr = case fr of
-            SqlField (Var vn _ _) fn -> if vn == srcVn then SqlField (Var dstVn Nothing False) fn else fr
-            SqlId (Var vn _ _) -> if vn == srcVn then SqlId (Var dstVn Nothing False) else fr
+            SqlField (Var vn _ _) fn -> if vn == srcVn then SqlField (Var dstVn (Left "") False) fn else fr
+            SqlId (Var vn _ _) -> if vn == srcVn then SqlId (Var dstVn (Left "") False) else fr
             _ -> fr
         aliasName :: FieldName -> Maybe VariableName -> Maybe EntityName -> Maybe VariableName    
 
@@ -61,16 +61,16 @@ trSq m sq = sq {
         trSelectField sf = 
             case sf of
                 SelectAllFields (Var vn _ _) -> [
-                        SelectAllFields (Var vn' Nothing False)
+                        SelectAllFields (Var vn' (Left "") False)
                         | (vn',_) <- newAliases vn
                     ]
                 SelectField (Var vn _ _) fn man -> [
-                        SelectField (Var vn' Nothing False) fn $ aliasName fn man men
+                        SelectField (Var vn' (Left "") False) fn $ aliasName fn man men
                         | (vn',men) <- newAliases vn,
                           validField (vn',fn)
                     ]
                 SelectIdField (Var vn _ _) man -> [
-                        SelectIdField (Var vn' Nothing False) $ aliasName "id" man men
+                        SelectIdField (Var vn' (Left "") False) $ aliasName "id" man men
                         | (vn',men) <- newAliases vn
                     ]
                 SelectValExpr _ _ -> [sf]  
