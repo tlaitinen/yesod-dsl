@@ -3,14 +3,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YesodDsl.Generator.Json (moduleToJson) where
 import YesodDsl.AST
-import Text.Shakespeare.Text hiding (toText)
-import qualified Data.Text as T
-import Data.List
-import Data.Maybe
-import Data.Char
-import YesodDsl.Generator.Common
 import Data.Aeson.Encode.Pretty
 import Data.Aeson
+import Data.Maybe
 import qualified Data.Vector as V
 import qualified Data.Text.Lazy.Encoding as LTE
 import YesodDsl.Generator.Input
@@ -80,7 +75,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     object [
                         "name" .= pn,
                         "type" .= Null
-                    ] | (pn,fr,_) <- ofs 
+                    ] | (pn,_,_) <- ofs 
                 ]   
             _ -> []
         selectFieldName sf = case sf of
@@ -112,8 +107,8 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         FTUTCTime -> "utctime"
                         FTZonedTime -> "zonedtime"
                         FTCheckmark -> "boolean"
-                    EntityField en -> "integer"
-                    EnumField en _ -> ("string" :: String)
+                    EntityField _ -> "integer"
+                    EnumField _ _ -> ("string" :: String)
             ]
         fieldValueJson fv = Just $ case fv of
             StringValue s -> toJSON s

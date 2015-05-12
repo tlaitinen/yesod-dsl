@@ -1,8 +1,0 @@
-Entity {
-    entityName = "~{entityName e}",
-    entityInstances = [~{intercalate ", " (map show (entityInstances e))}],
-    entityFields = [
-~{indent 8 $ intercalate ",\n" (map trField (entityFields e))}        
-    ],
-    entityChecks = [~{intercalate ", " (map show (entityChecks e))}]
-}

@@ -33,14 +33,11 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     postValidation) where
 import qualified Data.Map as Map
 import Control.Monad.State.Lazy
-import Control.Monad.Trans.Class
 import YesodDsl.AST 
 import YesodDsl.Lexer 
 import qualified Data.List as L
 import Data.Maybe
 import System.IO
-import Data.Generics
-import Data.Generics.Uniplate.Data
 
 data SymType = SEnum EnumType
              | SClass Class
@@ -207,7 +204,6 @@ runParser path ps m = do
 
 pushScope :: ParserMonad ()
 pushScope = do
-    syms <- gets psSyms
     modify $ \ps -> ps {
         psScopeId = psScopeId ps + 1,
         psPendingValidations = []:psPendingValidations ps 
@@ -350,8 +346,8 @@ requireEntityResult f = f'
 
 requireEntityOrClass :: (Location -> Location -> SymType -> ParserMonad ())
 requireEntityOrClass = f'
-    where f' _ _ (SEntity en) = return ()
-          f' _ _ (SClass cn) = return ()
+    where f' _ _ (SEntity _) = return ()
+          f' _ _ (SClass _) = return ()
           f' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity or class)"
 
 
@@ -377,17 +373,12 @@ requireEntityFieldSelectedOrResult l fn = fun'
 
         validate en = addEntityValidation (en, \e -> 
             case L.find (\f -> fieldName f == fn) $ entityFields e ++ entityClassFields e of
-              Just f -> return ()
+              Just _ -> return ()
               Nothing -> pError l ("Reference to undeclared field '" 
                             ++ fn ++ "' of entity '" ++ entityName e ++ "'"))
          
 
-requireFieldType :: (FieldType -> ParserMonad()) -> (Location -> Location -> SymType -> ParserMonad ())
-requireFieldType f = fun'
-    where 
-        fun' _ _ (SFieldType ft) = f ft
-        fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected field type)"  
-        
+       
 requireEnum :: Location -> Location -> SymType -> ParserMonad ()
 requireEnum = fun'
     where 
@@ -399,7 +390,7 @@ requireEnumValue l ev = fun'
     where 
         fun' _ _ (SEnum e) = 
             case L.find (\ev' -> ev' == ev) $ enumValues e of
-                Just ev -> return ()
+                Just _ -> return ()
                 Nothing -> pError l $ "Reference to undeclared enum value '"
                     ++ ev ++ "' of enum '" ++ enumName e ++ "'"
         fun' l1 l2 st = pError l1 $ "Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected enum)"

@@ -4,7 +4,6 @@
 
 module YesodDsl.Generator.Classes where
 import YesodDsl.AST
-import YesodDsl.AST
 import Data.Maybe
 import qualified Data.Text as T
 import Data.List
@@ -91,7 +90,7 @@ classSelect c es = maybeFilterDataType
             then classSelectFilterDataType c
             else ""
         maybeFilterParam = if hasClassFields then "filters" :: String else ""
-        filterField e (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
+        filterField _ (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
         filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
         maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
 
@@ -111,7 +110,7 @@ classUpdate c es
         maybeFilter e = if hasClassFields
             then T.unpack $(codegenFile "codegen/class-select-entity-filter.cg")
             else ""
-        filterField e (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
+        filterField _ (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
         filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
         
 instancesOf :: Module -> Class -> [Entity]
@@ -137,7 +136,7 @@ entityClassFieldWrappers m e = concatMap fieldWrapper (entityClassFields e)
             Nothing -> ""
         fieldWrapper _ = ""
         wrapInstance c f e2 = T.unpack $(codegenFile "codegen/entity-class-field-wrapper-wrap-instance.cg")
-        classInstanceFieldClass ((cn,fn), fs) = T.unpack $(codegenFile "codegen/entity-class-instance-field-class.cg")
+        classInstanceFieldClass ((_,fn), fs) = T.unpack $(codegenFile "codegen/entity-class-instance-field-class.cg")
             where
                 fieldInstance f = T.unpack $(codegenFile "codegen/entity-class-instance-field-class-instance.cg")
         fieldEntityName f = case fieldContent f of

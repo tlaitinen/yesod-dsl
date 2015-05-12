@@ -1,6 +1,5 @@
 module YesodDsl.SyncFile where
-import Prelude hiding (readFile, catch)
-import System.IO (FilePath, writeFile)
+import Prelude hiding (readFile)
 import System.IO.Strict (readFile)
 import Control.Exception (catch, SomeException)
 

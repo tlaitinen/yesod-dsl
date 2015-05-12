@@ -5,7 +5,6 @@ import Data.Maybe
 import Data.List
 import Data.Char
 import Data.Data (Data)
-import Data.Either
 import Data.Typeable (Typeable)
 import qualified Data.Map as Map
 

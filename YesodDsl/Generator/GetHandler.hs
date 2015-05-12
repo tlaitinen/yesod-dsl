@@ -2,17 +2,12 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 module YesodDsl.Generator.GetHandler where
-import Data.Either
-import System.IO (FilePath, writeFile)
-import System.FilePath (joinPath)    
-import System.Directory (createDirectoryIfMissing)
 import Data.String.Utils (rstrip)    
 import YesodDsl.AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
 import Data.List
 import Data.Maybe
-import Data.Char
 import YesodDsl.Generator.Common
 import YesodDsl.Generator.Esqueleto
 import YesodDsl.Generator.Models
@@ -21,18 +16,18 @@ import YesodDsl.Generator.Input
 import Control.Monad.Reader
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
-getStmt :: Stmt -> Reader Context String
-getStmt DefaultFilterSort = return $ T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
+getStmt :: Stmt -> String
+getStmt DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getStmt (IfFilter (pn,_,_,useFlag)) = return $ T.unpack $(codegenFile "codegen/get-filter-param.cg")
+getStmt (IfFilter (pn,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
-getStmt _ = return ""      
+getStmt _ = ""      
 
 ctxFields :: Reader Context [(Entity, VariableName, Field, VariableName, MaybeFlag)]
 ctxFields = do
     names <- asks ctxNames
     let fields = [ (e,vn,f,mf) | (vn,(e,mf)) <- Map.toList names, f <- entityFields e ]
-        usage = Map.fromListWith (+) [ (fieldName f,1) | (_,_,f,_) <- fields ]
+        usage = Map.fromListWith (+) [ (fieldName f,1::Int) | (_,_,f,_) <- fields ]
     return $ [
             (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 then fieldName f else vn ++ "." ++ fieldName f,mf)
             | (e,vn,f,mf) <- fields 
@@ -66,29 +61,24 @@ defaultSortFields sq = do
     return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where 
           fromSelectField (SelectField (Var vn (Right e) mf) fn an) = do
-              let en = entityName e
               return [ (e,vn, f, maybe (fieldName f) id an,mf)
                  | f <- entityFields e,
                    fieldName f == fn ]
-          fromSelectField (SelectIdField en an) = return [] -- TODO
+          fromSelectField (SelectIdField _ _) = return [] -- TODO
           fromSelectField _ = return []         
 
 
 
-isMaybeFieldRef :: FieldRef -> Reader Context Bool
-isMaybeFieldRef (SqlField (Var vn (Right e) _) fn) = do
-    return (fromMaybe False $ lookupField e fn >>= return . fieldOptional)
-isMaybeFieldRef _  = return False
 
 implicitJoinExpr :: Join -> Reader Context String
-implicitJoinExpr (Join _ en vn (Just expr)) = do
+implicitJoinExpr (Join _ _ _ (Just expr)) = do
     e <- hsBoolExpr expr
     return $ "where_ (" ++ e ++ ")\n"
 implicitJoinExpr _ = return ""
 
 
-baseIfFilter :: VariableName -> IfFilterParams -> Reader Context String
-baseIfFilter selectVar (pn,joins,bExpr,useFlag) = withScope 
+baseIfFilter :: IfFilterParams -> Reader Context String
+baseIfFilter (pn,joins,bExpr,useFlag) = withScope 
     (Map.fromList $ catMaybes [ either (\_ -> Nothing) (\e -> Just (joinAlias j, (e, isOuterJoin $ joinType j))) $ joinEntity j | j <- joins]) $ do
         joinExprs <- liftM concat $ mapM implicitJoinExpr joins
         expr <- hsBoolExpr bExpr
@@ -99,10 +89,10 @@ baseIfFilter selectVar (pn,joins,bExpr,useFlag) = withScope
           maybeFrom = if null joins 
                         then "do"
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
-getHandlerSelect :: [Stmt] -> Reader Context String
-getHandlerSelect ps = do
+getHandlerSelect :: [Stmt] -> String
+getHandlerSelect ps = 
     case listToMaybe [ sq | Select sq <- universeBi ps ] of
-        Just sq -> withScope (sqAliases sq) $ do
+        Just sq -> runReader (do
             let defaultFilterSort = DefaultFilterSort `elem` ps
                 ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
                 isIfFilter (IfFilter _) = True
@@ -119,36 +109,37 @@ getHandlerSelect ps = do
                     return $ "where_ (" ++ e ++ ")\n"
                 Nothing -> return ""
             joinExprs <- liftM concat $ mapM mapJoinExpr $ reverse $ sqJoins sq
-            ifFiltersStr <- liftM concat $ mapM (baseIfFilter selectVar) ifFilters
+            ifFiltersStr <- liftM concat $ mapM baseIfFilter  ifFilters
             filterFieldsStr <- defaultFilterFields sq
             returnFieldsStr <- selectReturnFields sq
             maybeDefaultSortFields <- if defaultFilterSort
                 then defaultSortFields sq
                 else return ""
-            ret <- getHandlerReturn sq
-            return $ (T.unpack $(codegenFile "codegen/base-select-query.cg"))
-                ++ (if defaultFilterSort 
+            return $ concat [
+                (T.unpack $(codegenFile "codegen/base-select-query.cg")),
+                (if defaultFilterSort 
                     then filterFieldsStr 
                          ++ ifFiltersStr
-                    else "")
-               ++ (indent 8 returnFieldsStr)
-               ++ (T.unpack $(codegenFile "codegen/select-count.cg"))
-               ++ (T.unpack $(codegenFile "codegen/select-results.cg"))
-               ++ ret 
-        Nothing -> return ""
+                    else ""),
+                (indent 8 returnFieldsStr),
+                (T.unpack $(codegenFile "codegen/select-count.cg")),
+                (T.unpack $(codegenFile "codegen/select-results.cg")),
+                getHandlerReturn sq
+                ]) (emptyContext { ctxNames = sqAliases sq })
+        Nothing -> ""
 
-getHandlerReturn :: SelectQuery -> Reader Context String
-getHandlerReturn sq = do
-    fieldNames' <- liftM concat $ mapM expand $ sqFields sq
-    let fieldNames = zip fieldNames' ([1..]::[Int])
+getHandlerReturn :: SelectQuery -> String
+getHandlerReturn sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
+    where 
+        fieldNames' = concat $ map expand $ sqFields sq
+        fieldNames = zip fieldNames' ([1..]::[Int])
         mappedResultFields = concatMap mapResultField $ fieldNames
         resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
-    return $ T.unpack $(codegenFile "codegen/get-handler-return.cg")
-    where 
-          expand (SelectField _ fn an') = return [ maybe fn id an' ]
-          expand (SelectIdField _ an') = return [ maybe "id" id an' ]
-          expand (SelectValExpr ve an) = return [ an ]
-          mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
+        expand (SelectField _ fn an') = [ maybe fn id an' ]
+        expand (SelectIdField _ an') = [ maybe "id" id an' ]
+        expand (SelectValExpr _ an) = [ an ]
+        expand _ = []
+        mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
 
 
 
@@ -160,32 +151,27 @@ getHandlerMaybeAuth ps
               isAuthField (AuthField _) = True
               isAuthField _ =False
    
-callStmts :: [Stmt] -> Reader Context String
-callStmts ps = do
-    liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
+callStmts :: [Stmt] -> String
+callStmts ps = concatMap f $ zip ([1..] :: [Int]) ps
     where 
-        f (callId,(Call fn frs)) = do
-            ifrs <- mapM inputFieldRef frs
-            return $ T.unpack $(codegenFile "codegen/get-call.cg")
-        f _ = return ""     
-getHandlerReadRequestFields :: [Stmt] -> Reader Context String
-getHandlerReadRequestFields ps = do
-    let attrs = jsonAttrs ps
+        f (_,(Call fn frs)) = 
+            let ifrs = map inputFieldRef frs
+            in T.unpack $(codegenFile "codegen/get-call.cg")
+        f _ = ""
+getHandlerReadRequestFields :: [Stmt] -> String
+getHandlerReadRequestFields ps = 
+    let attrs = nub $ concatMap getJsonAttrs ps
         defaults = getParamDefaults ps
-    if null attrs
-        then return ""
-        else return $
-            concatMap (\attr -> prepareRequestInputField attr (Map.lookup attr defaults)) attrs
-    where
-        jsonAttrs ps = nub $ concatMap getJsonAttrs ps
         prepareRequestInputField fn Nothing = T.unpack $(codegenFile "codegen/prepare-request-input-field.cg")
         prepareRequestInputField fn (Just d) = T.unpack $(codegenFile "codegen/prepare-request-input-field-default.cg")
+    in if null attrs
+        then ""
+        else concatMap (\attr -> prepareRequestInputField attr (Map.lookup attr defaults)) attrs
 
-getHandler :: [Stmt] -> Reader Context String
-getHandler ps = do
-    liftM concat $ sequence [
-            return $ getHandlerMaybeAuth ps,
-            liftM concat $ mapM getStmt ps,
+getHandler :: [Stmt] -> String
+getHandler ps = concat [
+            getHandlerMaybeAuth ps,
+            concatMap getStmt ps,
             getHandlerReadRequestFields ps,
             requireStmts ps,
             callStmts ps,

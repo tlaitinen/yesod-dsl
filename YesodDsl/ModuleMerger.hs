@@ -1,6 +1,5 @@
 module YesodDsl.ModuleMerger (mergeModules) where
 import YesodDsl.AST
-import Data.List
 import Data.Maybe
 import Data.Generics
     

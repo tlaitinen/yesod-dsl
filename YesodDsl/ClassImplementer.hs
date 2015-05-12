@@ -2,11 +2,9 @@
 module YesodDsl.ClassImplementer (implementClasses) where
 import Data.List
 import YesodDsl.AST
-import System.IO.Unsafe
 import Data.Maybe
 import Data.Generics
 import Data.Generics.Uniplate.Data
-import Control.Applicative
 import qualified Data.Map as Map
 import qualified Data.List as L
 
@@ -63,7 +61,7 @@ trSq m sq = sq {
         aliasName :: FieldName -> Maybe VariableName -> Maybe EntityName -> Maybe VariableName    
 
         aliasName fn man (Just en) = Just $ fromMaybe (fn ++ en) $ man >>= Just . (++en)
-        aliasName fn man Nothing = man
+        aliasName _ man Nothing = man
     
         trSelectField sf = 
             case sf of
@@ -94,7 +92,7 @@ trSq m sq = sq {
                       in all validField fs   
         validField (vn,fn) = fromMaybe False $ do
             (en,_) <- L.find ((==vn) . snd) allAliases
-            e <- lookupField' m en fn
+            _ <- lookupField' m en fn
             Just True
 
 classLookup :: [Class] -> ClassName -> Maybe Class
@@ -134,7 +132,7 @@ implInEntity m classes' e = e {
         entityFields  = concatMap (expandClassRefFields m e) $ 
                             entityFields e ++ extraFields,
         entityClassFields = filter isClassField $ entityFields e,
-        entityUniques = entityUniques e ++ (map (addEntityNameToUnique e) $ concatMap classUniques validClasses)
+        entityUniques = entityUniques e ++ (map addEntityNameToUnique $ concatMap classUniques validClasses)
     }
     where
         instances = entityInstances e
@@ -149,6 +147,6 @@ implInEntity m classes' e = e {
         extraFields = concatMap classFields validClasses
         isClassField (Field _ _ _ _ (EntityField iName) _) = iName `elem` (map className $ modClasses m)
         isClassField _ = False
-        addEntityNameToUnique e (Unique name fields) = Unique (entityName e ++ name) fields
+        addEntityNameToUnique (Unique name fields) = Unique (entityName e ++ name) fields
         
     

@@ -10,7 +10,7 @@ import qualified Data.Map as Map
 
 
 simplify :: Module -> Module
-simplify m = everywhere ((mkT $ sHandler m) . (mkT sValExpr) . (mkT sBoolExpr)
+simplify m = everywhere ((mkT sHandler) . (mkT sValExpr) . (mkT sBoolExpr)
                          . (mkT sStmt) . (mkT mapEntityRef)) m
     where
         sValExpr (SubQueryExpr sq) = SubQueryExpr $ mapSq sq
@@ -34,8 +34,8 @@ simplify m = everywhere ((mkT $ sHandler m) . (mkT sValExpr) . (mkT sBoolExpr)
                 joinExpr = joinExpr j >>= Just . (everywhere $ (mkT sValExpr) . (mkT sBoolExpr))
             }
 
-        lookupEntity m en = L.find ((==en) . entityName) $ modEntities m
-        mapEntityRef l@(Left en) = fromMaybe l $ lookupEntity m en >>= Just . Right
+        lookupEntity en = L.find ((==en) . entityName) $ modEntities m
+        mapEntityRef l@(Left en) = fromMaybe l $ lookupEntity en >>= Just . Right
         mapEntityRef x = x    
         expand sq (SelectAllFields (Var vn _ _)) = fromMaybe [] $ do
             (e,_) <- Map.lookup vn $ sqAliases sq
@@ -46,15 +46,15 @@ simplify m = everywhere ((mkT $ sHandler m) . (mkT sValExpr) . (mkT sBoolExpr)
         expand _ x = [x]         
 
 
-sHandler :: Module -> Handler -> Handler
-sHandler m h = everywhere ((mkT mapVarRef) . (mkT mapStmt) . (mkT mapSq)) h
+sHandler :: Handler -> Handler
+sHandler h = everywhere ((mkT mapVarRef) . (mkT mapStmt) . (mkT mapSq)) h
     where
         baseAliases = Map.unions [ sqAliases sq | Select sq <- universeBi h ]
-        mapStmt df@(DeleteFrom er vn mbe) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [ er >>= \e -> Right (vn, (e, False)) ] ]) df
-        mapStmt i@(IfFilter (_,js,be,_)) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [  joinEntity j >>= \e -> Right (joinAlias j,(e, isOuterJoin $ joinType j)) | j <- js ] ]) i
+        mapStmt df@(DeleteFrom er vn _) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [ er >>= \e -> Right (vn, (e, False)) ] ]) df
+        mapStmt i@(IfFilter (_,js,_,_)) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [  joinEntity j >>= \e -> Right (joinAlias j,(e, isOuterJoin $ joinType j)) | j <- js ] ]) i
         mapStmt i = i 
         mapSq sq = everywhere (mkT $ mapSqVarRef $ sqAliases sq) sq
-        mapSqVarRef aliases v@(Var vn (Left "") _) = case Map.lookup vn aliases of
+        mapSqVarRef aliases (Var vn (Left "") _) = case Map.lookup vn aliases of
             Just (e,mf) -> Var vn (Right e) mf
             _ -> Var vn (lookupEntityRef vn) False
         mapSqVarRef _ v = v
@@ -63,4 +63,5 @@ sHandler m h = everywhere ((mkT mapVarRef) . (mkT mapStmt) . (mkT mapSq)) h
             Nothing -> Left ""
 
         mapVarRef (Var vn (Left "") _) = Var vn (lookupEntityRef vn) False
+        mapVarRef v = v
 

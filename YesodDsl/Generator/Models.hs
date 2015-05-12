@@ -3,7 +3,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YesodDsl.Generator.Models where
 import YesodDsl.AST
-import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
@@ -69,12 +68,12 @@ enum e = T.unpack $(codegenFile "codegen/enum.cg")
           toPathPiece v = T.unpack $(codegenFile "codegen/enum-topathpiece.cg")
           parseJSON v = T.unpack $(codegenFile "codegen/enum-parsejson.cg")
           toJSON v = T.unpack $(codegenFile "codegen/enum-tojson.cg")
-          readsPrecs = concatMap readsPrec (enumValues e)
-          showsPrecs = concatMap showsPrec (enumValues e)
-          readsPrec v = T.unpack $(codegenFile "codegen/enum-readsprec.cg")
-          showsPrec v = T.unpack $(codegenFile "codegen/enum-showsprec.cg")
+          readsPrecs = concatMap readsPrec' (enumValues e)
+          showsPrecs = concatMap showsPrec' (enumValues e)
+          readsPrec' v = T.unpack $(codegenFile "codegen/enum-readsprec.cg")
+          showsPrec' v = T.unpack $(codegenFile "codegen/enum-showsprec.cg")
           toCharList s = "'" ++ (intercalate "':'" (map (:[]) s)) ++ "'"
-          prefixedValues e = intercalate " | " $ map ((enumName e) ++) $ enumValues e
+          prefixedValues  = intercalate " | " $ map ((enumName e) ++) $ enumValues e
 
 modelField :: Field -> String
 modelField f = T.unpack $(codegenFile "codegen/model-field.cg")

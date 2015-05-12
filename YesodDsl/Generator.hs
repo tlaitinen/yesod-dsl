@@ -2,20 +2,16 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YesodDsl.Generator (generate, hsRouteName, genFay, genJson) where
+module YesodDsl.Generator (generate, hsRouteName, genJson) where
 import Prelude hiding (readFile)
-import System.IO (FilePath, writeFile)
-import System.IO.Strict (readFile)
 import System.FilePath (joinPath)    
 import System.Directory (createDirectoryIfMissing)
-import Data.String.Utils (rstrip)    
 import YesodDsl.AST
 import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
 import Data.List
 import Data.Maybe
 import Control.Monad
-import Data.Char
 
 import YesodDsl.Generator.Models
 import YesodDsl.Generator.EntityFactories
@@ -25,12 +21,8 @@ import YesodDsl.Generator.Validation
 import YesodDsl.Generator.Handlers
 import YesodDsl.Generator.EsqueletoInstances
 import YesodDsl.Generator.Cabal
-import YesodDsl.Generator.Fay
 import YesodDsl.Generator.Json
 import YesodDsl.SyncFile
-import Control.Monad.Reader
-import YesodDsl.Generator.Esqueleto
-import Data.Generics
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
 
@@ -42,7 +34,7 @@ fmtImport i = T.unpack $(codegenFile "codegen/import.cg")
 
 writeRoute :: Module -> Route -> IO ()
 writeRoute m r = do
-    let content = runReader (liftM concat $ mapM (handler m r) (routeHandlers r)) emptyContext
+    let content = concatMap (handler m r) (routeHandlers r)
     syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
         T.unpack $(codegenFile "codegen/route-header.cg") ++ content
@@ -92,9 +84,6 @@ generate path m = do
 
                             
 
-genFay :: FilePath -> Module -> IO ()
-genFay path m = syncFile path $ fay m
- 
 genJson :: FilePath -> Module -> IO ()
 genJson path m = syncFile path $ moduleToJson m
 

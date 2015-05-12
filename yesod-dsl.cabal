@@ -61,7 +61,6 @@ library
            YesodDsl.Generator.Require
            YesodDsl.Generator.Cabal
            YesodDsl.Generator.EsqueletoInstances
-           YesodDsl.Generator.Fay
            YesodDsl.Generator.Json
            YesodDsl.Generator.EntityFactories
            YesodDsl.SyncFile

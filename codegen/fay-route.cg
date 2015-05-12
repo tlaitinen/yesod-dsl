@@ -1,6 +1,0 @@
-Route {
-    routePath = [~{intercalate ", " (map trPathPiece (routePath r))}],
-    routeHandlers = [
-~{indent 8 $ intercalate ",\n" (map trHandler (routeHandlers r))}
-    ]
-}

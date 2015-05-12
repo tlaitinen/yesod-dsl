@@ -14,7 +14,6 @@ entityFactory e = T.unpack $(codegenFile "codegen/entity-factory.cg")
     where requiredFields = [ f | f <- entityFields e, 
                                  fieldOptional f == False, 
                                  isNothing $ fieldDefault f ]
-          defaultFields = (entityFields e) \\ requiredFields
           fieldParamName f = fieldName f ++ "_"
           fieldSetter f = entityFieldName e f ++ " = " ++ value f
           value f 

@@ -4,13 +4,11 @@
 
 module YesodDsl.Generator.EsqueletoInstances (esqueletoInstances) where
 import YesodDsl.AST
-import YesodDsl.Generator.Common
 import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
 import Data.List
 import YesodDsl.Generator.Esqueleto
-import Control.Monad (liftM)
-import Control.Monad.Reader
+import Control.Monad.Reader (runReader, liftM)
 maxInstances :: Module -> Int
 maxInstances m = safeMaximum $ map sqFieldNumber
                       $ filter isSelectQuery [ hp | r <- modRoutes m, 
@@ -18,12 +16,7 @@ maxInstances m = safeMaximum $ map sqFieldNumber
                                                hp <- handlerStmts h]
     where isSelectQuery (Select _) = True
           isSelectQuery _ = False
-          sqFieldNumber (Select sq) = let
-              ctx = emptyContext {
-                  ctxNames = sqAliases sq
-              }
-              in runReader ((liftM concat $ mapM selectFieldExprs (sqFields sq))
-                        >>= \fes -> return $ length fes) ctx
+          sqFieldNumber (Select sq) = length $ concatMap selectFieldExprs (sqFields sq)
           sqFieldNumber _ = 0
           safeMaximum [] = 0
           safeMaximum xs = maximum xs

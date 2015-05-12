@@ -1,4 +1,4 @@
-data ~{enumName e} = ~{prefixedValues e} deriving (Eq, Ord, Enum)
+data ~{enumName e} = ~{prefixedValues} deriving (Eq, Ord, Enum)
 
 instance Read ~{enumName e} where
 ~{readsPrecs}    readsPrec _ _ = [ ]
