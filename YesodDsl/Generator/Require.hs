@@ -7,16 +7,14 @@ import Text.Shakespeare.Text hiding (toText)
 import qualified Data.Text as T
 import YesodDsl.Generator.Common
 import YesodDsl.Generator.Esqueleto
-import Control.Monad.State
-requireStmts :: State Context String
+import Control.Monad.Reader
+requireStmts :: Reader Context String
 requireStmts  = do
-    ps <- gets ctxStmts
+    ps <- asks ctxStmts
     liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
     where 
         f (requireId,(Require sq)) = do
 
-            ctx <- get
-            put $ ctx { ctxNames = map (\(e,vn,mf) -> (entityName e, vn, mf)) $ sqAliases sq }
             mw <- case sqWhere sq of
                 Just expr -> do
                     e <- hsBoolExpr expr 
@@ -24,7 +22,6 @@ requireStmts  = do
                 Nothing -> return ""
             jes <- liftM concat $ mapM mapJoinExpr (reverse $ sqJoins sq)
 
-            put ctx
             return $ let maybeWhere = mw 
                          joinExprs  = jes in 
                 T.unpack $(codegenFile "codegen/require-select-query.cg")

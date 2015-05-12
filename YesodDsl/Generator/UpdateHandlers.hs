@@ -15,11 +15,11 @@ import YesodDsl.Generator.Models
 import YesodDsl.Generator.Require
 import YesodDsl.Generator.Input
 import Data.Generics.Uniplate.Data
-import Control.Monad.State
+import Control.Monad.Reader
 import qualified Data.Map as Map
 
 
-updateHandlerRunDB :: (Int,Stmt) -> State Context String
+updateHandlerRunDB :: (Int,Stmt) -> Reader Context String
 updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
         updateHandlerDecode (pId,p) >>= return . (indent 4),
         case p of
@@ -41,7 +41,7 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
                 let maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
                 in T.unpack $(codegenFile "codegen/delete.cg")
             DeleteFrom (Right en) vn (Just e) -> do
-                withScope [(en,vn,False)] $ do
+                withScope (Map.fromList [(vn,(en,False))]) $ do
                     maybeExpr <- hsBoolExpr e
                     return $ T.unpack $(codegenFile "codegen/delete.cg")
             For vn fr hps -> do
@@ -53,7 +53,7 @@ updateHandlerRunDB (pId,p) = liftM concat $ sequence ([
                 ifrs <- mapM inputFieldRef frs
                 return $ T.unpack $(codegenFile "codegen/call.cg") 
             _ -> return ""
-    ] :: [State Context String])
+    ] :: [Reader Context String])
 defaultFieldValue :: Field -> String
 defaultFieldValue f = case fieldDefault f of
     Just fv -> fieldValueToHs fv
@@ -61,7 +61,7 @@ defaultFieldValue f = case fieldDefault f of
         then "Nothing"
         else let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
 
-mapJsonInputField :: [FieldRefMapping] -> Bool -> (Entity,Field) -> State Context (Maybe String)
+mapJsonInputField :: [FieldRefMapping] -> Bool -> (Entity,Field) -> Reader Context (Maybe String)
 mapJsonInputField ifields isNew (e,f) = do
     mcontent <- mkContent
     case mcontent of
@@ -105,17 +105,17 @@ prepareJsonInputField (fn, Just d) = T.unpack $(codegenFile "codegen/prepare-inp
 
 
  
-updateHandlerDecode :: (Int,Stmt) -> State Context String
+updateHandlerDecode :: (Int,Stmt) -> Reader Context String
 updateHandlerDecode (pId,p) = case p of
     Update (Right e) fr io -> do
-        m <- gets ctxModule
+        m <- asks ctxModule
         readInputObject e (io >>= \io' -> Just (Nothing, io')) (Just fr)
     Insert (Right e) io _ -> do
-        m <- gets ctxModule
+        m <- asks ctxModule
         readInputObject e io Nothing
     _ -> return ""
     where 
-        readInputObject :: Entity -> Maybe (Maybe VariableName, [FieldRefMapping]) -> Maybe FieldRef -> State Context String
+        readInputObject :: Entity -> Maybe (Maybe VariableName, [FieldRefMapping]) -> Maybe FieldRef -> Reader Context String
         readInputObject e (Just (mv, fields)) fr = do
             maybeExisting <- maybeSelectExisting e (mv,fields) fr
             fieldMappers <- mapFields e fields isNew
@@ -140,10 +140,10 @@ updateHandlerDecode (pId,p) = case p of
         maybeSelectExisting e _ _ = return ""
         mapFields e fields isNew = liftM ((intercalate ",\n") . catMaybes) $ mapM (mapJsonInputField fields isNew) 
                                       [ (e,f) | f <- entityFields e ]
-updateHandlerReadJsonFields :: State Context String
+updateHandlerReadJsonFields :: Reader Context String
 updateHandlerReadJsonFields = do
-    m <- gets ctxModule
-    ps <- gets ctxStmts
+    m <- asks ctxModule
+    ps <- asks ctxStmts
     let attrs = jsonAttrs m ps
     let defaults = getParamDefaults ps
     if null attrs
@@ -180,9 +180,9 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
         trOutputField (pn,NamedLocalParam vn,mm) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
         trOutputField (pn,fr,_) = error "not implemented yet, sorry"
 
-updateHandler :: State Context String
+updateHandler :: Reader Context String
 updateHandler = do
-    ps <- gets ctxStmts
+    ps <- asks ctxStmts
 
     liftM concat $ sequence ([
             updateHandlerReadJsonFields,
@@ -193,6 +193,6 @@ updateHandler = do
             liftM concat $ mapM updateHandlerRunDB $ zip [1..] ps,
             return $ updateHandlerReturnRunDB ps,
             return $ T.unpack $(codegenFile "codegen/update-handler-footer.cg")
-        ] :: [State Context String])
+        ] :: [Reader Context String])
 
 

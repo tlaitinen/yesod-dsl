@@ -7,6 +7,7 @@ import Data.Char
 import Data.Data (Data)
 import Data.Either
 import Data.Typeable (Typeable)
+import qualified Data.Map as Map
 
 
 data Module = Module {
@@ -144,8 +145,8 @@ data SelectQuery = SelectQuery {
 } deriving (Show, Eq, Data, Typeable)    
 
 type MaybeFlag = Bool
-sqAliases :: SelectQuery -> [(Entity, VariableName, MaybeFlag)]
-sqAliases sq = catMaybes $ (either (\_ -> Nothing) (\e -> Just (e,vn,False)) er) : [ either (\_ -> Nothing) (\e -> Just (e, joinAlias j, isOuterJoin $ joinType j)) $ joinEntity j 
+sqAliases :: SelectQuery -> Map.Map VariableName (Entity,MaybeFlag)
+sqAliases sq = Map.fromList $ catMaybes $ (either (\_ -> Nothing) (\e -> Just (vn,(e,False))) er) : [ either (\_ -> Nothing) (\e -> Just (joinAlias j, (e, isOuterJoin $ joinType j))) $ joinEntity j 
                              | j <- sqJoins sq ]
     where (er,vn) = sqFrom sq                             
 
@@ -338,18 +339,9 @@ fieldChecks f = map (\(FieldCheck func) -> func) $ filter isCheck (fieldOptions 
     where isCheck (FieldCheck _) = True
           isCheck _ = False
 
-lookupEntity :: Module -> EntityName -> Maybe Entity
-lookupEntity m en = listToMaybe [ e | e <- modEntities m, entityName e == en ]
 
-lookupField' :: Entity -> FieldName -> Maybe Field         
-lookupField' e fn = find ((==fn) . fieldName) $ entityFields e
-
-lookupField :: Module -> EntityName -> FieldName -> Maybe Field
-lookupField m en fn = listToMaybe [ f | e <- modEntities m,
-                                    f <- entityFields e,
-                                    entityName e == en,
-                                    fieldName f == fn ] 
-
+lookupField :: Entity -> FieldName -> Maybe Field         
+lookupField e fn = find ((==fn) . fieldName) $ entityFields e
 lowerFirst :: String -> String
 lowerFirst (a:b) = (toLower a):b
 lowerFirst a = a

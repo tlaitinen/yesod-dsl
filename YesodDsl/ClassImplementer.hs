@@ -10,6 +10,13 @@ import Control.Applicative
 import qualified Data.Map as Map
 import qualified Data.List as L
 
+lookupField' :: Module -> EntityName -> FieldName -> Maybe Field
+lookupField' m en fn = listToMaybe [ f | e <- modEntities m,
+                                    f <- entityFields e,
+                                    entityName e == en,
+                                    fieldName f == fn ] 
+
+
 implementClasses :: Module -> Module
 implementClasses m = let m' = m {
         modEntities  = [ implInEntity m (modClasses m) e | e <- modEntities m ]
@@ -45,7 +52,7 @@ trSq m sq = sq {
         trClassField en fr = case fr of
             SqlField v'@(Var vn _ _) fn -> fromMaybe fr $ do
                 (en',_) <- L.find ((==vn) . snd) aliases
-                f <- lookupField m en' (lowerFirst en ++ upperFirst fn)
+                f <- lookupField' m en' (lowerFirst en ++ upperFirst fn)
                 Just $ SqlField v' $ fieldName f
             _ -> fr    
                 
@@ -87,7 +94,7 @@ trSq m sq = sq {
                       in all validField fs   
         validField (vn,fn) = fromMaybe False $ do
             (en,_) <- L.find ((==vn) . snd) allAliases
-            e <- lookupField m en fn
+            e <- lookupField' m en fn
             Just True
 
 classLookup :: [Class] -> ClassName -> Maybe Class

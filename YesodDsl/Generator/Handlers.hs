@@ -14,7 +14,7 @@ import qualified Data.Map as Map
 import YesodDsl.Generator.GetHandler
 import YesodDsl.Generator.UpdateHandlers
 import YesodDsl.Generator.Routes
-import Control.Monad.State
+import Control.Monad.Reader
 import YesodDsl.Generator.Esqueleto
 
 hsRouteParams :: [PathPiece] -> String
@@ -29,11 +29,9 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
-handler :: Route -> Handler -> State Context String
-handler r (Handler _ ht ps) = do
-    ctx <- get 
-    put $ ctx { ctxStmts = ps }
-    m <- gets ctxModule
+handler :: Route -> Handler -> Reader Context String
+handler r (Handler _ ht ps) = local (\ctx -> ctx { ctxStmts = ps}) $ do
+    m <- asks ctxModule
  
     result <- liftM concat $ sequence [
             return $ T.unpack $(codegenFile "codegen/handler-header.cg"),

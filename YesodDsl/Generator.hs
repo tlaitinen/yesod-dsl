@@ -28,7 +28,7 @@ import YesodDsl.Generator.Cabal
 import YesodDsl.Generator.Fay
 import YesodDsl.Generator.Json
 import YesodDsl.SyncFile
-import Control.Monad.State
+import Control.Monad.Reader
 import YesodDsl.Generator.Esqueleto
 import Data.Generics
 import Data.Generics.Uniplate.Data
@@ -42,7 +42,7 @@ fmtImport i = T.unpack $(codegenFile "codegen/import.cg")
 
 writeRoute :: Module -> Route -> IO ()
 writeRoute m r = do
-    let (content, _) = runState (liftM concat $ mapM (handler r) (routeHandlers r)) (emptyContext m)
+    let content = runReader (liftM concat $ mapM (handler r) (routeHandlers r)) (emptyContext m)
     syncFile (joinPath ["Handler", moduleName m, 
                                       routeModuleName r ++ ".hs"]) $
         T.unpack $(codegenFile "codegen/route-header.cg") ++ content

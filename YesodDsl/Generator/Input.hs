@@ -5,14 +5,14 @@ import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
 import Data.String.Utils (rstrip)
-import Control.Monad.State
+import Control.Monad.Reader
 import YesodDsl.AST
 import YesodDsl.Generator.Esqueleto
 import YesodDsl.Generator.Common
 import YesodDsl.Generator.Models
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
-inputFieldRef :: FieldRef -> State Context String
+inputFieldRef :: FieldRef -> Reader Context String
 inputFieldRef AuthId = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-authid.cg")
 inputFieldRef (AuthField fn) = return $ rstrip $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
 inputFieldRef (NamedLocalParam vn) = return $ rstrip $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")

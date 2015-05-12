@@ -9,8 +9,8 @@ import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
 import Data.List
 import YesodDsl.Generator.Esqueleto
-import Control.Monad.State
-
+import Control.Monad (liftM)
+import Control.Monad.Reader
 maxInstances :: Module -> Int
 maxInstances m = safeMaximum $ map sqFieldNumber
                       $ filter isSelectQuery [ hp | r <- modRoutes m, 
@@ -20,9 +20,9 @@ maxInstances m = safeMaximum $ map sqFieldNumber
           isSelectQuery _ = False
           sqFieldNumber (Select sq) = let
               ctx = (emptyContext m) {
-                  ctxNames = map (\(e,vn,mf) -> (entityName e, vn, mf)) $ sqAliases sq
+                  ctxNames = sqAliases sq
               }
-              in evalState ((liftM concat $ mapM selectFieldExprs (sqFields sq))
+              in runReader ((liftM concat $ mapM selectFieldExprs (sqFields sq))
                         >>= \fes -> return $ length fes) ctx
           sqFieldNumber _ = 0
           safeMaximum [] = 0
