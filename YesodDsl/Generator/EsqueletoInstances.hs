@@ -19,7 +19,7 @@ maxInstances m = safeMaximum $ map sqFieldNumber
     where isSelectQuery (Select _) = True
           isSelectQuery _ = False
           sqFieldNumber (Select sq) = let
-              ctx = (emptyContext m) {
+              ctx = emptyContext {
                   ctxNames = sqAliases sq
               }
               in runReader ((liftM concat $ mapM selectFieldExprs (sqFields sq))

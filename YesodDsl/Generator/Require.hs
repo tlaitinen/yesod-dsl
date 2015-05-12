@@ -8,9 +8,8 @@ import qualified Data.Text as T
 import YesodDsl.Generator.Common
 import YesodDsl.Generator.Esqueleto
 import Control.Monad.Reader
-requireStmts :: Reader Context String
-requireStmts  = do
-    ps <- asks ctxStmts
+requireStmts :: [Stmt] -> Reader Context String
+requireStmts ps = do
     liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
     where 
         f (requireId,(Require sq)) = do

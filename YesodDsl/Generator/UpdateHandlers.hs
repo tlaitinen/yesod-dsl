@@ -108,10 +108,8 @@ prepareJsonInputField (fn, Just d) = T.unpack $(codegenFile "codegen/prepare-inp
 updateHandlerDecode :: (Int,Stmt) -> Reader Context String
 updateHandlerDecode (pId,p) = case p of
     Update (Right e) fr io -> do
-        m <- asks ctxModule
         readInputObject e (io >>= \io' -> Just (Nothing, io')) (Just fr)
     Insert (Right e) io _ -> do
-        m <- asks ctxModule
         readInputObject e io Nothing
     _ -> return ""
     where 
@@ -140,11 +138,9 @@ updateHandlerDecode (pId,p) = case p of
         maybeSelectExisting e _ _ = return ""
         mapFields e fields isNew = liftM ((intercalate ",\n") . catMaybes) $ mapM (mapJsonInputField fields isNew) 
                                       [ (e,f) | f <- entityFields e ]
-updateHandlerReadJsonFields :: Reader Context String
-updateHandlerReadJsonFields = do
-    m <- asks ctxModule
-    ps <- asks ctxStmts
-    let attrs = jsonAttrs m ps
+updateHandlerReadJsonFields :: [Stmt] -> Reader Context String
+updateHandlerReadJsonFields ps = do
+    let attrs = jsonAttrs ps
     let defaults = getParamDefaults ps
     if null attrs
         then return ""
@@ -152,7 +148,7 @@ updateHandlerReadJsonFields = do
             (T.unpack $(codegenFile "codegen/json-body.cg")) 
             ++ concatMap (\attr -> prepareJsonInputField (attr, Map.lookup attr defaults)) attrs
     where
-        jsonAttrs m ps = nub $ concatMap getJsonAttrs ps
+        jsonAttrs ps = nub $ concatMap getJsonAttrs ps
 
 
 
@@ -180,15 +176,13 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
         trOutputField (pn,NamedLocalParam vn,mm) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
         trOutputField (pn,fr,_) = error "not implemented yet, sorry"
 
-updateHandler :: Reader Context String
-updateHandler = do
-    ps <- asks ctxStmts
-
+updateHandler :: [Stmt] -> Reader Context String
+updateHandler ps = do
     liftM concat $ sequence ([
-            updateHandlerReadJsonFields,
+            updateHandlerReadJsonFields ps,
             return $ updateHandlerMaybeCurrentTime ps,
             return $ updateHandlerMaybeAuth ps,
-            requireStmts,
+            requireStmts ps,
             return $ (T.unpack $(codegenFile "codegen/rundb.cg")),
             liftM concat $ mapM updateHandlerRunDB $ zip [1..] ps,
             return $ updateHandlerReturnRunDB ps,

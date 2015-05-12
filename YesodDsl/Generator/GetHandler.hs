@@ -66,7 +66,6 @@ defaultSortFields sq = do
     return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where 
           fromSelectField (SelectField (Var vn (Right e) mf) fn an) = do
-              m <- asks ctxModule
               let en = entityName e
               return [ (e,vn, f, maybe (fieldName f) id an,mf)
                  | f <- entityFields e,
@@ -100,19 +99,9 @@ baseIfFilter selectVar (pn,joins,bExpr,useFlag) = withScope
           maybeFrom = if null joins 
                         then "do"
                         else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
-getSelectQuery :: Reader Context (Maybe SelectQuery)
-getSelectQuery = do
-    ps <- asks ctxStmts
-    return $ ((listToMaybe . (filter isSelect)) ps) >>= \(Select sq) -> return sq
-    where
-        isSelect (Select _) = True
-        isSelect _ = False
-
-getHandlerSelect :: Reader Context String
-getHandlerSelect = do
-    ps <- asks ctxStmts
-    msq <- getSelectQuery
-    case msq of
+getHandlerSelect :: [Stmt] -> Reader Context String
+getHandlerSelect ps = do
+    case listToMaybe [ sq | Select sq <- universeBi ps ] of
         Just sq -> withScope (sqAliases sq) $ do
             let defaultFilterSort = DefaultFilterSort `elem` ps
                 ifFilters = map (\(IfFilter f) -> f) $ filter isIfFilter ps
@@ -171,39 +160,35 @@ getHandlerMaybeAuth ps
               isAuthField (AuthField _) = True
               isAuthField _ =False
    
-callStmts :: Reader Context String
-callStmts = do
-    ps <- asks ctxStmts
+callStmts :: [Stmt] -> Reader Context String
+callStmts ps = do
     liftM concat $ mapM f $ zip ([1..] :: [Int]) ps
     where 
         f (callId,(Call fn frs)) = do
             ifrs <- mapM inputFieldRef frs
             return $ T.unpack $(codegenFile "codegen/get-call.cg")
         f _ = return ""     
-getHandlerReadRequestFields :: Reader Context String
-getHandlerReadRequestFields = do
-    m <- asks ctxModule
-    ps <- asks ctxStmts
-    let attrs = jsonAttrs m ps
+getHandlerReadRequestFields :: [Stmt] -> Reader Context String
+getHandlerReadRequestFields ps = do
+    let attrs = jsonAttrs ps
         defaults = getParamDefaults ps
     if null attrs
         then return ""
         else return $
             concatMap (\attr -> prepareRequestInputField attr (Map.lookup attr defaults)) attrs
     where
-        jsonAttrs m ps = nub $ concatMap getJsonAttrs ps
+        jsonAttrs ps = nub $ concatMap getJsonAttrs ps
         prepareRequestInputField fn Nothing = T.unpack $(codegenFile "codegen/prepare-request-input-field.cg")
         prepareRequestInputField fn (Just d) = T.unpack $(codegenFile "codegen/prepare-request-input-field-default.cg")
 
-getHandler :: Reader Context String
-getHandler = do
-    ps <- asks ctxStmts
+getHandler :: [Stmt] -> Reader Context String
+getHandler ps = do
     liftM concat $ sequence [
             return $ getHandlerMaybeAuth ps,
             liftM concat $ mapM getStmt ps,
-            getHandlerReadRequestFields,
-            requireStmts,
-            callStmts,
-            getHandlerSelect
+            getHandlerReadRequestFields ps,
+            requireStmts ps,
+            callStmts ps,
+            getHandlerSelect ps
         ]
     

@@ -30,17 +30,13 @@ hsBinOp op = case op of
 type TypeName = String
 data Context = Context {
     ctxNames :: Map.Map VariableName (Entity,MaybeFlag),
-    ctxModule :: Module,
-    ctxStmts :: [Stmt],
     ctxExprType :: Maybe String,
     ctxExprMaybeLevel :: Int,
     ctxExprListValue :: Bool
 }
-emptyContext :: Module -> Context
-emptyContext m = Context {
+emptyContext :: Context
+emptyContext = Context {
     ctxNames = Map.empty,
-    ctxModule = m,
-    ctxStmts = [],
     ctxExprType = Nothing,
     ctxExprMaybeLevel = 0,
     ctxExprListValue = False
@@ -211,8 +207,6 @@ mapJoinExpr _  = return ""
 
 selectFieldExprs :: SelectField -> Reader Context [ValExpr]
 selectFieldExprs sf = do
-    m <- asks ctxModule
-
     case sf of
         (SelectField vn fn _) -> return [ FieldExpr $ SqlField vn fn]
         (SelectIdField vn _) -> return [ FieldExpr $ SqlId vn ]

@@ -29,20 +29,16 @@ hsHandlerMethod PutHandler    = "put"
 hsHandlerMethod PostHandler   = "post"
 hsHandlerMethod DeleteHandler = "delete"
 
-handler :: Route -> Handler -> Reader Context String
-handler r (Handler _ ht ps) = local (\ctx -> ctx { ctxStmts = ps}) $ do
-    m <- asks ctxModule
- 
+handler :: Module -> Route -> Handler -> Reader Context String
+handler m r (Handler _ ht ps) = do
     result <- liftM concat $ sequence [
             return $ T.unpack $(codegenFile "codegen/handler-header.cg"),
             return $ (if Public `elem` ps 
                     then "" 
                     else (T.unpack $(codegenFile "codegen/handler-requireauth.cg"))),
             case ht of
-                    GetHandler -> getHandler
-                    PutHandler -> updateHandler
-                    PostHandler -> updateHandler
-                    DeleteHandler -> updateHandler
+                    GetHandler -> getHandler ps
+                    _ -> updateHandler ps
         ]
     return result 
 
