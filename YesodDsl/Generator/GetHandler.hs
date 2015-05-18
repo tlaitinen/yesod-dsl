@@ -26,7 +26,7 @@ getStmt _ = ""
 ctxFields :: Reader Context [(Entity, VariableName, Field, VariableName, MaybeFlag)]
 ctxFields = do
     names <- asks ctxNames
-    let fields = [ (e,vn,f,mf) | (vn,(e,mf)) <- Map.toList names, f <- entityFields e ]
+    let fields = [ (e,vn,f,mf) | (vn,(e,mf)) <- Map.toList names, f <- entityFields e, fieldInternal f == False ]
         usage = Map.fromListWith (+) [ (fieldName f,1::Int) | (_,_,f,_) <- fields ]
     return $ [
             (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 then fieldName f else vn ++ "." ++ fieldName f,mf)
