@@ -15,7 +15,7 @@ import qualified Data.List as L
 import qualified Data.Text.Lazy as LT
 import Data.Function
 fieldRefMappingToAttrs :: Entity -> [FieldRefMapping] -> [(FieldName, Maybe FieldContent)]
-fieldRefMappingToAttrs e fs = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldName f `notElem` mapped ] ++ [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, (fn,_,_) <- fs, fieldName f == fn ]
+fieldRefMappingToAttrs e fs = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldInternal f == False, fieldName f `notElem` mapped ] ++ [ (pn, Just $ fieldContent f) | f <- entityFields e, (fn,fr,_) <- fs, (RequestField pn) <- universeBi fr, fieldName f == fn ]
     where
         mapped = [ fn | (fn, _, _) <- fs ]
 
