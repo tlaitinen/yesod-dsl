@@ -126,8 +126,6 @@ import Data.List
     nothing { Tk _ TNothing }
     request { Tk _ TRequest }
     larrow { Tk _ TLArrow }
-    rarrow { Tk _ TRArrow }
-    doublecolon { Tk _ TDoubleColon }
     now { Tk _ TNow }
     auth { Tk _ TAuth }
     return { Tk _ TReturn }
@@ -210,16 +208,6 @@ def : routeDef     { RouteDef $1 }
       | entityDef      { EntityDef $1 } 
       | classDef      { ClassDef $1 }
       | enumDef       { EnumDef $1 }
-paramDef: lowerIdTk {%
-    do
-        l <- mkLoc $1
-        let n = tkString $1
-        declare l n SParam
-        return n
-    } 
-
-maybeEmptyLowerIdList : { [] }
-                      | lowerIdList { (reverse $1) }
 
 lowerIdList : lowerIdTk { [tkString $1] }
             | lowerIdList comma lowerIdTk { (tkString $3) : $1 }
@@ -688,7 +676,7 @@ expr : expr and expr { AndExpr $1 $3 }
          return $ ExternExpr s1 $2
      }         
 
-functionParamList: { [] }
+functionParamList: functionParam { [$1] }
                  | functionParamList functionParam { $1 ++ [$2] }
 functionParam: fieldRef { FieldRefParam $1 }
              | verbatim { VerbatimParam (tkString $1) }

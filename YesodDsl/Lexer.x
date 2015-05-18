@@ -36,8 +36,6 @@ tokens :-
     \<\= { mkT TLe }
     \>\= { mkT TGe }
     \<\- { mkT TLArrow }
-    \-\> { mkT TRArrow }
-    \:\: { mkT TDoubleColon }
     "like" { mkT TLike }
     "ilike" { mkT TIlike }
     "||" { mkT TConcatOp }
@@ -244,8 +242,6 @@ data TokenType = TSemicolon
            | TNothing
            | TRequest
            | TLArrow
-           | TRArrow
-           | TDoubleColon
            | TNow
            | TAuth
            | TReturn
