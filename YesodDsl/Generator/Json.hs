@@ -10,8 +10,32 @@ import Data.Maybe
 import qualified Data.Vector as V
 import qualified Data.Text.Lazy.Encoding as LTE
 import YesodDsl.Generator.Input
-
+import Data.Generics.Uniplate.Data
+import qualified Data.List as L
 import qualified Data.Text.Lazy as LT
+import Data.Function
+fieldRefMappingToAttrs :: Entity -> [FieldRefMapping] -> [(FieldName, Maybe FieldContent)]
+fieldRefMappingToAttrs e fs = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldName f `notElem` mapped ] ++ [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, (fn,_,_) <- fs, fieldName f == fn ]
+    where
+        mapped = [ fn | (fn, _, _) <- fs ]
+
+requestAttrs :: Stmt -> [(FieldName, Maybe FieldContent)]
+requestAttrs (Update (Right e) _ Nothing) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False ]
+requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e fs
+requestAttrs (Insert (Right e) Nothing _) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False ]
+requestAttrs (Insert (Right e) (Just (_, fs)) _) = fieldRefMappingToAttrs e fs
+requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ] ++ (concat $ [ requestAttrs i | i@(Insert _ _ _) <- universeBi hp ] ++ [ requestAttrs u | u@(Update _ _ _) <- universeBi hp ])
+requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ]
+                ++ (concat [ [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+                    | Insert (Right e) Nothing _ <- universeBi hp ])
+
+nubAttrs :: [(FieldName, Maybe FieldContent)] -> [(FieldName, Maybe FieldContent)]
+nubAttrs  = L.nubBy ((==) `on` fst) . (L.sortBy cmp)
+    where
+        cmp (_, Just _) (_, Nothing) = LT
+        cmp (_, Nothing) (_, Just _) = GT
+        cmp _ _ = EQ
+ 
 moduleToJson :: Module -> String
 moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         "name" .= moduleName m,
@@ -39,11 +63,12 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     case pp of
                         PathText s -> object [
                                             "type" .= ("string" :: String),
+                                            "references" .= ("null" :: String),
                                             "value" .= s
                                         ]  
                         PathId _ en -> object [
-                                            "type" .= ("entity-id" :: String),
-                                            "name" .= en
+                                            "type" .= ("integer" :: String),
+                                            "references" .= en
                                         ]                 
                     | pp <- routePath r
                 ],
@@ -54,9 +79,10 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         "inputs" .= [ 
                                 object [
                                     "name" .= fn,
-                                    "type" .= Null -- TODO
+                                    "type" .= (mfc >>= Just . toJSON . jsonFieldType),
+                                    "references" .= (mfc >>= Just . toJSON . jsonFieldReferences)
                                 ] 
-                            | fn <- concatMap getJsonAttrs $ handlerStmts h 
+                            | (fn, mfc) <- nubAttrs $ concatMap requestAttrs $ handlerStmts h 
                         ],
                         "outputs" .= (concatMap outputs $ handlerStmts h)
                     ] |  h <- routeHandlers r
@@ -88,7 +114,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     SelectValExpr _ vn -> vn
                     _ -> ""
                 type_ = case sf of
-                    SelectField (Var _ (Right e) _) fn _ -> fromMaybe Null $ lookupField e fn >>= Just . toJSON . jsonFieldType          
+                    SelectField (Var _ (Right e) _) fn _ -> fromMaybe Null $ lookupField e fn >>= Just . toJSON . jsonFieldType . fieldContent
                     SelectIdField _ _ -> String "integer"
                     SelectValExpr ve _ -> case ve of
                         ConcatManyExpr _ -> String "string"
@@ -102,21 +128,21 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     _ -> Null    
                 references = case sf of
                     SelectIdField (Var _ (Right e) _) _ -> String $ T.pack $ entityName e
-                    SelectField (Var _ (Right e) _) fn _ -> fromMaybe Null $ lookupField e fn >>= Just . jsonFieldReferences
+                    SelectField (Var _ (Right e) _) fn _ -> fromMaybe Null $ lookupField e fn >>= Just . jsonFieldReferences . fieldContent
                     _ -> Null
                   
         fieldJson f = object [
                 "name" .= fieldName f,
                 "optional" .= fieldOptional f,
                 "default" .= (fieldDefault f >>= fieldValueJson),
-                "references" .= jsonFieldReferences f,
-                "type" .= jsonFieldType f
+                "references" .= (jsonFieldReferences $ fieldContent f),
+                "type" .= (jsonFieldType $ fieldContent f)
               ]
-        jsonFieldReferences f = case fieldContent f of
+        jsonFieldReferences fc = case fc of
             EntityField en -> toJSON en
             EnumField en _ -> toJSON en
             _ -> Null
-        jsonFieldType f = case fieldContent f of
+        jsonFieldType fc = case fc of
             NormalField ft _ -> case ft of
                 FTWord32 -> "integer"
                 FTWord64 -> "integer"

@@ -126,8 +126,6 @@ hsValExpr ml ve = do
         maybePromoteJust c = case ve of
             SubQueryExpr _ -> return c
             FieldExpr fr -> case fr of
-            --    Const _ -> do
-            --        return $ makeJust ml c
                 _ -> return c
             _ -> do
                 return $ makeJust ml c

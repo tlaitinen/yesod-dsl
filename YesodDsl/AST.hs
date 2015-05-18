@@ -49,8 +49,9 @@ data FieldType = FTWord32 | FTWord64 | FTInt | FTInt32 | FTInt64 | FTText
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
                | FTCheckmark | FTZonedTime deriving (Eq,Show,Data,Typeable)
 
--- | file name, row number, and column
-data Location = Loc FilePath Int Int deriving (Eq,Data,Typeable)
+type RowNum = Int
+type ColNum = Int
+data Location = Loc FilePath RowNum ColNum deriving (Eq,Data,Typeable)
 
 instance Show Location where
     show (Loc path row col) = path ++ ":" ++ show row ++ ":" ++ show col
