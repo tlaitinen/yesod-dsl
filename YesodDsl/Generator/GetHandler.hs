@@ -23,15 +23,17 @@ getStmt (IfFilter (pn,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filter
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
 getStmt _ = ""      
 
-ctxFields :: Reader Context [(Entity, VariableName, Field, VariableName, MaybeFlag)]
-ctxFields = do
+ctxFields :: SelectQuery -> Reader Context [(Entity, VariableName, Field, VariableName, MaybeFlag)]
+ctxFields sq = do
     names <- asks ctxNames
     let fields = [ (e,vn,f,mf) | (vn,(e,mf)) <- Map.toList names, f <- entityFields e, fieldInternal f == False ]
         usage = Map.fromListWith (+) [ (fieldName f,1::Int) | (_,_,f,_) <- fields ]
     return $ [
-            (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 then fieldName f else vn ++ "." ++ fieldName f,mf)
+            (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 || vn == fromVn then fieldName f else vn ++ "." ++ fieldName f,mf)
             | (e,vn,f,mf) <- fields 
         ]    
+        where
+            (_,fromVn) = sqFrom sq
 
 
 defaultFilterField :: (Entity, VariableName, Field,VariableName,MaybeFlag) -> Reader Context String
@@ -41,7 +43,7 @@ defaultFilterField (e,vn,f,alias,isMaybe) = do
 
 defaultFilterFields :: SelectQuery -> Reader Context String
 defaultFilterFields sq = do
-    fs <- ctxFields
+    fs <- ctxFields sq
     fields' <- liftM concat $ mapM defaultFilterField fs
 
     let (er,vn) = sqFrom sq 
