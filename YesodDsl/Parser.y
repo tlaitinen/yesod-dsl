@@ -341,6 +341,26 @@ fieldRef :
             m <- symbolMatches s1 $ \st -> case st of SEntityResult _ -> True; _ -> False
             return $ if m then b else a
     }
+    | lowerIdTk dot upperIdTk dot idField {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            -- TODO validation
+            return $ SqlId (Var (s1 ++ "_" ++ s3) (Left "") False)
+    }
+    | lowerIdTk dot upperIdTk dot lowerIdTk {%
+        do
+           l1 <- mkLoc $1
+           let s1 = tkString $1
+           l3 <- mkLoc $3
+           let s3 = tkString $3
+           l5 <- mkLoc $5
+           let s5 = tkString $5
+           -- TODO: validation
+           return $ SqlField (Var (s1 ++ "_" ++ s3) (Left "") False) s5
+    }
     | upperIdTk dot upperIdTk {%
         do
             l1 <- mkLoc $1
@@ -383,6 +403,7 @@ declareFromEntity: upperIdTk as lowerIdTk {%
             l3 <- mkLoc $3
             let (s1,s3) = (tkString $1, tkString $3)
             declare l3 s3 (SEntity s1)
+
             withSymbol l1 s1 $ requireEntityOrClass
             return (Left s1,s3)
     }
