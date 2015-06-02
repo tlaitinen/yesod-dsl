@@ -106,7 +106,6 @@ defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
 defaultFilterOp _ = (==.)
 
-ilike = unsafeSqlBinOp " ILIKE "
 is = unsafeSqlBinOp " IS "
 
 extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value Double)
