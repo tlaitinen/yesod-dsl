@@ -10,8 +10,6 @@ category:       Web, Yesod
 stability:      Experimental
 cabal-version:  >= 1.8
 build-type:     Simple
-homepage:       https://github.com/tlaitinen/yesod-dsl
-
 extra-source-files:
     codegen/*.cg
 
@@ -82,3 +80,8 @@ executable  yesod-dsl
                  , yesod-dsl
                  
     ghc-options: -Wall 
+
+
+source-repository head
+  type:     git
+  location: https://github.com/tlaitinen/yesod-dsl
