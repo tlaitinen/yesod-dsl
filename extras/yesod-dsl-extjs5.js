@@ -1,6 +1,11 @@
 // requires underscore.js
 var yesodDsl = function(defs, __, config) {
-    console.log(config.name);
+    var preloadStores = [],
+        cb = {
+        onLogin : function() {
+            preloadStores.forEach(function (s) { s.load(); } );
+        }
+    };
     var formItemXtypes = {
         integer: 'numberfield',
         number: 'numberfield',
@@ -108,12 +113,22 @@ var yesodDsl = function(defs, __, config) {
                 name: itemCfg.name,
                 allowBlank: itemCfg.allowBlank || true,
                 labelWidth: itemCfg.labelWidth || formCfg.labelWidth || config.formLabelWidth || 120,
-                inputType: itemCfg.inputType,
-                minLength: itemCfg.minLength,
-                minLengthText: itemCfg.minLengthText ? __(itemCfg.minLengthText) : undefined,
-                height: itemCfg.height,
-                autoscroll: itemCfg.height ? true : false,
+                autoScroll: itemCfg.height ? true : false,
             };
+            if ('inputType' in itemCfg) {
+                res.inputType = itemCfg.inputType;
+            }
+            if ('minLength' in itemCfg) {
+                res.minLength = itemCfg.minLength;
+                if (itemCfg.minLengthText)
+                    res.minLengthText = __(itemCfg.minLengthText);
+            }
+
+            if ('height' in itemCfg)
+                res.height = itemCfg.height;
+
+            if (field.type == "boolean")
+                res.inputValue = true;
             if (itemCfg.items) {
                 res.items = _.map(itemCfg.items, function(i) { return initFormItem(h, formCfg, widgetName)(i); });
             }
@@ -153,6 +168,7 @@ var yesodDsl = function(defs, __, config) {
         initComponent: function() {
             this.callParent(arguments);
             this.store = createStore(this.myStore);
+            this.onBindStore(this.store);
         },
         configStore: function(extraFilters) {
             var v = this.getValue()
@@ -307,7 +323,6 @@ var yesodDsl = function(defs, __, config) {
                         },
                         listeners: {
                             exception: function (proxy, response, operation) {
-                                console.log(response);
                                 if (response.request.options.method != 'GET')
                                     saveError(response.responseText);
                             }
@@ -327,15 +342,17 @@ var yesodDsl = function(defs, __, config) {
                     proxy: proxy
                    
                 }, function (model) {
-                    Ext.define(storeName, {
+                    var storeDef = {
                         extend: 'Ext.data.Store',
                         filters: [],
                         model: modelName,
                         pageSize: config.defaultPageSize || 100,
                         remoteFilter: true,
                         remoteSort: true,
-                        proxy: proxy
-                    }, function(storeClass) {
+                        proxy: proxy,
+                        autoSync : routeCfg.autoSync || false
+                    };
+                    Ext.define(storeName, storeDef, function(storeClass) {
                         Ext.data.StoreManager.register(storeClass);
 
 
@@ -343,14 +360,18 @@ var yesodDsl = function(defs, __, config) {
                         if (_.find(h.outputs, function (o) { return o.name == 'name'; }) || routeCfg.combo) {
                             var tpl = undefined, displayTpl = undefined, comboCfg = routeCfg.combo || {};
 
+                            var template = comboCfg.template || undefined;
                             if (comboCfg.field) {
+                                template = '{' + comboCfg.field + '}';
+                            }
+                            if (template != undefined) {
                                 tpl = Ext.create('Ext.XTemplate',
                                     '<tpl for=".">',
-                                        '<div class="x-boundlist-item">{' + comboCfg.field + '}</div>',
+                                        '<div class="x-boundlist-item">{' + template + '}</div>',
                                     '</tpl>');
                                 displayTpl = Ext.create('Ext.XTemplate',
                                     '<tpl for=".">',
-                                        '{' + comboCfg.field + '}',
+                                        '{' + template + '}',
                                     '</tpl>');
                             }
 
@@ -361,7 +382,8 @@ var yesodDsl = function(defs, __, config) {
                                 displayTpl: displayTpl,
                                 emptyText: __(name + 'combo.emptyText'),
                                 myStore: storeName,
-                                getFilters: comboCfg.getFilters
+                                getFilters: comboCfg.getFilters,
+                                forceSelection: comboCfg.forceSelection || false
                             });
                         } 
 
@@ -389,7 +411,6 @@ var yesodDsl = function(defs, __, config) {
                             });
                             var widgetName = gridWidgetName(name, gridCfg);
                             var listName  = config.name + '.view.' + name + '.' + widgetName;
-                            console.log(listName + " : " + widgetName);
                             Ext.define(listName, {
                                 extend: 'Ext.grid.Panel',
                                 alias: 'widget.' + widgetName,
@@ -398,11 +419,13 @@ var yesodDsl = function(defs, __, config) {
                                 allowDeselect : true,
                                 title: __(widgetName + '.title'),
                                 requires: ['Ext.toolbar.Paging'],
+                                plugins: gridCfg.plugins || [],
                                 viewConfig: {
                                     listeners: {
                                         render: function(view) {
-                                            var tooltip = gridCfg.tooltip || idTooltip;
-                                            createToolTip(view, tooltip);
+
+                                            if (gridCfg.tooltip)
+                                                createToolTip(view, gridCfg.tooltip);
 
                                             if (gridCfg.preload != false) {
                                                 store.load();
@@ -411,7 +434,6 @@ var yesodDsl = function(defs, __, config) {
                                         celldblclick: function(grid, td, cellIndex, record, tr, rowIndex, e, eOpts) {
                                             if (gridCfg.form) {
 
-                                            console.log("fuu");
                                                 openFormWindow(gridCfg.form, 
                                                                gridCfg.formWidth || config.formWidth || 610,
                                                                gridCfg.formHeight || config.formHeight || 630,
@@ -424,29 +446,29 @@ var yesodDsl = function(defs, __, config) {
                                 initComponent: function() {
                                     var grid = this;
                                     this.columns = _.map(gridCfg.columns, function(c) {
-                                                        var field = undefined,
-                                                            filterable = undefined,
-                                                            renderer = undefined,
-                                                            flex = undefined,
-                                                            header = undefined;
-                                                        if (typeof c == 'string') {
-                                                            field = c;
-                                                            header = c;
-                                                        } else {
-                                                            field = c.field;
-                                                            filterable = c.filterable;
-                                                            renderer = c.renderer;
-                                                            flex = c.flex;
-                                                            header = c.header || field;
-                                                        }
-                                                        return {
-                                                            "header" : __(widgetName + "." + header, header),
-                                                            "dataIndex" : field,
-                                                            "flex" : flex || 1,
-                                                            "filterable" : filterable || true,
-                                                            "renderer" : renderer
-                                                        };
-                                                    });
+                                                if (typeof c == 'string') {
+                                                    c = {
+                                                        field:c,
+                                                        header: c
+                                                    };
+                                                } 
+                                                var header = c.header || c.field;
+                                                var r = {
+                                                    header : __(widgetName + "." + header, header),
+                                                    dataIndex : c.field,
+                                                    flex : c.flex || 1
+                                                };
+                                                if (c.header == "")
+                                                    r.header = "";
+
+
+                                                if ("renderer" in c)
+                                                    r.renderer = c.renderer;
+                                                if ("editor" in c)
+                                                    r.editor = c.editor;
+                                                
+                                                return r;
+                                            });
                                     var displayMsg = __(widgetName + '.paging','x');
                                     if (displayMsg === 'x')
                                         displayMsg = __(widgetName + '.title') + " {0} - {1} / {2}";
@@ -464,14 +486,8 @@ var yesodDsl = function(defs, __, config) {
                                                     click: function(button) {
                                                         if (tb.action == 'remove') {
                                                             var selected = button.up(widgetName).getSelectionModel().getSelection();
-                                                            Ext.MessageBox.confirm(__(widgetName + '.' + tb.name + '.title'), 
-                                                                                   __(widgetName + '.' + tb.name + '.message').replace('{0}', ''+selected.length), 
-                                                                                   function (btn) { 
-                                                                                        if (btn == 'yes') { 
-                                                                                            store.remove(selected);
-                                                                                            store.sync()
-                                                                                        }
-                                                                                   });
+                                                            store.remove(selected);
+                                                            store.sync();
                                                         } else if (tb.action == 'new') {
                                                             var record = Ext.create(modelName, entityDefaults(entityName));
                                                             record.setId(0);
@@ -498,10 +514,11 @@ var yesodDsl = function(defs, __, config) {
                                                     listeners: {
                                                         select: function(combo) {
                                                             store.filters.removeAtKey(tb.filterField);
+                                                            var v = combo.getValue();
                                                             store.addFilter(new Ext.util.Filter({
                                                                     id: tb.filterField,
                                                                     property: tb.filterField,
-                                                                    value: ''+combo.getValue()
+                                                                    value: ''+((v != undefined) ? v : 0)
                                                                 }));
                                                         },
                                                         change: function(combo) {
