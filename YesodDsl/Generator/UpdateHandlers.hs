@@ -75,20 +75,22 @@ mapJsonInputField ifields isNew (e,f) = do
             _ -> True
         promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
 
-        mcontent = case maybeInput of
-            Just (RequestField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-            Just (AuthId, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
-            Just (AuthField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
-            Just (PathParam i, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
-            Just (Const v, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
-            Just (Now, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
-            Just (NamedLocalParam vn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
-            Just (LocalParamField (Var vn (Right e') _) fn, mm) -> do
-                let en = entityName e'
-                return $ resultMapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
-            Just (fr,_) -> error $ "Sorry, not implemented yet: " ++ show fr    
-            Nothing -> if isNew then Just $ defaultFieldValue f
-                                else Nothing
+        mcontent 
+            | null ifields && fieldInternal f == False  = Just $ let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+            | otherwise = case maybeInput of
+                Just (RequestField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+                Just (AuthId, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+                Just (AuthField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
+                Just (PathParam i, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
+                Just (Const v, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+                Just (Now, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
+                Just (NamedLocalParam vn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+                Just (LocalParamField (Var vn (Right e') _) fn, mm) -> do
+                    let en = entityName e'
+                    return $ resultMapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
+                Just (fr,_) -> error $ "Sorry, not implemented yet: " ++ show fr    
+                Nothing -> if isNew then Just $ defaultFieldValue f
+                                    else Nothing
 matchInputField :: [FieldRefMapping] -> FieldName -> Maybe (FieldRef, Maybe FunctionName)
 matchInputField ifields fn =  listToMaybe [ (inp,mm) | (pn,inp,mm) <- ifields, pn == fn ]
 prepareJsonInputField :: (FieldName,Maybe FieldValue) -> String

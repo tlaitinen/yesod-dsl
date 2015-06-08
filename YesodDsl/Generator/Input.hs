@@ -20,7 +20,7 @@ inputFieldRef (RequestField pn) = rstrip $ T.unpack $(codegenFile "codegen/input
 inputFieldRef ifr = show ifr
 
 getJsonAttrs :: Stmt -> [FieldName]
-getJsonAttrs (Insert (Right e) Nothing _) = [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+getJsonAttrs (Insert (Right e) Nothing _) = [ fieldName f | f <- entityFields e, fieldInternal f == False ]
 getJsonAttrs hp = [ fn | RequestField fn <- universeBi hp ]
                 ++ (concat [ [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
                     | Insert (Right e) Nothing _ <- universeBi hp ])
