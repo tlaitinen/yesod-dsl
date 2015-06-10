@@ -13,6 +13,7 @@
 {-# OPTIONS_GHC -fno-warn-overlapping-patterns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 module Handler.~{moduleName m}.Internal where
 import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto

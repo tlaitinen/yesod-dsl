@@ -8,6 +8,32 @@ var yesodDsl = function(defs, strings, config) {
         day: 'datefield',
         timeofday: 'timefield'
     };
+    function defineModel(modelName, fields, proxy, cb) {
+        Ext.define(modelName, {
+            extend: 'Ext.data.Model',
+            fields: _.map(fields, function (f) {
+                var name = f.name,
+                    mapping = undefined;
+
+                if (name == 'length') {
+                    mapping = name;
+                    name += '_';
+                }
+                var r = {
+                    name : name,
+                    type : (f.optional || f.references) ? "auto" : f.type
+                };
+                if ('default' in f)
+                    r.defaultValue = f.default;
+                if (mapping != undefined) {
+                    r.mapping = mapping;
+                }
+                return r;
+            }),
+            proxy: proxy
+        }, cb);
+
+    }
     function createStore(storeCls, storeId) {
         var store = Ext.create(storeCls, { storeId:storeId });
         config.defaultStoreFilters.forEach(function(cf) {
@@ -21,6 +47,85 @@ var yesodDsl = function(defs, strings, config) {
         });
         return store;
     }
+    function initFormFilters(ffs, form) {
+        return _.map(ffs, function (fInfo) {
+            if (typeof fInfo == 'string') {
+                fInfo = {
+                    name: fInfo,
+                    field: 'id'
+                };
+            }
+            var record = form.getForm().getRecord();
+
+            var value = record.get(fInfo.field)  ;
+
+            return new Ext.util.Filter({
+                id: fInfo.name,
+                property: fInfo.name,
+                value: ''+ (value ? value : 0)
+            });
+        });
+    }
+    function defaultRoute(entityName) {
+        return _.find(defs.routes, function (r) {
+            return r.path.length == 1 && r.path[0].type == "string"
+                && r.handlers.some(function (h) {
+                    return h.type == 'GET'
+                        && h.outputs.some(function (o) {
+                            return o.name == 'id' && o.references == entityName;
+                        });
+                })
+        });
+    }
+    function entityByRoute(routeName) {
+        var res = undefined;
+        defs.routes.forEach(function (r) {
+            if (r.path.length == 1 && r.path[0].type == "string" && r.path[0].value == routeName) {
+                r.handlers.forEach(function (h) {
+                    if (h.type == "GET") {
+                        h.outputs.forEach(function (o) {
+                            if (o.name == "id") {
+                                res = o.references;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        return res;
+    }
+    function createFromGrid(form, recordFields, formFields, srcGrid, gridFields, dstGrid) {
+        var modelName = dstGrid.store.model.$className,
+            entityName = entityByRoute(modelName.split(".").pop()),
+            formRecord = form.getRecord(),
+            formValues = form.getValues();
+
+        var selected = srcGrid.getSelectionModel().getSelection();
+        selected.forEach(function (s) { 
+            var record = Ext.create(config.name + '.model.' + entityName, entityDefaults(entityName));
+            recordFields.forEach(function (rf) {
+                record.set(rf.dst, formRecord.get(rf.src));
+            });
+            formFields.forEach(function (ff) {
+                record.set(ff.dst, formValues[ff.src])
+            });
+
+            gridFields.forEach(function (gf) {
+                record.set(gf.dst, s.get(gf.src));
+            });
+            record.save({
+               success: function(rec, op) {
+                   var r = JSON.parse(op.response.responseText)
+                   if (!record.getId()) {
+                       record.setId(r.id);
+                   }
+                   dstGrid.store.add(record);
+               }
+            });
+        });
+
+
+    }
 
     function saveError(responseText) {
         Ext.Msg.alert(translate('saveError.title'), 
@@ -28,15 +133,16 @@ var yesodDsl = function(defs, strings, config) {
     }
 
     function entityDefaults(entityName) {
-        var r = {},
-            e = _.find(defs.entities, function (e) { return e.name == entityName; });
+        var e = _.find(defs.entities, function (e) { return e.name == entityName; }),
+            r = {};
         e.fields.forEach(function (f) {
-            if (f.default) {
+            if ('default' in f) {
                 r[f.name] = f.default;
             }
         });
         return r;
     }
+
     function gridWidgetName(routeName, gridCfg) {
         return gridCfg.widget || (routeName + 'list');
     }
@@ -53,6 +159,16 @@ var yesodDsl = function(defs, strings, config) {
                     }
                 });
         });
+    }
+    function findGrid(widgetName) {
+        var res = undefined;
+        _.each(config.routes, function (r) {
+            r.grids.forEach(function (g) {
+                if (g.widget == widgetName) 
+                    res = g;
+            });
+        });
+        return res;
     }
     function initFormItem(h, formCfg, widgetName) {
         return function (i) {             
@@ -81,20 +197,64 @@ var yesodDsl = function(defs, strings, config) {
                 name: itemCfg.name,
                 allowBlank: itemCfg.allowBlank || true,
                 labelWidth: itemCfg.labelWidth || formCfg.labelWidth || config.formLabelWidth || 120,
-                inputType: itemCfg.inputType,
-                minLength: itemCfg.minLength,
-                minLengthText: itemCfg.minLengthText ? translate(itemCfg.minLengthText) : undefined,
-                height: itemCfg.height,
                 autoscroll: itemCfg.height ? true : false,
+                flex: itemCfg.flex,
+                param: itemCfg.param
             };
+            if ('inputType' in itemCfg) {
+                res.inputType = itemCfg.inputType;
+            }
+            if ('minLength' in itemCfg) {
+                res.minLength = itemCfg.minLength;
+                if (itemCfg.minLengthText)
+                    res.minLengthText = translate(itemCfg.minLengthText);
+            }
+
+            if ('height' in itemCfg)
+                res.height = itemCfg.height;
+
+            if (field.type == "boolean")
+                res.inputValue = true;
+
+            var filters = (formCfg.filters || []).concat(itemCfg.filters || []);
+            if (filters.length) {
+
+                if (findGrid(itemCfg.xtype)) {
+                    res.listeners = {
+                        render: function(grid) {
+                            initFormFilters(filters, grid.up('form')).forEach(function (f) {
+                                grid.store.filters.removeAtKey(f.id);
+                                grid.store.addFilter(f, false);
+                            });
+                            grid.store.reload();
+                        }
+                    };
+                } 
+            }
+            if (itemCfg.bodyPadding) {
+                res.bodyPadding = itemCfg.bodyPadding;
+            }
+            if (itemCfg.title) {
+                res.title = translate(itemCfg.title);
+            }
+            if (itemCfg.layout) {
+                res.layout = itemCfg.layout;
+            }
             if (itemCfg.items) {
                 res.items = _.map(itemCfg.items, function(i) { return initFormItem(h, formCfg, widgetName)(i); });
             }
-            var text = translate(widgetName + '.' + itemCfg.name);
+            var text = itemCfg.text ? translate(itemCfg.text) : translate(widgetName + '.' + itemCfg.name);
             if (itemCfg.xtype == 'button') {
                 res.text = text;
                 res.listeners = {
                     click: function(button) {
+                        if (itemCfg.action == "create") {
+                            var form = button.up('form'),
+                                srcGrid = form.down(itemCfg.srcGrid),
+                                dstGrid = form.down(itemCfg.dstGrid);
+                            createFromGrid(form.getForm(), itemCfg.recordFields || [], itemCfg.formFields || [], srcGrid, itemCfg.gridFields, dstGrid);
+
+                        } 
                         if (itemCfg.form) {
                             var record = button.up('form').getForm().getRecord();
                             openFormWindow(itemCfg.form, 
@@ -190,17 +350,7 @@ var yesodDsl = function(defs, strings, config) {
     function idTooltip(record) { 
         return "ID " + record.get('id');
     }
-    function defaultRoute(entityName) {
-        return _.find(defs.routes, function (r) {
-            return r.path.length == 1 && r.path[0].type == "string"
-                && r.handlers.some(function (h) {
-                    return h.type == 'GET'
-                        && h.outputs.some(function (o) {
-                            return o.name == 'id' && o.references == entityName;
-                        });
-                })
-        });
-    }
+
     function routeInfo(r) {
         var name = '', url = config.urlBase;
         r.path.forEach(function (pp) {
@@ -218,6 +368,17 @@ var yesodDsl = function(defs, strings, config) {
             url:url
         };
     }
+    function formFilters(formName) {
+        var res = [];
+        _.each(config.routes, function (r) {
+            (r.forms || []).forEach(function (f) {
+                if (f.widget == formName && 'filters' in f) {
+                    res = f.filters;
+                }
+            });
+        });
+        return res;
+    }
     function openFormWindow(formName, formWidth, formHeight, record) {
         var winId = formName + record.get('id');
         var win = Ext.getCmp(winId);
@@ -233,13 +394,15 @@ var yesodDsl = function(defs, strings, config) {
                 title: translate(formName + ".title"),
                 items: [ { xtype: formName } ]
             });
-            win.show();
-            win.down(formName).loadRecord(record);
+            var form = win.down(formName);
+            form.loadRecord(record);
             win.query('combobox').forEach(function (cb) { 
                 if ('configStore' in cb) {
-                    cb.configStore();
+                    cb.configStore(initFormFilters(formFilters(formName), form));
                 }
             });
+
+            win.show();
 
         }
     }
@@ -281,6 +444,30 @@ var yesodDsl = function(defs, strings, config) {
             });
         });
     });
+    defs.entities.forEach(function (e) {
+        var modelName = config.name + '.model.' + e.name,
+            route = defaultRoute(e.name);
+        if (route) {
+            var proxy = {
+                type: 'rest',
+                url: routeInfo(defaultRoute(e.name)).url,
+                reader: {
+                    type: 'json',
+                    root: 'result',
+                    totalProperty: 'totalCount'
+                },
+                listeners: {
+                    exception: function (proxy, response, operation) {
+                        if (response.request.options.method != 'GET')
+                            saveError(response.responseText);
+                    }
+                }
+            };
+            defineModel(modelName, e.fields, proxy);
+
+        }
+
+    });
     defs.routes.forEach(function (r) {
 
         var info = routeInfo(r),
@@ -311,17 +498,7 @@ var yesodDsl = function(defs, strings, config) {
                             }
                         }
                     };
-                Ext.define(modelName, {
-                    extend: 'Ext.data.Model',
-                    fields: _.map(h.outputs, function (o) {
-                        return {
-                            "name" : o.name,
-                            "type" : o.references ? "auto" : o.type
-                        };
-                    }),
-                    proxy: proxy
-                   
-                }, function (model) {
+                defineModel(modelName, h.outputs, proxy, function(model) {
                     Ext.define(storeName, {
                         extend: 'Ext.data.Store',
                         model: modelName,
@@ -389,6 +566,7 @@ var yesodDsl = function(defs, strings, config) {
                                 multiSelect: true,
                                 store: store,
                                 allowDeselect : true,
+                                title: translate(widgetName + '.title'),
                                 requires: ['Ext.toolbar.Paging', 'Ext.ux.grid.FiltersFeature'],
                                 viewConfig: {
                                     listeners: {
@@ -429,9 +607,13 @@ var yesodDsl = function(defs, strings, config) {
                                                             flex = c.flex;
                                                             header = c.header || field;
                                                         }
+                                                        var dataIndex = field;
+                                                        if (dataIndex == "length")
+                                                            dataIndex += "_";
+    
                                                         return {
                                                             "header" : translate(widgetName + "." + header, header),
-                                                            "dataIndex" : field,
+                                                            "dataIndex" : dataIndex,
                                                             "flex" : flex || 1,
                                                             "filterable" : filterable || true,
                                                             "renderer" : renderer
@@ -453,17 +635,29 @@ var yesodDsl = function(defs, strings, config) {
                                                 listeners: {
                                                     click: function(button) {
                                                         if (tb.action == 'remove') {
+
                                                             var selected = button.up(widgetName).getSelectionModel().getSelection();
-                                                            Ext.MessageBox.confirm(translate(widgetName + '.' + tb.name + '.title'), 
-                                                                                   translate(widgetName + '.' + tb.name + '.message').replace('{0}', ''+selected.length), 
-                                                                                   function (btn) { 
-                                                                                        if (btn == 'yes') { 
-                                                                                            store.remove(selected);
-                                                                                            store.sync()
-                                                                                        }
-                                                                                   });
+                                                            store.remove(selected);
+                                                            store.sync();
                                                         } else if (tb.action == 'new') {
                                                             var record = Ext.create(modelName, entityDefaults(entityName));
+
+                                                            if (tb.recordFields) {
+                                                                var form = button.up('form');
+                                                                if (form) {
+                                                                    var formRecord = form.getForm().getRecord();
+                                                                    tb.recordFields.forEach(function (ff) {
+                                                                        if (typeof ff == "string") {
+                                                                            ff = {
+                                                                                "src" : "id",
+                                                                                "dst" : ff
+                                                                            };
+                                                                        };
+                                                                        record.set(ff.dst, formRecord.get(ff.src));
+                                                                    });
+
+                                                                }
+                                                            }
                                                             openFormWindow(gridCfg.form, 
                                                                            gridCfg.formWidth || config.formWidth || 610,
                                                                            gridCfg.formHeight || config.formHeight || 630,
@@ -542,10 +736,32 @@ var yesodDsl = function(defs, strings, config) {
 
                             var widgetName = formCfg.widget || (name + 'form');
                             var formName  = config.name + '.view.' + name + '.' + widgetName;
+
+                            var tabItems = _.map((formCfg.tabs || []), function (tabCfg) {
+                                return {
+                                    xtype: 'panel',
+                                    title: widgetName + "." + tabCfg.name,
+                                    layout: {
+                                        type: 'vbox',
+                                        align: 'stretch'
+                                    },
+                                    bodyPadding: formCfg.bodyPadding || 5,
+                                    items: tabCfg.items
+                                };
+                            });
+                            var tab = [];
+                            if (tabItems.length) {
+                                tab = [{
+                                    xtype: 'tabpanel',
+                                    items: tabItems
+                                }];
+                            }
+                            var items = _.flatten(_.map(tab.concat(formCfg.items || []), initFormItem(h, formCfg, widgetName)));
+                            
                             Ext.define(formName, {
                                 extend: 'Ext.form.Panel',
                                 alias: 'widget.' + widgetName,
-                                bodyPadding: formCfg.bodyPadding || 5,
+                                bodyPadding: formCfg.bodyPadding || (tabItems.length ? 0 : 5),
                                 layout: {
                                     type: 'vbox',
                                     align: 'stretch'
@@ -578,7 +794,7 @@ var yesodDsl = function(defs, strings, config) {
                                                                    }
                                                                }
 
-                                                               var canClose = btn.action == 'cancel' || valid;
+                                                               var canClose = btn.action == 'closewithoutsaving' || valid;
                                                                 
                                                                if (btn.action == 'save' || btn.action == 'saveandclose') {
                                                                    if (valid) {
@@ -621,7 +837,7 @@ var yesodDsl = function(defs, strings, config) {
                                                                                      translate(validationMessage));
                                                                    }
                                                                }
-                                                               if (canClose && (btn.action == 'saveandclose' || btn.action == 'closewithoutsaving')) {
+                                                               if (canClose && (btn.action == 'saveandclose' || btn.action == 'closewithoutsaving' || btn.action == 'close')) {
                                                                    button.up('window').close();
                                                                } 
 
@@ -629,7 +845,7 @@ var yesodDsl = function(defs, strings, config) {
                                                        }
                                                    };
                                                }),
-                                items: _.flatten(_.map(formCfg.items, initFormItem(h, formCfg, widgetName))),
+                                items: items
 
                             });
 
