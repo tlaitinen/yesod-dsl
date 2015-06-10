@@ -118,7 +118,6 @@ import Data.List
     deriving { Tk _ TDeriving }
     default  { Tk _ TDefault }
     pathParam {Tk _ (TPathParam _) }
-    idField { Tk _ TId }
     entityId { Tk _ (TEntityId _) }
     localParam { Tk _ TLocalParam }
     true { Tk _ TTrue }
@@ -322,13 +321,6 @@ fieldRefList : { [ ] }
 fieldRef : 
     value { Const $1 }
     | now lparen rparen { Now }
-    | lowerIdTk dot idField {%
-        do
-            l1 <- mkLoc $1
-            let s1 = tkString $1
-            withSymbol l1 s1 $ requireEntity $ \_ -> return ()
-            return $ SqlId (Var s1 (Left "") False)
-    }
     | lowerIdTk dot lowerIdTk {% 
         do 
             l1 <- mkLoc $1
@@ -337,18 +329,14 @@ fieldRef :
             let s3 = tkString $3
                 a = SqlField (Var s1 (Left "") False) s3
                 b = LocalParamField (Var s1 (Left "") False) s3
-            withSymbol l1 s1 $ requireEntityFieldSelectedOrResult l3 s3
-            m <- symbolMatches s1 $ \st -> case st of SEntityResult _ -> True; _ -> False
-            return $ if m then b else a
-    }
-    | lowerIdTk dot upperIdTk dot idField {%
-        do
-            l1 <- mkLoc $1
-            let s1 = tkString $1
-            l3 <- mkLoc $3
-            let s3 = tkString $3
-            -- TODO validation
-            return $ SqlId (Var (s1 ++ "_" ++ s3) (Left "") False)
+            if s3 == "id"
+                then do
+                    withSymbol l1 s1 $ requireEntity $ \_ -> return ()
+                    return $ SqlId (Var s1 (Left "") False)
+                else do
+                    withSymbol l1 s1 $ requireEntityFieldSelectedOrResult l3 s3
+                    m <- symbolMatches s1 $ \st -> case st of SEntityResult _ -> True; _ -> False
+                    return $ if m then b else a
     }
     | lowerIdTk dot upperIdTk dot lowerIdTk {%
         do
@@ -359,7 +347,9 @@ fieldRef :
            l5 <- mkLoc $5
            let s5 = tkString $5
            -- TODO: validation
-           return $ SqlField (Var (s1 ++ "_" ++ s3) (Left "") False) s5
+           if s5 == "id"
+               then return $ SqlId (Var (s1 ++ "_" ++ s3) (Left "") False)
+               else return $ SqlField (Var (s1 ++ "_" ++ s3) (Left "") False) s5
     }
     | upperIdTk dot upperIdTk {%
         do
@@ -377,15 +367,17 @@ fieldRef :
             withSymbolNow Nothing l1 ("$" ++ show i1) $ requireEntityId $ \_ -> return Nothing
 
             return $ PathParam i1 }
-    | auth dot idField { AuthId }
     | auth dot lowerIdTk {%
         do 
 
             l1 <- mkLoc $1
             l3 <- mkLoc $3
             let n3 = tkString $3
-            withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
-            return $ AuthField n3 
+            if n3 == "id"
+                then return AuthId
+                else do
+                    withSymbol l1 "User" $ requireEntityField l3 n3 $ \_ -> return ()
+                    return $ AuthField n3 
     }
     | localParam { LocalParam }
     | request dot lowerIdTk { RequestField (tkString $3) }
@@ -585,15 +577,12 @@ selectField: lowerIdTk dot asterisk {%
             l1 <- mkLoc $1
             return (l1, SelectAllFields $ Var (tkString $1) (Left "") False)
     }
-    | lowerIdTk dot idField maybeSelectAlias {% 
-        do
-            l1 <- mkLoc $1
-            return (l1, SelectIdField (Var (tkString $1) (Left "") False) $4) 
-    }
     | lowerIdTk dot lowerIdTk maybeSelectAlias {%
         do
             l1 <- mkLoc $1
-            return (l1, SelectField (Var (tkString $1) (Left "") False) (tkString $3) $4) 
+            if tkString $3 == "id"
+                then return (l1, SelectIdField (Var (tkString $1) (Left "") False) $4) 
+                else return (l1, SelectField (Var (tkString $1) (Left "") False) (tkString $3) $4) 
     }
     | valexpr as lowerIdTk {% 
         do

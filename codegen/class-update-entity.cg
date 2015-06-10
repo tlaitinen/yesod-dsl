@@ -1,6 +1,6 @@
 update $ \e -> do
     let _ = e ^. ~{entityName e}Id
-    set e $ map (\update -> case update of
+    set e $ map (\u -> case u of
 ~{indent 12 $ concatMap (updateEntityField e) $ classFields c}
         ) updates
 ~{maybeFilter e}

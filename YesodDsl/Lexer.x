@@ -120,7 +120,6 @@ tokens :-
     "for" { mkT TFor }
     $digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
-     "id" { mkT TId }
      "now" { mkT TNow }
      "random" { mkT TRandom }
      "ceiling" { mkT TCeiling }
@@ -221,7 +220,6 @@ data TokenType = TSemicolon
            | TBeforeHandler
            | TAfterHandler
            | TDefaultFilterSort
-           | TId
            | TNot
            | TIf
            | TThen
