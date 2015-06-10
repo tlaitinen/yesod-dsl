@@ -14,6 +14,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
 module Handler.~{moduleName m}.Internal where
 import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto

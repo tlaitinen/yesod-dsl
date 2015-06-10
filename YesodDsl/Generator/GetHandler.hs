@@ -116,7 +116,9 @@ getHandlerSelect ps =
             returnFieldsStr <- selectReturnFields sq
             maybeDefaultSortFields <- if defaultFilterSort
                 then defaultSortFields sq
-                else return ""
+                else do
+                    staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
+                    return $ T.unpack $(codegenFile "codegen/static-order-by.cg")
             return $ concat [
                 (T.unpack $(codegenFile "codegen/base-select-query.cg")),
                 (if defaultFilterSort 
