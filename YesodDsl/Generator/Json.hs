@@ -42,7 +42,9 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         "classes" .= [
             object [
                 "name" .= className c,
-                "fields" .= [ fieldJson f | f <- classFields c, fieldInternal f == False ]
+                "fields" .= [ fieldJson f | f <- classFields c, fieldInternal f == False ],
+                "instances" .= [ entityName e | e <- modEntities m, 
+                                 className c `elem` entityInstances e ]
             ] | c <- modClasses m
         ],
         "entities" .= [
