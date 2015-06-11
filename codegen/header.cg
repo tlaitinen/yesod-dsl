@@ -106,9 +106,13 @@ defaultFilterOp "lt" = (<.)
 defaultFilterOp "gt" = (>.)
 defaultFilterOp "le" = (<=.)
 defaultFilterOp "ge" = (>=.)
+defaultFilterOp "is" = is
+defaultFilterOp "is not" = isNot
 defaultFilterOp _ = (==.)
 
 is = unsafeSqlBinOp " IS "
+isNot = unsafeSqlBinOp " IS NOT "
+
 
 extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value Double)
 extractSubField = unsafeSqlExtractSubField
