@@ -16,7 +16,10 @@ import YesodDsl.SyncFile
 knownMods :: Module -> [ModuleName]
 knownMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto", pfx ++ ".PathPieces", pfx ++ ".Validation"]
                 ++ [pfx ++ "." ++ (routeModuleName r) | r <- modRoutes m ] ++ (map importModule $ modImports m)
-    where pfx = "Handler." ++ (fromMaybe "" $ modName m)
+    where pfx = handlerPrefix m
+
+handlerPrefix :: Module -> String
+handlerPrefix m = "Handler." ++ (fromMaybe "" $ modName m)
 
 ensureDeps :: [Dependency] -> [Dependency]
 ensureDeps deps = nubBy samePackage ([Dependency (PackageName name) anyVersion 
@@ -54,8 +57,8 @@ modifyDesc m d = d {
         modifyLib l = l {
             exposedModules = modifyExposed (exposedModules l)            
         }
-        modifyExposed mods = nub $ mods ++ knownMods m
-
+        modifyExposed mods = nub $ filter notGeneratedMod mods ++ knownMods m
+        notGeneratedMod = not . ((handlerPrefix m) `isPrefixOf`) . (intercalate ".") . components
 syncCabal :: FilePath -> Module -> IO ()
 syncCabal path' m = do
     let path = addExtension (dropExtension path') ".cabal"
