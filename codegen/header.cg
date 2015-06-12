@@ -63,7 +63,7 @@ data ~{moduleName m} = ~{moduleName m}
 
 data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_type :: Text,
-    filterJsonMsg_value :: Text,
+    filterJsonMsg_value :: Maybe Text,
     filterJsonMsg_field :: Text,
     filterJsonMsg_property :: Text,
     filterJsonMsg_comparison :: Text
@@ -86,10 +86,11 @@ instance IsString (Maybe Text) where
     fromString "" = Nothing
     fromString a  = Just $ T.pack a
 
-parseStringOrInt :: HMS.HashMap Text A.Value -> AT.Parser Text
+parseStringOrInt :: HMS.HashMap Text A.Value -> AT.Parser (Maybe Text)
 parseStringOrInt hm = case HMS.lookup "value" hm of
-    Just (A.Number n) -> return $ T.pack $ show n
-    Just (A.String s) -> return s
+    Just (A.Number n) -> return $ Just $ T.pack $ show n
+    Just (A.String s) -> return $ Just s 
+    Just (A.Null) -> return Nothing
     _ -> mzero
 
 data SortJsonMsg = SortJsonMsg {
@@ -118,7 +119,7 @@ extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (D
 extractSubField = unsafeSqlExtractSubField
 
 getDefaultFilter maybeGetParam defaultFilterJson p = do
-    f <- maybe maybeGetParam Just getFilter
+    f <- maybe maybeGetParam id getFilter
     PP.fromPathPiece f
     where 
         getFilter = do            
@@ -126,7 +127,7 @@ getDefaultFilter maybeGetParam defaultFilterJson p = do
             v <- DL.find (\fjm -> filterJsonMsg_property fjm == p) j
             return (filterJsonMsg_value v)
 hasDefaultFilter maybeGetParam defaultFilterJson p = isJust $
-    maybe maybeGetParam Just getFilter
+    maybe maybeGetParam id getFilter
     where
         getFilter = do
             j <- defaultFilterJson

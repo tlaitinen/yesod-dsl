@@ -39,7 +39,9 @@ ctxFields sq = do
 defaultFilterField :: (Entity, VariableName, Field,VariableName,MaybeFlag) -> Reader Context String
 defaultFilterField (e,vn,f,alias,isMaybe) = do
     let maybeLevel = boolToInt isMaybe + boolToInt (fieldOptional f)
-    return $ T.unpack $(codegenFile "codegen/default-filter-field.cg")
+    return $ T.unpack $ if maybeLevel > 0
+        then $(codegenFile "codegen/default-filter-field-maybe.cg")
+        else $(codegenFile "codegen/default-filter-field.cg")
 
 defaultFilterFields :: SelectQuery -> Reader Context String
 defaultFilterFields sq = do
