@@ -59,16 +59,20 @@ baseDefaultFilterOp neg op a b = if neg then not_ $ f op a b  else f op a b
         f "is not" = isNot 
         f _ = (==.)
 
-
+textDefaultFilterOp :: (P.PersistField a) => NegateFlag -> Text -> SqlExpr (Value a) -> SqlExpr (Value a) -> SqlExpr (Value Bool)
+textDefaultFilterOp neg op a b = case op of
+    "like" -> if neg then not_ $ unsafe_like a b else unsafe_like a b
+    "ilike" -> if neg then not_ $ unsafe_ilike a b else unsafe_ilike a b
+    _ -> baseDefaultFilterOp neg op a b
 class P.PersistField a => FieldFilter a where
     defaultFilterOp :: NegateFlag -> Text -> SqlExpr (Value a) -> SqlExpr (Value a) -> SqlExpr (Value Bool)
     defaultFilterOp = baseDefaultFilterOp
 instance FieldFilter Text where
-    defaultFilterOp neg "like" a b = if neg then not_ $ like a b else like a b
-    defaultFilterOp neg "ilike" a b = if neg then not_ $ like  a b else ilike a b
-    defaultFilterOp neg op a b = baseDefaultFilterOp neg op a b
+    defaultFilterOp = textDefaultFilterOp
+instance FieldFilter (Maybe Text) where
+    defaultFilterOp = textDefaultFilterOp
 
-instance FieldFilter a => FieldFilter (Maybe a) where
+
 instance P.PersistEntity a => FieldFilter (P.Key a) where
 instance FieldFilter P.Checkmark where
 instance FieldFilter Double where
@@ -81,10 +85,25 @@ instance FieldFilter Day where
 instance FieldFilter TimeOfDay where
 instance FieldFilter UTCTime where
 instance FieldFilter Bool where
+instance P.PersistEntity a => FieldFilter (Maybe (P.Key a)) where
+instance FieldFilter (Maybe P.Checkmark) where
+instance FieldFilter (Maybe Double) where
+instance FieldFilter (Maybe Word32) where
+instance FieldFilter (Maybe Word64) where
+instance FieldFilter (Maybe Int32) where
+instance FieldFilter (Maybe Int64) where
+instance FieldFilter (Maybe Int) where
+instance FieldFilter (Maybe Day) where
+instance FieldFilter (Maybe TimeOfDay) where
+instance FieldFilter (Maybe UTCTime) where
+instance FieldFilter (Maybe Bool) where
+instance FieldFilter (Maybe a) => FieldFilter (Maybe (Maybe a)) where
+    defaultFilterOp neg op a b = defaultFilterOp neg op (joinV a) (joinV b)
 
 is = unsafeSqlBinOp " IS "
 isNot = unsafeSqlBinOp " IS NOT "
-
+unsafe_like = unsafeSqlBinOp " LIKE "
+unsafe_ilike = unsafeSqlBinOp " ILIKE "
 
 extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Value Double)
 extractSubField = unsafeSqlExtractSubField

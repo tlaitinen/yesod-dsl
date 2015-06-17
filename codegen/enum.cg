@@ -21,4 +21,4 @@ instance PP.PathPiece ~{enumName e} where
 ~{toPathPieces}
 
 instance FieldFilter ~{enumName e} where
-    defaultFilterOp = baseDefaultFilterOp
+instance FieldFilter (Maybe ~{enumName e}) where
