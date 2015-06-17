@@ -9,7 +9,7 @@ import qualified Web.PathPieces as PP
 import Database.Persist.Types
 import Database.Persist.Sql
 import Prelude
-import Data.Time (TimeOfDay, UTCTime, ZonedTime)
+import Data.Time (TimeOfDay, UTCTime)
 import Data.Int (Int64, Int32)
 import Data.Word (Word32,Word64)
 import Data.Maybe
@@ -99,10 +99,6 @@ instance PathPiece TimeOfDay where
     toPathPiece = T.pack . show
 
 instance PathPiece UTCTime where
-    fromPathPiece = safeRead
-    toPathPiece = T.pack . show
-
-instance PathPiece ZonedTime where
     fromPathPiece = safeRead
     toPathPiece = T.pack . show
 

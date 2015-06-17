@@ -23,7 +23,7 @@ import Prelude
 import Control.Monad (forM_, when)
 import Control.Monad.Catch (MonadThrow)
 import Database.Esqueleto
-import Database.Esqueleto.Internal.Sql (unsafeSqlBinOp, unsafeSqlExtractSubField, UnsafeSqlFunctionArgument)
+import qualified Database.Esqueleto as E
 import qualified Database.Persist as P
 import Database.Persist.TH
 import Yesod.Auth (requireAuth, requireAuthId, YesodAuth, AuthId, YesodAuthPersist)
@@ -66,7 +66,8 @@ data FilterJsonMsg = FilterJsonMsg {
     filterJsonMsg_value :: Maybe Text,
     filterJsonMsg_field :: Text,
     filterJsonMsg_property :: Text,
-    filterJsonMsg_comparison :: Text
+    filterJsonMsg_comparison :: Text,
+    filterJsonMsg_negate :: Bool
 } 
 filterJsonMsg_field_or_property :: FilterJsonMsg -> Text
 filterJsonMsg_field_or_property fjm
@@ -79,7 +80,8 @@ instance FromJSON FilterJsonMsg where
         (parseStringOrInt v) <*>
         v .:? "field" .!= "" <*>
         v .:? "property" .!= "" <*>
-        v .:? "comparison" .!= "eq"
+        v .:? "comparison" .!= "eq" <*>
+        v .:? "negate" .!= False
     parseJSON _ = mzero
 
 instance IsString (Maybe Text) where
@@ -100,23 +102,7 @@ data SortJsonMsg = SortJsonMsg {
 
 $(deriveJSON defaultOptions{fieldLabelModifier = drop 12} ''SortJsonMsg)
 
--- defaultFilterOp :: forall v typ. PersistField typ => Text -> EntityField v typ -> typ -> Filter v
-defaultFilterOp "eq" = (==.)
-defaultFilterOp "neq" = (!=.)
-defaultFilterOp "lt" = (<.)
-defaultFilterOp "gt" = (>.)
-defaultFilterOp "le" = (<=.)
-defaultFilterOp "ge" = (>=.)
-defaultFilterOp "is" = is
-defaultFilterOp "is not" = isNot
-defaultFilterOp _ = (==.)
 
-is = unsafeSqlBinOp " IS "
-isNot = unsafeSqlBinOp " IS NOT "
-
-
-extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Database.Esqueleto.Value Double)
-extractSubField = unsafeSqlExtractSubField
 
 getDefaultFilter maybeGetParam defaultFilterJson p = do
     f <- maybe maybeGetParam id getFilter

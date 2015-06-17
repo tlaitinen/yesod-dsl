@@ -74,7 +74,6 @@ import Data.List
     timeofday { Tk _ TTimeOfDay }
     day { Tk _ TDay }
     utctime { Tk _ TUTCTime }
-    zonedtime { Tk _ TZonedTime }
     maybe { Tk _ TMaybe }
     get { Tk _ TGet }
     param { Tk _ TParam }
@@ -897,7 +896,6 @@ fieldType:
     | timeofday { FTTimeOfDay }
     | day       { FTDay }
     | utctime   { FTUTCTime }
-    | zonedtime { FTZonedTime }
     | checkmark { FTCheckmark }
 
 maybeMaybe : { False }

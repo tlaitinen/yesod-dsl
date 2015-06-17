@@ -157,7 +157,6 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                 FTTimeOfDay -> "timeofday"
                 FTDay -> "day"
                 FTUTCTime -> "utctime"
-                FTZonedTime -> "zonedtime"
                 FTCheckmark -> "boolean"
             EntityField _ -> "integer"
             EnumField _ _ -> ("string" :: String)

@@ -29,7 +29,6 @@ fieldTypeToHsType ft = case ft of
     FTTimeOfDay -> "TimeOfDay"
     FTDay -> "Day"
     FTUTCTime -> "UTCTime"
-    FTZonedTime -> "ZonedTime"
     FTCheckmark -> "Checkmark"
 
 

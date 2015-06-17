@@ -1,3 +1,3 @@
                 "~{alias}" -> case (filterJsonMsg_value fjm >>= PP.fromPathPiece) of 
-                    (Just v') -> where_ $ defaultFilterOp (filterJsonMsg_comparison fjm) (~{vn} ~{projectField isMaybe} ~{entityFieldTypeName e f}) (~{makeJust maybeLevel "(val v')"})
+                    (Just v') -> where_ $ defaultFilterOp (filterJsonMsg_negate fjm) (filterJsonMsg_comparison fjm) (~{vn} ~{projectField isMaybe} ~{entityFieldTypeName e f}) (~{makeJust maybeLevel "(val v')"})
                     _        -> return ()

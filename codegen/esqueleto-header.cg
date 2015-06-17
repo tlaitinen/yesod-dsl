@@ -18,10 +18,13 @@ import Control.Monad.IO.Class (MonadIO(..))
 import Control.Monad.Logger (MonadLogger)
 import Control.Monad.Trans.Class (lift)
 import Control.Monad.Trans.Resource (MonadResourceBase)
-import Data.Int (Int64)
+import Data.Int 
+import Data.Word
+import Data.Time
 import Data.List (intersperse)
 import Data.Monoid (Monoid(..), (<>))
 import Data.Proxy (Proxy(..))
+import qualified Database.Persist as P
 import qualified Control.Monad.Trans.Reader as R
 import qualified Control.Monad.Trans.State as S
 import qualified Control.Monad.Trans.Writer as W
@@ -32,10 +35,9 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
 import qualified Data.Text.Lazy.Builder.Int as TLBI
-
+import Data.Text (Text)
 import Database.Esqueleto.Internal.Language
 import Database.Esqueleto.Internal.Sql
-
 uncommas :: [TLB.Builder] -> TLB.Builder
 uncommas = mconcat . intersperse ", " . filter (/= mempty)
 
@@ -43,3 +45,46 @@ uncommas' :: Monoid a => [(TLB.Builder, a)] -> (TLB.Builder, a)
 uncommas' = (uncommas *** mconcat) . unzip
 
 
+type NegateFlag = Bool
+baseDefaultFilterOp :: P.PersistField a => NegateFlag -> Text -> SqlExpr (Value a) -> SqlExpr (Value a) -> SqlExpr (Value Bool)
+baseDefaultFilterOp neg op a b = if neg then not_ $ f op a b  else f op a b
+    where
+        f  "eq" = (==.)
+        f "neq" = (!=.)
+        f "lt" = (<.)
+        f "gt" = (>.)
+        f "le" = (<=.)
+        f "ge" = (>=.)
+        f "is" = is
+        f "is not" = isNot 
+        f _ = (==.)
+
+
+class P.PersistField a => FieldFilter a where
+    defaultFilterOp :: NegateFlag -> Text -> SqlExpr (Value a) -> SqlExpr (Value a) -> SqlExpr (Value Bool)
+    defaultFilterOp = baseDefaultFilterOp
+instance FieldFilter Text where
+    defaultFilterOp neg "like" a b = if neg then not_ $ like a b else like a b
+    defaultFilterOp neg "ilike" a b = if neg then not_ $ like  a b else ilike a b
+    defaultFilterOp neg op a b = baseDefaultFilterOp neg op a b
+
+instance FieldFilter a => FieldFilter (Maybe a) where
+instance P.PersistEntity a => FieldFilter (P.Key a) where
+instance FieldFilter P.Checkmark where
+instance FieldFilter Double where
+instance FieldFilter Word32 where
+instance FieldFilter Word64 where
+instance FieldFilter Int32 where
+instance FieldFilter Int64 where
+instance FieldFilter Int where
+instance FieldFilter Day where
+instance FieldFilter TimeOfDay where
+instance FieldFilter UTCTime where
+instance FieldFilter Bool where
+
+is = unsafeSqlBinOp " IS "
+isNot = unsafeSqlBinOp " IS NOT "
+
+
+extractSubField :: UnsafeSqlFunctionArgument a => TLB.Builder -> a -> SqlExpr (Value Double)
+extractSubField = unsafeSqlExtractSubField

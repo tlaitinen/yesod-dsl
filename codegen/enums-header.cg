@@ -6,3 +6,4 @@ import Database.Persist.TH
 import qualified Data.Aeson as A
 import Prelude
 import Control.Monad (mzero)
+import Handler.~{moduleName m}.Esqueleto

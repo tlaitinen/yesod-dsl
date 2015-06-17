@@ -88,7 +88,6 @@ tokens :-
     "Nothing" { mkT TNothing }
     "TimeOfDay" { mkT TTimeOfDay }
     "UTCTime" { mkT TUTCTime }
-    "ZonedTime" { mkT TZonedTime }
     "default-filter-sort" { mkT TDefaultFilterSort }
     "param" { mkT TParam }
     "if" { mkT TIf }
@@ -197,7 +196,6 @@ data TokenType = TSemicolon
            | TTimeOfDay
            | TDay
            | TUTCTime
-           | TZonedTime
            | TJoin
            | TLeft
            | TRight

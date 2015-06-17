@@ -47,7 +47,7 @@ type FieldName = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
-               | FTCheckmark | FTZonedTime deriving (Eq,Show,Data,Typeable)
+               | FTCheckmark deriving (Eq,Show,Data,Typeable)
 
 type RowNum = Int
 type ColNum = Int
