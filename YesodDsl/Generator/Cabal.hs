@@ -14,7 +14,7 @@ import Data.List
 import YesodDsl.Generator.Routes
 import YesodDsl.SyncFile
 knownMods :: Module -> [ModuleName]
-knownMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto", pfx ++ ".PathPieces", pfx ++ ".Validation"]
+knownMods m = map fromString $ [pfx, pfx ++ ".Internal", pfx ++ ".Enums", pfx ++ ".Routes", pfx ++ ".Esqueleto", pfx ++ ".PathPieces", pfx ++ ".Validation", pfx ++ ".FilterSort" ]
                 ++ [pfx ++ "." ++ (routeModuleName r) | r <- modRoutes m ] ++ (map importModule $ modImports m)
     where pfx = handlerPrefix m
 

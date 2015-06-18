@@ -1,5 +1,5 @@
 case defaultSortJson of 
-    Just xs -> mapM_ (\sjm -> case sortJsonMsg_property sjm of
+    Just xs -> mapM_ (\sjm -> case FS.s_field sjm of
 ~{indent 12 $ fields}
             _ -> return ()
         ) xs

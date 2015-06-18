@@ -1,4 +1,4 @@
 do 
     f <- lookupGetParam "filter" 
-    let f' = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) f) :: Maybe [FilterJsonMsg] 
+    let f' = (maybe Nothing (decode . LBS.fromChunks . (:[]) . encodeUtf8) f) :: Maybe [FS.Filter] 
     return $ maybe [] (concatMap toDefaultFilter~{entityName e}) f'

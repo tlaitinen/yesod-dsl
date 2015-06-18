@@ -79,6 +79,8 @@ generate path m = do
         T.unpack $(codegenFile "codegen/dispatch.cg")
     syncFile (joinPath ["Handler", moduleName m, "PathPieces.hs"]) $
         T.unpack $(codegenFile "codegen/path-pieces.cg")
+    syncFile (joinPath ["Handler", moduleName m, "FilterSort.hs"]) $
+        T.unpack $(codegenFile "codegen/filter-sort.cg")    
     where
            routeImport r = T.unpack $(codegenFile "codegen/route-import.cg")
 

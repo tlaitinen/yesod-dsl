@@ -1,4 +1,4 @@
-        if hasDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" 
+        if FS.hasDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" 
             then ~{maybeFrom} 
 ~{indent 12 joinExprs}                 
                 where_ $ ~{expr}

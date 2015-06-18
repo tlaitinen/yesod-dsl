@@ -1,4 +1,4 @@
-        case getDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" of
+        case FS.getDefaultFilter filterParam_~{pn} defaultFilterJson "~{pn}" of
             Just localParam -> ~{maybeFrom} 
 ~{indent 16 joinExprs}                
                 where_ $ ~{expr}

@@ -20,6 +20,7 @@ import Handler.~{moduleName m}.Enums
 import Handler.~{moduleName m}.Esqueleto
 import Handler.~{moduleName m}.Internal
 import Handler.~{moduleName m}.Validation
+import qualified Handler.~{moduleName m}.FilterSort as FS
 import qualified Handler.~{moduleName m}.PathPieces as PP
 import Prelude
 import Database.Esqueleto
