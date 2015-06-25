@@ -1,0 +1,4 @@
+~{lowerFirst $ entityName e}~{upperFirst fn}ExprFromString "~{fieldEntityName f}" e op vt = case vt of 
+    Just vt' -> PP.fromPathPiece vt' >>= \v -> Just $ defaultFilterOp False op (e ^. ~{entityName e}~{upperFirst $ fieldName f}) (val v)
+    Nothing -> Just $ defaultFilterOp False op (e ^. ~{entityName e}~{upperFirst $ fieldName f}) nothing
+   

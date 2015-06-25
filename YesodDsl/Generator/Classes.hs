@@ -139,6 +139,9 @@ entityClassFieldWrappers m e = concatMap fieldWrapper (entityClassFields e)
         classInstanceFieldClass ((_,fn), fs) = T.unpack $(codegenFile "codegen/entity-class-instance-field-class.cg")
             where
                 fieldInstance f = T.unpack $(codegenFile "codegen/entity-class-instance-field-class-instance.cg")
+                fieldExprFromString f = T.unpack $(codegenFile "codegen/entity-class-instance-field-class-expr-from-string.cg")
+                fieldExpr2FromString f = T.unpack $(codegenFile "codegen/entity-class-instance-field-class-expr2-from-string.cg")
+      
         fieldEntityName f = case fieldContent f of
             EntityField en -> en
             _ -> ""

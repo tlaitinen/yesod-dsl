@@ -1,0 +1,1 @@
+~{lowerFirst $ entityName e}~{upperFirst fn}Expr2FromString "~{fieldEntityName f}" e op e2 = Just $ defaultFilterOp False op (e ^. ~{entityName e}~{upperFirst $ fieldName f}) (e2 ^. ~{entityName e}~{upperFirst $ fieldName f})

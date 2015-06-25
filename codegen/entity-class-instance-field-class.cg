@@ -2,3 +2,13 @@ class ~{entityName e}~{upperFirst fn}Field e where
     ~{lowerFirst $ entityName e}~{upperFirst fn}Field :: SqlExpr (Database.Esqueleto.Value (Maybe (Key e))) -> EntityField ~{entityName e} (Maybe (Key e)) 
 
 ~{concatMap fieldInstance fs}    
+
+~{lowerFirst $ entityName e}~{upperFirst fn}ExprFromString :: Text -> SqlExpr (Entity ~{entityName e}) -> Text -> Maybe Text -> Maybe (SqlExpr (E.Value Bool))
+~{concatMap fieldExprFromString fs}
+~{lowerFirst $ entityName e}~{upperFirst fn}ExprFromString _ _ _ _ = Nothing
+
+~{lowerFirst $ entityName e}~{upperFirst fn}Expr2FromString :: Text -> SqlExpr (Entity ~{entityName e}) -> Text -> SqlExpr (Entity ~{entityName e}) -> Maybe (SqlExpr (E.Value Bool))
+~{concatMap fieldExpr2FromString fs}
+~{lowerFirst $ entityName e}~{upperFirst fn}Expr2FromString _ _ _ _ = Nothing
+
+~
