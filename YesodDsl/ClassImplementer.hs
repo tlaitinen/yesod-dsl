@@ -43,7 +43,7 @@ trSq m sq = sq {
                     in (Just (a, (a', Just $ entityName e)), j {
                         joinAlias = a',
                         joinEntity = (Left $ entityName e),
-                        joinExpr = joinExpr j >>= Just . (everywhere $ (mkT $ trClassField (entityName e)) . (mkT $ trVar a a'))
+                        joinExpr = joinExpr j >>= Just . (everywhere $ (mkT $ trDropInvalidExprs) . (mkT $ trClassField (entityName e)) . (mkT $ trVar a a'))
                     }) | e <- modEntities m, className c `elem` entityInstances e
                 ]
         
@@ -88,6 +88,20 @@ trSq m sq = sq {
                     ] 
                 in if null r then e else foldl1 OrExpr r
                       
+        trueExpr = let c = (FieldExpr (Const (BoolValue True))) in BinOpExpr c Eq c
+        trDropInvalidExprs e = 
+            let  
+                me = case e of
+                    AndExpr e1 e2 -> Just (e1,e2)
+                    OrExpr e1 e2 -> Just (e1,e2)
+                    _ -> Nothing
+            in case me >>= \(e1,e2) -> Just  (validExpr e1, validExpr e2, e1, e2) of
+                    Just (True, True, _, _) -> e
+                    Just (False, True, _, e2) -> e2
+                    Just (True, False, e1, _) -> e1
+                    Just (False, False, _, _) -> trueExpr
+                    Nothing -> e
+
         validExpr e = let fs = [ (vn,fn) | SqlField (Var vn _ _) fn <- universeBi e ]
                       in all validField fs   
         validField (vn,fn) = fromMaybe False $ do
