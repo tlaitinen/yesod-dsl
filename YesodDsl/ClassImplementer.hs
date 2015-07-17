@@ -148,10 +148,16 @@ expandClassRefUniques m e u = expand [u] cFields
         expand us [] = us
         expandField f u 
             | fieldName f `elem` uniqueFields u = [ 
-                    u { uniqueFields = (uniqueFields u L.\\ [ fieldName f ] ) ++ [ fieldName f' ] }
+                    u { 
+                        uniqueName = uniqueName u ++ fieldEntityName f',
+                        uniqueFields = (uniqueFields u L.\\ [ fieldName f ] ) ++ [ fieldName f' ] 
+                    }
                     | f' <- expandClassRefFields m e f
                 ]
             | otherwise = [ u ] 
+        fieldEntityName f = case fieldContent f of
+            EntityField en -> en
+            _ -> ""
         cFields = [ f | fn <- uniqueFields u, 
                          f <- entityFields e,
                          fieldName f == fn,
