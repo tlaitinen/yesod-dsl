@@ -1,5 +1,5 @@
 data ~{className c}Instance = ~{intercalate "    | " $ map entityInstance es}
 
-data ~{className c}InstanceId = ~{intercalate "    | " $ map entityInstanceId es}
+data ~{className c}InstanceId = ~{intercalate "    | " $ map entityInstanceId es}    deriving (Eq, Ord)
 
 instance ~{className c} ~{className c}Instance where
