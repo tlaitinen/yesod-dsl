@@ -141,12 +141,31 @@ expandClassRefFields m e f = expand (fieldContent f)
             Nothing -> [f]
         expand _ = [f]                           
             
+expandClassRefUniques :: Module -> Entity -> Unique -> [Unique]           
+expandClassRefUniques m e u = expand [u] cFields
+    where
+        expand us (f:fs) = expand (concatMap (expandField f) us) fs
+        expand us [] = us
+        expandField f u 
+            | fieldName f `elem` uniqueFields u = [ 
+                    u { uniqueFields = (uniqueFields u L.\\ [ fieldName f ] ) ++ [ fieldName f' ] }
+                    | f' <- expandClassRefFields m e f
+                ]
+            | otherwise = [ u ] 
+        cFields = [ f | fn <- uniqueFields u, 
+                         f <- entityFields e,
+                         fieldName f == fn,
+                         isClassField m f ]
+         
+isClassField :: Module -> Field -> Bool
+isClassField m (Field _ _ _ _ (EntityField iName) _) = iName `elem` (map className $ modClasses m)
+isClassField _ _ = False
 implInEntity :: Module -> [Class] -> Entity -> Entity
 implInEntity m classes' e = e { 
         entityFields  = concatMap (expandClassRefFields m e) $ 
                             entityFields e ++ extraFields,
-        entityClassFields = filter isClassField $ entityFields e,
-        entityUniques = entityUniques e ++ (map addEntityNameToUnique $ concatMap classUniques validClasses)
+        entityClassFields = filter (isClassField m) $ entityFields e,
+        entityUniques = concatMap (expandClassRefUniques m e) $ entityUniques e ++ (map addEntityNameToUnique $ concatMap classUniques validClasses)
     }
     where
         instances = entityInstances e
@@ -159,8 +178,6 @@ implInEntity m classes' e = e {
         maybeCompare Nothing Nothing = Prelude.EQ
         validClasses = mapMaybe (classLookup classes) $ entityInstances e
         extraFields = concatMap classFields validClasses
-        isClassField (Field _ _ _ _ (EntityField iName) _) = iName `elem` (map className $ modClasses m)
-        isClassField _ = False
         addEntityNameToUnique (Unique name fields) = Unique (entityName e ++ name) fields
         
     
