@@ -114,16 +114,16 @@ classLookup classes name =  find (\i -> name == className i) classes
 
 
 expandClassField :: Module -> ClassName -> Entity ->  Field -> [Field]
-expandClassField m cn e f@(Field _ _ internal _ (EntityField iName) _) 
+expandClassField m cn e f@(Field _ _ _ (EntityField iName) opts _) 
     | not $ fieldOptional f = error $ show (entityLoc e) ++ ": non-maybe reference to class not allowed"
     | otherwise = [ mkField re | re <- modEntities m,  
                                  iName `elem` (entityInstances re) ]
     where mkField re = Field {
             fieldLoc = fieldLoc f,
             fieldOptional = True,
-            fieldInternal = internal,
             fieldName = lowerFirst (entityName re) ++ upperFirst (fieldName f),
             fieldContent = EntityField (entityName re),
+            fieldOptions = opts,
             fieldClassName = Just (cn, fieldName f)
         } 
 expandClassField _ _ _ _ = []
@@ -164,7 +164,7 @@ expandClassRefUniques m e u = expand [u] cFields
                          isClassField m f ]
          
 isClassField :: Module -> Field -> Bool
-isClassField m (Field _ _ _ _ (EntityField iName) _) = iName `elem` (map className $ modClasses m)
+isClassField m (Field _ _ _ (EntityField iName) _ _) = iName `elem` (map className $ modClasses m)
 isClassField _ _ = False
 implInEntity :: Module -> [Class] -> Entity -> Entity
 implInEntity m classes' e = e { 

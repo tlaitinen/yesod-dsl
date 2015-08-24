@@ -42,6 +42,7 @@ import Data.List
     semicolon  { Tk _ TSemicolon }
     hash        { Tk _ THash }
     equals { Tk _ TEquals }
+    sql { Tk _ TSql }
     concatop { Tk _ TConcatOp }
     ne { Tk _ TNe }
     lt { Tk _ TLt }
@@ -234,7 +235,7 @@ uniqueUpperId: uniqueUpperIdTk { tkString $1 }
 enumValues : uniqueUpperId { [$1] }
           | enumValues pipe uniqueUpperId { $3 : $1 }
     
-entityDef : entity upperIdTk lbrace 
+entityDef : entity upperIdTk maybeTableName lbrace 
             pushScope
             maybeInstances
             fields
@@ -246,10 +247,13 @@ entityDef : entity upperIdTk lbrace
     do
         l <- mkLoc $2
         let n = tkString $2
-        let e = Entity l n $5 (reverse $6) [] (reverse $7) $8 (reverse $9) 
+        let e = Entity l n $3 $6 (reverse $7) [] (reverse $8) $9 (reverse $10) 
         declareGlobal l n (SEntity n)
         return e
     }
+
+maybeTableName: sql stringval { Just $2 }
+              | { Nothing }
 
 routeDef : 
     route 
@@ -766,53 +770,37 @@ popScope: {% popScope }
 fields : { [] }
               | fields field semicolon { $2 : $1 }
  
-field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions fieldFlags popScope {%
+field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions popScope {%
         do
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $6) n (NormalField $4 (reverse $5)) Nothing 
+            let f = Field l $2 n (NormalField $4) $5 Nothing 
             declare l n (SField f)
             return f
         } 
-      | lowerIdTk maybeMaybe entityId fieldFlags {% 
+      | lowerIdTk maybeMaybe entityId pushScope fieldOptions popScope {% 
         do
             l <- mkLoc $1
             let n = tkString $1
             l3 <- mkLoc $3
             let s3 = tkString $3
-            let f = Field l $2 (FieldInternal `elem` $4) n (EntityField s3) Nothing
+            let f = Field l $2 n (EntityField s3) $5 Nothing
             withGlobalSymbol l3 s3 requireEntityOrClass
             declare l n (SField f)
             return f}
-      | lowerIdTk maybeMaybe enumFieldContent fieldFlags {%
+      | lowerIdTk maybeMaybe upperIdTk pushScope fieldOptions popScope {%
         do  
             l <- mkLoc $1
             let n = tkString $1
-            let f = Field l $2 (FieldInternal `elem` $4) n $3 Nothing
+
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            withGlobalSymbol l3 s3 requireEnum
+            let f = Field l $2 n (EnumField s3) $5 Nothing
             declare l n (SField f)
             return f
             }
 
-enumFieldContent: 
-    upperIdTk default upperIdTk {%
-        do
-            l1 <- mkLoc $1
-            let s1 = tkString $1
-            withGlobalSymbol l1 s1 requireEnum
-            l3 <- mkLoc $3
-            let s3 = tkString $3
-            withGlobalSymbol l1 s1 $ requireEnumValue l3 s3
-            return $ EnumField s1 (Just s3)
-        } 
-    | upperIdTk {% 
-        do
-            l1 <- mkLoc $1
-            let s1 = tkString $1
-            withGlobalSymbol l1 s1 requireEnum
-            return $ EnumField s1 Nothing
-    }
-
-        
 
 fieldOptions : { [] }
              | pushScope fieldOptionsList popScope { $2 }
@@ -825,19 +813,35 @@ fieldOption : check lowerIdTk {%
             withSymbol l2 s2 requireFunction
             return $ FieldCheck s2
     }
-            | default value {%
+    | sql stringval {%
+        do
+            l <- mkLoc $1
+            declare l "sql column name" SReserved
+            return $ FieldColumnName $2
+    }
+    | default value {%
         do
             l <- mkLoc $1
             declare l "default value" SReserved
             return $ FieldDefault $2 
     }
+    | default upperIdTk {%
+        do 
+            l1 <- mkLoc $1
+            declare l1 "default value" SReserved
+            l2 <- mkLoc $2
+            -- TODO: validate enum default values
+            return $ FieldDefault (StringValue (tkString $2))
+             
+    }
+    | internal {% 
+        do
+            l <- mkLoc $1
+            declare l "internal field" SReserved
+            return $ FieldInternal
+    }
 
-fieldFlags : { [] }
-           | fieldFlagList { $1 }
-fieldFlagList : fieldFlag { [$1] }
-              | fieldFlagList fieldFlag { $2 : $1 }
-fieldFlag : internal { FieldInternal }              
-            
+           
 value : stringval { StringValue $1 }
       | intval { IntValue $1 }
       | floatval { FloatValue $1 }
@@ -909,7 +913,6 @@ data ModDef = EntityDef Entity
            | RouteDef Route
            deriving (Show)
 
-data FieldFlag = FieldInternal deriving (Eq)
 getEntities :: [ModDef] -> [Entity]
 getEntities defs = mapMaybe (\d -> case d of (EntityDef e) -> Just e ; _ -> Nothing) defs
 

@@ -142,10 +142,10 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
               ]
         jsonFieldReferences fc = case fc of
             EntityField en -> toJSON en
-            EnumField en _ -> toJSON en
+            EnumField en -> toJSON en
             _ -> Null
         jsonFieldType fc = case fc of
-            NormalField ft _ -> case ft of
+            NormalField ft -> case ft of
                 FTWord32 -> "integer"
                 FTWord64 -> "integer"
                 FTInt32 -> "integer"
@@ -159,7 +159,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                 FTUTCTime -> "utctime"
                 FTCheckmark -> "boolean"
             EntityField _ -> "integer"
-            EnumField _ _ -> ("string" :: String)
+            EnumField _ -> ("string" :: String)
  
         fieldValueJson fv = Just $ case fv of
             StringValue s -> toJSON s

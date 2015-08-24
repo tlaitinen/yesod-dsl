@@ -19,7 +19,7 @@ classDefField :: Class -> Field -> String
 classDefField c cf = T.unpack $(codegenFile "codegen/class-field.cg")
     where
         f = case cf of
-            Field _ _ _ _ (EntityField "ClassInstance") _ -> cf {
+            Field _ _ _ (EntityField "ClassInstance") _ _ -> cf {
                 fieldContent = EntityField (className c ++ "Instance")
             }
             _ -> cf
@@ -38,7 +38,7 @@ classInstanceField :: Class -> Entity -> Field -> String
 classInstanceField c e f = T.unpack $(codegenFile "codegen/class-instance-field.cg")
     where
         mapper = case f of
-            Field _ opt _ _ (EntityField "ClassInstance") _ -> 
+            Field _ opt _ (EntityField "ClassInstance") _ _ -> 
                 let base = className c ++ "Instance" ++ entityName e ++ "Id"
                     in if opt
                         then "(fmap " ++ base ++ ") . "
@@ -54,7 +54,7 @@ classEntityInstanceField c es f = T.unpack $(codegenFile "codegen/class-entity-i
     where   
         caseEntity e = T.unpack $(codegenFile "codegen/class-entity-instance-field-entity.cg")
         mapper e = case f of
-            Field _ opt _ _ (EntityField "ClassInstance") _ -> 
+            Field _ opt _ (EntityField "ClassInstance") _ _  -> 
                 let base = className c ++ "Instance" ++ entityName e ++ "Id"
                     in if opt
                         then "(fmap " ++ base ++ ") $ "
@@ -73,7 +73,7 @@ classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instanc
 classSelectFilterDataType :: Class -> String
 classSelectFilterDataType c = T.unpack $(codegenFile "codegen/class-select-filter-data-type.cg")
     where 
-        fieldFilterDataType (Field _ _ _ _ (EntityField "ClassInstance") _) = Nothing
+        fieldFilterDataType (Field _ _ _ (EntityField "ClassInstance") _ _) = Nothing
         fieldFilterDataType f = Just $ rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-data-type-field.cg")
 
 classSelect :: Class -> [Entity] -> String
@@ -90,7 +90,7 @@ classSelect c es = maybeFilterDataType
             then classSelectFilterDataType c
             else ""
         maybeFilterParam = if hasClassFields then "filters" :: String else ""
-        filterField _ (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
+        filterField _ (Field _ _ _ (EntityField "ClassInstance") _  _) = ""
         filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
         maybeFilterType = if hasClassFields then rstrip $ T.unpack $(codegenFile "codegen/class-select-filter-type.cg") else ""
 
@@ -103,14 +103,14 @@ classUpdate c es
     where
         hasClassFields = not . null $ classFields c
         updateEntity e = T.unpack $(codegenFile "codegen/class-update-entity.cg")
-        fieldUpdateDataType (Field _ _ _ _ (EntityField "ClassInstance") _) = Nothing
+        fieldUpdateDataType (Field _ _ _ (EntityField "ClassInstance") _ _) = Nothing
         fieldUpdateDataType f = Just $ rstrip $ T.unpack $(codegenFile "codegen/class-update-data-type-field.cg")
-        updateEntityField _ (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
+        updateEntityField _ (Field _ _ _ (EntityField "ClassInstance") _ _) = ""
         updateEntityField e f = T.unpack $(codegenFile "codegen/class-update-entity-field.cg")
         maybeFilter e = if hasClassFields
             then T.unpack $(codegenFile "codegen/class-select-entity-filter.cg")
             else ""
-        filterField _ (Field _ _ _ _ (EntityField "ClassInstance") _) = ""
+        filterField _ (Field _ _ _ (EntityField "ClassInstance") _ _) = ""
         filterField e f = T.unpack $(codegenFile "codegen/class-select-entity-filter-field.cg")
         
 instancesOf :: Module -> Class -> [Entity]
@@ -131,7 +131,7 @@ entityClassFieldWrappers :: Module -> Entity -> String
 entityClassFieldWrappers m e = concatMap fieldWrapper (entityClassFields e) 
                              ++ concatMap classInstanceFieldClass classInstanceFields
     where
-        fieldWrapper f@(Field _ _ _ _ (EntityField cName) _) = case find (\c -> className c == cName) $ modClasses m of
+        fieldWrapper f@(Field _ _ _ (EntityField cName) _ _) = case find (\c -> className c == cName) $ modClasses m of
             Just c ->  T.unpack $(codegenFile "codegen/entity-class-field-wrapper.cg")
             Nothing -> ""
         fieldWrapper _ = ""

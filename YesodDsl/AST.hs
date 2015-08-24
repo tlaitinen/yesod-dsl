@@ -6,6 +6,7 @@ import Data.List
 import Data.Char
 import Data.Data (Data)
 import Data.Typeable (Typeable)
+import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
 
 
@@ -181,6 +182,7 @@ data Handler = Handler {
 data Entity = Entity {
     entityLoc        :: Location,
     entityName       :: String,
+    entityTable      :: Maybe String,
     entityInstances :: [ClassName],
     entityFields     :: [Field],
     entityClassFields :: [Field],
@@ -254,25 +256,30 @@ data Class = Class {
 
 type DefaultValue = String
 type IsListFlag = Bool
-data FieldContent = NormalField FieldType [FieldOption]
+data FieldContent = NormalField FieldType 
                     | EntityField EntityName 
-                    | EnumField EnumName (Maybe EnumValue)
+                    | EnumField EnumName 
                 deriving (Show,Eq, Data, Typeable)
    
 
 data Field = Field {
     fieldLoc       :: Location,
     fieldOptional  :: Bool,
-    fieldInternal  :: Bool,
     fieldName      :: FieldName,
     fieldContent   :: FieldContent,
+    fieldOptions   :: [FieldOption],
     fieldClassName :: Maybe (ClassName,FieldName)
 } deriving (Show,Eq, Data, Typeable)
 
+fieldInternal :: Field -> Bool
+fieldInternal = (FieldInternal `elem`) . fieldOptions
 
 data FieldOption = FieldCheck FunctionName
                  | FieldDefault FieldValue
+                 | FieldColumnName FieldName
+                 | FieldInternal
                  deriving (Show, Eq, Data, Typeable)
+
 
 data FieldValue = StringValue String
                 | IntValue Int
@@ -321,24 +328,15 @@ fieldValueToHs fv = case fv of
 
 
         
-fieldOptions :: Field -> [FieldOption]
-fieldOptions f = fieldContentOptions (fieldContent f)
-    where fieldContentOptions (NormalField  _ options) = options
-          fieldContentOptions (EnumField en (Just ev)) = [ FieldDefault (EnumFieldValue en ev) ]
-          fieldContentOptions _ = []
-    
+   
 fieldDefault :: Field -> Maybe FieldValue
-fieldDefault f = case find isDefault (fieldOptions f) of
-    Just (FieldDefault fv) -> Just fv
-    _ -> Nothing
-    where isDefault (FieldDefault _) = True
-          isDefault _  = False
+fieldDefault f = listToMaybe [ fv | FieldDefault fv <- universeBi f ]
+
+fieldColumnName :: Field -> Maybe FieldName
+fieldColumnName f = listToMaybe [ cn | FieldColumnName cn <- universeBi f ]
 
 fieldChecks :: Field -> [FunctionName]
-fieldChecks f = map (\(FieldCheck func) -> func) $ filter isCheck (fieldOptions f)
-    where isCheck (FieldCheck _) = True
-          isCheck _ = False
-
+fieldChecks f = [ func | FieldCheck func <- universeBi f ]
 
 lookupField :: Entity -> FieldName -> Maybe Field         
 lookupField e fn = find ((==fn) . fieldName) $ entityFields e

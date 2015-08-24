@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module YesodDsl.Generator.Models where
 import YesodDsl.AST
+import Data.Maybe
 import qualified Data.Text as T
 import Data.List
 import Text.Shakespeare.Text hiding (toText)
@@ -34,9 +35,9 @@ fieldTypeToHsType ft = case ft of
 
 baseFieldType :: Field -> String
 baseFieldType f = case fieldContent f of
-    (NormalField ft _) -> fieldTypeToHsType ft
+    (NormalField ft) -> fieldTypeToHsType ft
     (EntityField en) -> en ++ "Id"
-    (EnumField en _) -> en
+    (EnumField en) -> en
 
 
 persistFieldType :: Field -> String
@@ -45,13 +46,17 @@ persistFieldType f = baseFieldType f
                    ++ (maybeDefault . fieldDefault) f
                    ++ (maybeDefaultNull f)
                    ++ (maybeCheckmarkNullable $ fieldContent f)
+                   ++ (maybeColumnName . fieldColumnName) f 
     where 
           maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
-          maybeDefaultNull (Field _ True _ _ (EntityField _) _) = " default=NULL"
+          maybeDefaultNull (Field _ True _ (EntityField _) _ _) = " default=NULL"
           maybeDefaultNull _ = ""
-          maybeCheckmarkNullable (NormalField FTCheckmark _) = " nullable"
+          maybeCheckmarkNullable (NormalField FTCheckmark) = " nullable"
           maybeCheckmarkNullable _ = ""
+          maybeColumnName (Just cn) =" \"sql=" ++ cn ++ "\""
+          maybeColumnName Nothing = ""
+
 
 
 
@@ -88,7 +93,10 @@ model e = T.unpack $(codegenFile "codegen/model-header.cg")
         ++ (concatMap modelField (entityFields e))
         ++ (concatMap modelUnique (entityUniques e)) 
         ++ (concatMap modelDeriving (entityDeriving e))
-
+    where
+        maybeEntityTableName
+            | isJust $ entityTable e = " \"sql=" ++ (fromJust $ entityTable e) ++ "\""
+            | otherwise = ""
 models :: Module -> String
 models m = T.unpack $(codegenFile "codegen/models-header.cg")
          ++ (concatMap model (modEntities m))

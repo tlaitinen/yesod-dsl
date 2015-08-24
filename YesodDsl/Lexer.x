@@ -88,6 +88,7 @@ tokens :-
     "Nothing" { mkT TNothing }
     "TimeOfDay" { mkT TTimeOfDay }
     "UTCTime" { mkT TUTCTime }
+    "sql" { mkT TSql }
     "default-filter-sort" { mkT TDefaultFilterSort }
     "param" { mkT TParam }
     "if" { mkT TIf }
@@ -254,6 +255,7 @@ data TokenType = TSemicolon
            | TCheckmark
            | TCheckmarkActive
            | TCheckmarkInactive
+           | TSql
 
     deriving (Show)
 
