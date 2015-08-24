@@ -27,6 +27,7 @@ fieldTypeToHsType ft = case ft of
     FTText -> "Text"
     FTBool -> "Bool"
     FTDouble -> "Double"
+    FTRational -> "Rational"
     FTTimeOfDay -> "TimeOfDay"
     FTDay -> "Day"
     FTUTCTime -> "UTCTime"

@@ -81,6 +81,7 @@ tokens :-
     "Text" { mkT TText }
     "Bool" { mkT TBool }
     "Double" { mkT TDouble }
+    "Rational" { mkT TRational }
     "Maybe" { mkT TMaybe }
     "Day" { mkT TDay }
     "True" { mkT TTrue }
@@ -193,6 +194,7 @@ data TokenType = TSemicolon
            | TText
            | TBool
            | TDouble
+           | TRational
            | TMaybe
            | TTimeOfDay
            | TDay

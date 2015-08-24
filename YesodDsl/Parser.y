@@ -72,6 +72,7 @@ import Data.List
     text { Tk _ TText }
     bool { Tk _ TBool }
     double { Tk _ TDouble }
+    rational { Tk _ TRational }
     timeofday { Tk _ TTimeOfDay }
     day { Tk _ TDay }
     utctime { Tk _ TUTCTime }
@@ -788,18 +789,25 @@ field : lowerIdTk maybeMaybe pushScope fieldType fieldOptions popScope {%
             withGlobalSymbol l3 s3 requireEntityOrClass
             declare l n (SField f)
             return f}
-      | lowerIdTk maybeMaybe upperIdTk pushScope fieldOptions popScope {%
+      | lowerIdTk maybeMaybe pushScope declareEnumName fieldOptions popScope {%
         do  
             l <- mkLoc $1
             let n = tkString $1
 
-            l3 <- mkLoc $3
-            let s3 = tkString $3
-            withGlobalSymbol l3 s3 requireEnum
-            let f = Field l $2 n (EnumField s3) $5 Nothing
+            l4 <- mkLoc $4
+            let s4 = tkString $4
+            withGlobalSymbol l4 s4 requireEnum
+            let f = Field l $2 n (EnumField s4) $5 Nothing
             declare l n (SField f)
             return f
             }
+declareEnumName: upperIdTk {%
+    do
+        l <- mkLoc $1
+        declare l "enum name" (SEnumName $ tkString $1)
+        return $1
+                
+    }
 
 
 fieldOptions : { [] }
@@ -830,8 +838,15 @@ fieldOption : check lowerIdTk {%
             l1 <- mkLoc $1
             declare l1 "default value" SReserved
             l2 <- mkLoc $2
-            -- TODO: validate enum default values
-            return $ FieldDefault (StringValue (tkString $2))
+            let s2 = tkString $2
+
+            men <- withSymbolNow Nothing l2 ("enum name") $ requireEnumName $ \en -> return $ Just en
+      
+            case men of
+                Just en -> do
+                    withSymbol l2 en $ requireEnumValue l2 s2
+                    return $ FieldDefault $ EnumFieldValue en s2
+                Nothing -> return $ FieldDefault (StringValue s2)
              
     }
     | internal {% 
@@ -897,6 +912,7 @@ fieldType:
     | text      { FTText }
     | bool      { FTBool }
     | double    { FTDouble }
+    | rational  { FTRational }
     | timeofday { FTTimeOfDay }
     | day       { FTDay }
     | utctime   { FTUTCTime }

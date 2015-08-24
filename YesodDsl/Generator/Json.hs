@@ -154,6 +154,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                 FTText -> "string"
                 FTBool -> "boolean"
                 FTDouble -> "number"
+                FTRational -> "number"
                 FTTimeOfDay -> "timeofday"
                 FTDay -> "day"
                 FTUTCTime -> "utctime"

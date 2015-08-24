@@ -11,6 +11,7 @@ module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     getEntitySymbol,
     symbolMatches,
     requireClass, 
+    requireEnumName,
     requireEntity,
     requireEntityResult,
     requireEntityOrClass,
@@ -40,6 +41,7 @@ import Data.Maybe
 import System.IO
 
 data SymType = SEnum EnumType
+             | SEnumName EnumName
              | SClass Class
              | SEntity EntityName
              | SEntityResult EntityName
@@ -57,6 +59,7 @@ data SymType = SEnum EnumType
 instance Show SymType where
     show st = case st of
         SEnum _  -> "enum"
+        SEnumName _ -> "enum name"
         SClass _   -> "class"
         SEntity _  -> "entity"
         SEntityResult _ -> "get-entity"
@@ -319,6 +322,7 @@ getEntitySymbol :: Location -> Location -> SymType -> ParserMonad (Maybe EntityN
 getEntitySymbol _ _ (SEntity en) = return $ Just en
 getEntitySymbol _ _ _ = return Nothing
 
+
 symbolMatches :: String -> (SymType -> Bool) -> ParserMonad Bool
 symbolMatches n f = do
     syms <- gets psSyms
@@ -355,6 +359,13 @@ requireEntityId :: (EntityName -> ParserMonad (Maybe a)) -> (Location -> Locatio
 requireEntityId f = f'
     where f' _ _ (SEntityId en) = f en
           f' l1 l2 st = pError l1 ("Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected entity id)") >> return Nothing
+
+requireEnumName :: (EntityName -> ParserMonad (Maybe a)) -> (Location -> Location -> SymType -> ParserMonad (Maybe a))
+requireEnumName f = f'
+    where f' _ _ (SEnumName en) = f en
+          f' l1 l2 st = pError l1 ("Reference to " ++ show st ++ " declared in " ++ show l2 ++ " (expected enum name)") >> return Nothing
+
+
 
 requireEntityField :: Location -> FieldName -> ((Entity,Field) -> ParserMonad ()) -> (Location -> Location -> SymType -> ParserMonad ())
 requireEntityField l fn fun = fun'
