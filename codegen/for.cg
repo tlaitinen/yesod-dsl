@@ -1,2 +1,2 @@
-        forM_ (~{ifr}) $ \result_~{vn} -> do
+        forM_ (~{ifr} :: [_]) $ \result_~{vn} -> do
 ~{indent 12 $ content}
