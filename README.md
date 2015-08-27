@@ -178,10 +178,10 @@ entity {}-block has the following structure where square brackets []  denote an 
 value and the asterisk * means that the element can be repeated:
 
 ```
-entity EntityName {
+entity EntityName [sql "table name"] {
     [instance of ClassName [, ClassName]*;]
 
-    [fieldName [Maybe] FieldType [default defaultValue] [check functionName]* [internal];]*
+    [fieldName [Maybe] FieldType [default defaultValue] [sql "table-column-name"] [json "json-field-name"] [check functionName]* [internal];]*
     
     [unique UniqueName fieldName [, fieldName]*;]*
 
