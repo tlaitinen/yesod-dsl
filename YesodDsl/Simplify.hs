@@ -37,10 +37,16 @@ simplify m = everywhere ((mkT sHandler) . (mkT sValExpr) . (mkT sBoolExpr)
         lookupEntity en = L.find ((==en) . entityName) $ modEntities m
         mapEntityRef l@(Left en) = fromMaybe l $ lookupEntity en >>= Just . Right
         mapEntityRef x = x    
+        expand sq (SelectField vr@(Var vn _ _) fn Nothing) = fromMaybe [] $ do
+            (e,_) <- Map.lookup vn $ sqAliases sq
+            Just $ [ 
+                    SelectField vr fn (Just $ fieldJsonName f)
+                    | f <- entityFields e, fieldName f == fn
+                ]
         expand sq (SelectAllFields (Var vn _ _)) = fromMaybe [] $ do
             (e,_) <- Map.lookup vn $ sqAliases sq
             Just $ [
-                    SelectField (Var vn (Left "") False) (fieldName f) Nothing
+                    SelectField (Var vn (Left "") False) (fieldName f) (Just $ fieldJsonName f) 
                     | f <- entityFields e, fieldInternal f == False
                 ]
         expand _ x = [x]         

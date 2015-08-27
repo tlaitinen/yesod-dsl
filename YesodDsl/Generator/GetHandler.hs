@@ -27,9 +27,9 @@ ctxFields :: SelectQuery -> Reader Context [(Entity, VariableName, Field, Variab
 ctxFields sq = do
     names <- asks ctxNames
     let fields = [ (e,vn,f,mf) | (vn,(e,mf)) <- Map.toList names, f <- entityFields e, fieldInternal f == False ]
-        usage = Map.fromListWith (+) [ (fieldName f,1::Int) | (_,_,f,_) <- fields ]
+        usage = Map.fromListWith (+) [ (fieldJsonName f,1::Int) | (_,_,f,_) <- fields ]
     return $ [
-            (e,vn,f,if Map.findWithDefault 1 (fieldName f) usage == 1 || vn == fromVn then fieldName f else vn ++ "." ++ fieldName f,mf)
+            (e,vn,f,if Map.findWithDefault 1 (fieldJsonName f) usage == 1 || vn == fromVn then fieldJsonName f else vn ++ "." ++ fieldJsonName f,mf)
             | (e,vn,f,mf) <- fields 
         ]    
         where
