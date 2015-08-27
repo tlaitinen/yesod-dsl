@@ -43,6 +43,7 @@ import Data.List
     hash        { Tk _ THash }
     equals { Tk _ TEquals }
     sql { Tk _ TSql }
+    jsonTk { Tk _ TJson }
     concatop { Tk _ TConcatOp }
     ne { Tk _ TNe }
     lt { Tk _ TLt }
@@ -826,6 +827,12 @@ fieldOption : check lowerIdTk {%
             l <- mkLoc $1
             declare l "sql column name" SReserved
             return $ FieldColumnName $2
+    }
+    | jsonTk stringval {%
+        do
+            l <- mkLoc $1
+            declare l "json field name" SReserved
+            return $ FieldJsonName $2
     }
     | default value {%
         do

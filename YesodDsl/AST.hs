@@ -174,7 +174,7 @@ data CheckmarkValue = Active | Inactive
 data SortDir = SortAsc | SortDesc deriving (Show, Eq, Data, Typeable)                   
 
 data Handler = Handler {
-    handlerLoc	  :: Location,
+    handlerLoc  :: Location,
     handlerType   :: HandlerType,
     handlerStmts :: [Stmt] 
 } deriving (Show, Eq, Data, Typeable)
@@ -274,9 +274,13 @@ data Field = Field {
 fieldInternal :: Field -> Bool
 fieldInternal = (FieldInternal `elem`) . fieldOptions
 
+fieldJsonName :: Field -> FieldName
+fieldJsonName f = fromMaybe (fieldName f) $ listToMaybe [ fn | FieldJsonName fn <- universeBi f ]
+
 data FieldOption = FieldCheck FunctionName
                  | FieldDefault FieldValue
                  | FieldColumnName FieldName
+                 | FieldJsonName FieldName
                  | FieldInternal
                  deriving (Show, Eq, Data, Typeable)
 

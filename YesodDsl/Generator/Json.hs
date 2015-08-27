@@ -134,7 +134,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                     _ -> Null
                   
         fieldJson f = object [
-                "name" .= fieldName f,
+                "name" .= fieldJsonName f,
                 "optional" .= fieldOptional f,
                 "default" .= (fieldDefault f >>= fieldValueJson),
                 "references" .= (jsonFieldReferences $ fieldContent f),

@@ -90,6 +90,7 @@ tokens :-
     "TimeOfDay" { mkT TTimeOfDay }
     "UTCTime" { mkT TUTCTime }
     "sql" { mkT TSql }
+    "json" { mkT TJson }
     "default-filter-sort" { mkT TDefaultFilterSort }
     "param" { mkT TParam }
     "if" { mkT TIf }
@@ -258,6 +259,7 @@ data TokenType = TSemicolon
            | TCheckmarkActive
            | TCheckmarkInactive
            | TSql
+           | TJson
 
     deriving (Show)
 
