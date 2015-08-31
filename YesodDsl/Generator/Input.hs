@@ -17,6 +17,7 @@ inputFieldRef (LocalParamField (Var vn (Right e) _) fn) = let en = entityName e 
            
 inputFieldRef (PathParam i) = T.unpack $(codegenFile "codegen/input-field-path-param.cg")
 inputFieldRef (RequestField pn) = rstrip $ T.unpack $(codegenFile "codegen/input-field-normal.cg")
+inputFieldRef (Const fv) = fieldValueToHs fv
 inputFieldRef ifr = show ifr
 
 getJsonAttrs :: Stmt -> [FieldName]
