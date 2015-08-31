@@ -164,7 +164,7 @@ exprMaybeLevel ve = case ve of
     ValBinOpExpr e1 _ e2 -> max (exprMaybeLevel e1) (exprMaybeLevel e2)
     FloorExpr e -> exprMaybeLevel e
     CeilingExpr e -> exprMaybeLevel e
-    ExtractExpr _ e -> exprMaybeLevel e
+    ExtractExpr _ e -> 0
     SubQueryExpr sq -> fromMaybe 0 $ listToMaybe $ map exprMaybeLevel $ concatMap (selectFieldExprs) $ sqFields sq
     _ -> 0
 exprReturnType :: ValExpr -> Maybe String
