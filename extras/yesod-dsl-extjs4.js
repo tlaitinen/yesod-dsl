@@ -1,5 +1,5 @@
 // requires underscore.js
-var yesodDsl = function(defs, strings, config) {
+var yesodDsl = function(defs, strings, config, onReady) {
     var formItemXtypes = {
         'integer': 'numberfield',
         'number': 'numberfield',
@@ -149,6 +149,15 @@ var yesodDsl = function(defs, strings, config) {
     function gridWidgetName(routeName, gridCfg) {
         return gridCfg.widget || (routeName + 'list');
     }
+    function gridClsName(routeName, gridCfg) {
+        return config.name + '.view.' + routeName + '.' + gridWidgetName(routeName, gridCfg);
+    }
+    function formWidgetName(routeName, formCfg) {
+        return formCfg.widget || (routeName + 'form');
+    }
+    function formClsName(routeName, formCfg) {
+        return config.name + '.view.' + routeName + '.' + formWidgetName(routeName, formCfg);
+    }
     function refreshGrids(routeName) {
         var reloaded = [];
         var routeCfg = config.routes[routeName] || {};
@@ -215,6 +224,15 @@ var yesodDsl = function(defs, strings, config) {
 
             if ('height' in itemCfg)
                 res.height = itemCfg.height;
+            if ('readOnly' in itemCfg)
+                res.readOnly = itemCfg.readOnly;
+            if ('extra' in itemCfg) {
+                for (var prop in itemCfg.extra) {
+                    if (itemCfg.extra.hasOwnProperty(prop)) {
+                        res[prop] = itemCfg.extra[prop];
+                    }
+                }
+            }
 
             if (field.type == "boolean")
                 res.inputValue = true;
@@ -409,6 +427,7 @@ var yesodDsl = function(defs, strings, config) {
 
         }
     }
+    
     defs.enums.forEach(function (e) {
 
 
@@ -471,6 +490,8 @@ var yesodDsl = function(defs, strings, config) {
         }
 
     });
+    var deferreds = {};
+
     defs.routes.forEach(function (r) {
 
         var info = routeInfo(r),
@@ -480,9 +501,24 @@ var yesodDsl = function(defs, strings, config) {
             modelName = config.name + '.model.' + name,
             storeName = config.name + '.store.' + name,
             comboName = config.name + '.view.' + name + '.Combo';
+        [proxyName, modelName, storeName, comboName].forEach(function (n) { deferreds[n] = $.Deferred(); });
+       
+
+
         r.handlers.forEach(function (h) {
            
             var routeCfg = config.routes[name] || {};
+
+            // grids on demand by config
+            var grids = routeCfg.grids || [],
+                forms = routeCfg.forms || [];
+            grids.forEach(function(gridCfg) {
+                deferreds[gridClsName(name, gridCfg)] = $.Deferred();
+            });
+            forms.forEach(function (formCfg) {
+                deferreds[formClsName(name, formCfg)] = $.Deferred();
+            });
+
 
             // create models and stores for GET handlers without parameters  
             if (h.type == "GET" && r.path.length == 1 && r.path[0].type == "string") {
@@ -518,9 +554,11 @@ var yesodDsl = function(defs, strings, config) {
                             return this.applyEncoding(min);
                         }
                 }, function(proxyCls) {
+                    deferreds[proxyName].resolve();
                     var proxy = Ext.create(proxyCls);
 
                     defineModel(modelName, h.outputs, proxy, function(model) {
+                        deferreds[modelName].resolve();
                         Ext.define(storeName, {
                             extend: 'Ext.data.Store',
                             model: modelName,
@@ -529,6 +567,7 @@ var yesodDsl = function(defs, strings, config) {
                             remoteSort: true,
                             proxy: proxy
                         }, function(storeClass) {
+                            deferreds[storeName].resolve();
                             Ext.data.StoreManager.register(storeClass);
 
 
@@ -555,16 +594,19 @@ var yesodDsl = function(defs, strings, config) {
                                     emptyText: translate(name + 'combo.emptyText'),
                                     myStore: storeName,
                                     getFilters: comboCfg.getFilters
+                                }, function (comboCls) {
+                                    deferreds[comboName].resolve();
                                 });
                             } 
 
                             var globalStore = createStore(storeClass, name);
-                            // grids on demand by config
-                            var grids = routeCfg.grids || [],
-                                forms = routeCfg.forms || [];
 
 
                             grids.forEach(function(gridCfg) {
+
+                                var widgetName = gridWidgetName(name, gridCfg);
+                                var listName  = config.name + '.view.' + name + '.' + widgetName;
+
                                 var store = undefined;
                                 if (gridCfg.globalStore == true) {
                                     store = globalStore;
@@ -581,8 +623,6 @@ var yesodDsl = function(defs, strings, config) {
                                             comparison: f.op ? f.op : "eq" 
                                         }), false)
                                 });
-                                var widgetName = gridWidgetName(name, gridCfg);
-                                var listName  = config.name + '.view.' + name + '.' + widgetName;
                                 Ext.define(listName, {
                                     extend: 'Ext.grid.Panel',
                                     alias: 'widget.' + widgetName,
@@ -751,6 +791,8 @@ var yesodDsl = function(defs, strings, config) {
                                         }
                                         return toolbar;
                                     })()
+                                }, function (listCls) {
+                                    deferreds[listName].resolve();
                                 });
                             });
 
@@ -759,8 +801,8 @@ var yesodDsl = function(defs, strings, config) {
                                 entityRouteInfo = entityName ? routeInfo(entityRoute) : undefined;
                             forms.forEach(function (formCfg) {
 
-                                var widgetName = formCfg.widget || (name + 'form');
-                                var formName  = config.name + '.view.' + name + '.' + widgetName;
+                                var widgetName = formWidgetName(name, formCfg);
+                                var formName  = formClsName(name, formCfg);
 
                                 var tabItems = _.map((formCfg.tabs || []), function (tabCfg) {
                                     return {
@@ -872,6 +914,8 @@ var yesodDsl = function(defs, strings, config) {
                                                    }),
                                     items: items
 
+                                }, function (formCls) {
+                                    deferreds[formName].resolve();
                                 });
 
                             });
@@ -886,7 +930,13 @@ var yesodDsl = function(defs, strings, config) {
             }
             
         });
+
     });
+    var dfs = [];
+    for (var df in deferreds) {
+        dfs.push(df);
+    }
+    $.when.apply($, dfs).then(onReady);
     return {
         createFromGrid: createFromGrid
     };
