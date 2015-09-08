@@ -223,14 +223,14 @@ var yesodDsl = function(defs, __, config, onReady) {
                     res.listeners = {
                         render: function(grid) {
                             initFormFilters(filters, grid.up('form')).forEach(function (f) {
-                                grid.store.filters.removeAtKey(f.id);
+                                grid.store.removeFilter(f.id, true);
                                 grid.store.addFilter(f, false);
                             });
                             grid.store.reload();
                         },
                         idChanged: function(grid) {
                             initFormFilters(filters, grid.up('form')).forEach(function (f) {
-                                grid.store.filters.removeAtKey(f.id);
+                                grid.store.removeFilter(f.id, true);
                                 grid.store.addFilter(f, false);
                             });
                             grid.store.reload();
@@ -301,7 +301,7 @@ var yesodDsl = function(defs, __, config, onReady) {
             var c = this;
             c.store.load(function() {
                 c.setValue(v);
-                c.store.filters.removeAtKey('id');
+                c.store.removeFilter('id', true);
 
                 if (c.getFilters) {
                     var filters = c.getFilters();
@@ -708,7 +708,7 @@ Ext.define(proxyName, {
                                                         xtype: tb.xtype,
                                                         listeners: {
                                                             select: function(combo) {
-                                                                store.filters.removeAtKey(tb.filterField);
+                                                                store.removeFilter(tb.filterField, true);
                                                                 var v = combo.getValue();
                                                                 if (v != '__EMPTY_VALUE__') {
                                                                     store.addFilter(new Ext.util.Filter({
@@ -720,8 +720,7 @@ Ext.define(proxyName, {
                                                             },
                                                             change: function(combo) {
                                                                 if (combo.getValue() == '') {
-                                                                    store.filters.removeAtKey(tb.filterField);
-                                                                    store.reload();
+                                                                    store.removeFilter(tb.filterField);
                                                                 }
                                                             }
                                                         }
@@ -739,15 +738,15 @@ Ext.define(proxyName, {
                                                     change: {
                                                         buffer: 500,
                                                         fn: function(textField) {
-                                                            store.filters.removeAtKey('query');
                                                             if (textField.getValue() != '') {
+                                                                store.removeFilter('query', true);
                                                                 store.addFilter(new Ext.util.Filter({
                                                                     id: 'query',
                                                                     property: 'query',
                                                                     value: '' + textField.getValue()
                                                                 }));
                                                             } else {
-                                                                store.reload();
+                                                                store.removeFilter('query');
                                                             }
                                                         }
                                                     }
