@@ -132,6 +132,7 @@ import Data.List
     return { Tk _ TReturn }
     require { Tk _ TRequire }
     internal { Tk _ TInternal }
+    readonly { Tk _ TReadOnly }
     underscore { Tk _ TUnderScore }
     for { Tk _ TFor }
     extract { Tk _ TExtract }
@@ -860,6 +861,12 @@ fieldOption : check lowerIdTk {%
         do
             l <- mkLoc $1
             declare l "internal field" SReserved
+            return $ FieldInternal
+    }
+    | readonly {%
+        do
+            l <- mkLoc $1
+            declare l "readonly field" SReserved
             return $ FieldInternal
     }
 

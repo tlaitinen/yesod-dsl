@@ -20,9 +20,9 @@ fieldRefMappingToAttrs e fs = [ (fieldName f, Just $ fieldContent f) | f <- enti
         mapped = [ fn | (fn, _, _) <- fs ]
 
 requestAttrs :: Stmt -> [(FieldName, Maybe FieldContent)]
-requestAttrs (Update (Right e) _ Nothing) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False ]
+requestAttrs (Update (Right e) _ Nothing) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e fs
-requestAttrs (Insert (Right e) Nothing _) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False ]
+requestAttrs (Insert (Right e) Nothing _) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 requestAttrs (Insert (Right e) (Just (_, fs)) _) = fieldRefMappingToAttrs e fs
 requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ] ++ (concat $ [ requestAttrs i | i@(Insert _ _ _) <- universeBi hp ] ++ [ requestAttrs u | u@(Update _ _ _) <- universeBi hp ])
 requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ]
@@ -42,7 +42,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         "classes" .= [
             object [
                 "name" .= className c,
-                "fields" .= [ fieldJson f | f <- classFields c, fieldInternal f == False ],
+                "fields" .= [ fieldJson f | f <- classFields c, fieldInternal f == False, fieldReadOnly f == False ],
                 "instances" .= [ entityName e | e <- modEntities m, 
                                  className c `elem` entityInstances e ]
             ] | c <- modClasses m
@@ -50,7 +50,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         "entities" .= [
             object [
                 "name" .= entityName e,
-                "fields" .= [ fieldJson f | f <- entityFields e, fieldInternal f == False ]
+                "fields" .= [ fieldJson f | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
             ] | e <- modEntities m
         ],
         "enums" .= [

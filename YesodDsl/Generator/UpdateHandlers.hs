@@ -77,7 +77,7 @@ mapJsonInputField ifields isNew (e,f) = do
         promoteJust = fieldOptional f && isJust maybeInput && notNothing && notInputField
 
         mcontent 
-            | null ifields && fieldInternal f == False  = Just $ let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+            | null ifields && fieldInternal f == False && fieldReadOnly f == False = Just $ let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             | otherwise = case maybeInput of
                 Just (RequestField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
                 Just (AuthId, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")

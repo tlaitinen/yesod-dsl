@@ -115,6 +115,7 @@ tokens :-
     "$request" { mkT TRequest }
     "require" { mkT TRequire }
     "internal" { mkT TInternal }
+    "read-only" { mkT TReadOnly }
     "extract" { mkT TExtract }
     "concat" { mkT TConcat }
      "return" { mkT TReturn }
@@ -246,6 +247,7 @@ data TokenType = TSemicolon
            | TAuth
            | TReturn
            | TInternal
+           | TReadOnly
            | TRequire
            | TUnderScore
            | TFor

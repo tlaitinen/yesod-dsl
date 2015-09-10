@@ -274,6 +274,9 @@ data Field = Field {
 fieldInternal :: Field -> Bool
 fieldInternal = (FieldInternal `elem`) . fieldOptions
 
+fieldReadOnly :: Field -> Bool
+fieldReadOnly = (FieldReadOnly `elem`) . fieldOptions
+
 fieldJsonName :: Field -> FieldName
 fieldJsonName f = fromMaybe (fieldName f) $ listToMaybe [ fn | FieldJsonName fn <- universeBi f ]
 
@@ -282,6 +285,7 @@ data FieldOption = FieldCheck FunctionName
                  | FieldColumnName FieldName
                  | FieldJsonName FieldName
                  | FieldInternal
+                 | FieldReadOnly
                  deriving (Show, Eq, Data, Typeable)
 
 
