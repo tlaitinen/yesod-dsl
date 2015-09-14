@@ -19,8 +19,35 @@ implementClasses :: Module -> Module
 implementClasses m = let m' = m {
         modEntities  = [ implInEntity m (modClasses m) e | e <- modEntities m ]
     } in m' {
-        modRoutes = everywhere (mkT $ trSq m') $ modRoutes m'
+        modRoutes = everywhere ((mkT $ trStmt m) . (mkT $ trSq m')) $ modRoutes m'
     }
+
+trStmt :: Module -> Stmt -> Stmt
+trStmt m s = case s of
+    Update er@(Left en) fr (Just frm) -> Update er fr (Just $ concatMap (f en) frm)
+    Insert er@(Left en) (Just (mvn1, frm)) mvn2 -> Insert er (Just (mvn1, concatMap (f en) frm)) mvn2
+                   
+    x -> x
+    where
+        f en x@(pn,RequestField fn,mfn) = if pn == fn 
+                then fromMaybe [x] $ do
+                    f <- lookupField' m en pn
+                    case fieldContent f of
+                        EntityField name -> do
+                            c <- classLookup (modClasses m) name
+
+                            Just $ [ 
+                                    (lowerFirst (entityName e) ++ upperFirst pn,
+                                     RequestField (lowerFirst (entityName e) ++ upperFirst pn),
+                                     mfn) 
+                                    | e <- modEntities m, 
+                                      className c `elem` entityInstances e
+                                ]
+                        _ -> Nothing
+                else [x]
+        f _ x = [x]
+
+            
 
 trSq :: Module -> SelectQuery -> SelectQuery
 trSq m sq = sq {
