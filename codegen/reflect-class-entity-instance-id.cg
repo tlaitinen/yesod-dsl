@@ -1,0 +1,1 @@
+~{className c}Instance~{entityName e}Id key -> ("~{entityName e}", fromSqlKey key)

@@ -69,6 +69,7 @@ classEntityInstances c es = T.unpack $(codegenFile "codegen/class-entity-instanc
     where 
         entityInstance e = T.unpack $(codegenFile "codegen/class-entity-instance.cg")
         entityInstanceId e = T.unpack $(codegenFile "codegen/class-entity-instance-id.cg")
+        reflectEntityInstanceId e = T.unpack $(codegenFile "codegen/reflect-class-entity-instance-id.cg")
 
 classSelectFilterDataType :: Class -> String
 classSelectFilterDataType c = T.unpack $(codegenFile "codegen/class-select-filter-data-type.cg")

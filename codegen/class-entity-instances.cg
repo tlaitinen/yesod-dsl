@@ -2,4 +2,8 @@ data ~{className c}Instance = ~{intercalate "    | " $ map entityInstance es}
 
 data ~{className c}InstanceId = ~{intercalate "    | " $ map entityInstanceId es}    deriving (Eq, Ord)
 
+reflect~{className c}InstanceId :: ~{className c}InstanceId -> (Text, Int64)
+reflect~{className c}InstanceId x = case x of
+~{indent 4 $ concatMap reflectEntityInstanceId es}
+
 instance ~{className c} ~{className c}Instance where
