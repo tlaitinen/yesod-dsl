@@ -1,3 +1,8 @@
+lookup~{className c}Instance :: forall (m :: * -> *). (MonadIO m) =>
+    ~{className c}InstanceId -> SqlPersistT m (Maybe ~{className c}Instance)
+lookup~{className c}Instance k = case k of
+~{indent 4 $ concatMap lookupInstance es}
+    
 select~{className c} :: forall (m :: * -> *). 
     (MonadLogger m, MonadIO m, MonadThrow m, MonadBaseControl IO m) => 
     ~{maybeFilterType} SqlPersistT m [~{className c}Instance]

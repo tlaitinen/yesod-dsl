@@ -1,0 +1,1 @@
+    ~{className c}Instance~{entityName e}Id key -> (runMaybeT $ MaybeT $ get key) >>= (Just . ~{className c}Instance~{entityName e})

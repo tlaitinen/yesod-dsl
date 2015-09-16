@@ -81,6 +81,7 @@ classSelect :: Class -> [Entity] -> String
 classSelect c es = maybeFilterDataType 
     ++ T.unpack $(codegenFile "codegen/class-select.cg")
     where 
+        lookupInstance e = T.unpack $(codegenFile "codegen/lookup-class-instance.cg")
         selectEntity e = T.unpack $(codegenFile "codegen/class-select-entity.cg")
         wrapResult e = T.unpack $(codegenFile "codegen/class-select-result.cg")
         hasClassFields = not . null $ classFields c
