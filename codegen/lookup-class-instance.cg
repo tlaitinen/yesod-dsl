@@ -1,1 +1,3 @@
-    ~{className c}Instance~{entityName e}Id key -> (runMaybeT $ MaybeT $ get key) >>= (Just . ~{className c}Instance~{entityName e})
+    ~{className c}Instance~{entityName e}Id key -> runMaybeT $ do
+        val <- MaybeT $ get key
+        return $ ~{className c}Instance~{entityName e} $ Entity key val

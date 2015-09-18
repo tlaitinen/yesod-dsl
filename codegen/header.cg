@@ -22,6 +22,7 @@ import qualified Handler.~{moduleName m}.PathPieces as PP
 import Prelude
 import Control.Monad (forM_, when)
 import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Trans.Maybe (MaybeT(..), runMaybeT)
 import Database.Esqueleto
 import qualified Database.Esqueleto as E
 import qualified Database.Persist as P
