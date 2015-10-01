@@ -1,1 +1,1 @@
-~{lowerFirst $ entityName e}~{upperFirst $ fieldName f} :: ~{pureScriptFieldType f}
+~{entityFieldName e f} :: ~{pureScriptFieldType f}

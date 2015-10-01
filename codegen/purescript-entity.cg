@@ -1,24 +1,10 @@
-newtype ~{entityName e}Id = ~{entityName e}Id Number
-
-derive instance ~{lowerFirst $ entityName e}IdGeneric :: Generic ~{entityName e}Id
-
-instance show~{entityName e}Id :: Show ~{entityName e}Id where
-    show = gShow
-
-instance eq~{entityName e}Id :: Eq ~{entityName e}Id where
-    eq = gEq
-
-instance ord~{entityName e}Id :: Ord ~{entityName e}Id where
-    compare = gCompare
-
+type ~{entityName e}Id = Key ~{entityName e}
 newtype ~{entityName e} = ~{entityName e} {
-    ~{lowerFirst $ entityName e}Id :: ~{entityName e}Id,
-~{indent 4 $ intercalate ",\n" $ map field $ filter (not . fieldInternal) $ entityFields e}}
-derive instance ~{lowerFirst $ entityName e}Generic :: Generic ~{entityName e}
+~{indent 4 $ intercalate ",\n" $ map field $ entityJsonFields e}}
 
-instance show~{entityName e} :: Show ~{entityName e} where
-    show = gShow
-
-
-
-
+instance decodeJson~{entityName e} :: DecodeJson ~{entityName e} where
+    decodeJson json  = do
+        x <- decodeJson json
+~{indent 8 $ concatMap decodeJsonExtract $ entityJsonFields e}
+        pure $ ~{entityName e} {
+~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ entityJsonFields e}        }

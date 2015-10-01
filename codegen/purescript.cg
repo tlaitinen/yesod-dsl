@@ -1,11 +1,52 @@
 module ~{moduleName m} where
 import Prelude
-import Data.Argonaut ((~>), (:=), (.?), jsonEmptyObject)
+import Data.Argonaut.Combinators ((~>), (:=), (.?))
+import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode (EncodeJson, encodeJson)
 import Data.Argonaut.Decode (DecodeJson, decodeJson)
 import Data.Maybe (Maybe(..))
 import Data.Generic
+import Data.Either (Either(..))
 
+data Key record = Key Number
+
+derive instance genericKey :: Generic (Key record)
+
+instance showKey :: Show (Key record) where
+    show = gShow
+
+instance eqKey :: Eq (Key record) where
+    eq = gEq
+
+instance ordKey :: Ord (Key record) where
+    compare = gCompare
+
+instance decodeJsonKey :: DecodeJson (Key record) where
+    decodeJson json = do
+        x <- decodeJson json
+        pure $ Key x
+
+instance encodeJsonKey :: EncodeJson (Key record) where
+    encodeJson (Key x) = encodeJson x
+
+
+data Entity record = Entity { 
+    entityKey :: Key record,
+    entityVal :: record
+}
+
+
+instance decodeEntity :: (DecodeJson record) => DecodeJson (Entity record) where
+    decodeJson json = do
+        obj <- decodeJson json
+        key <- obj .? "id"
+        val <- decodeJson json
+        pure $ Entity { 
+            entityKey: key,
+            entityVal: val
+        }
+
+        
 ~{concatMap enum $ modEnums m}
 ~{concatMap entity $ modEntities m}
 

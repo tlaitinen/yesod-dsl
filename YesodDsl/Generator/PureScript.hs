@@ -38,7 +38,12 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
             where
                 value v = enumName e ++ v
                 showValue v = T.unpack $(codegenFile "codegen/purescript-enum-show.cg")
+                decodeValue v = rstrip $ T.unpack $(codegenFile "codegen/purescript-enum-decodevalue.cg")
+                encodeValue v = T.unpack $(codegenFile "codegen/purescript-enum-encodevalue.cg")
+        entityJsonFields = (filter (not . fieldInternal)) . entityFields
         entity e = T.unpack $(codegenFile "codegen/purescript-entity.cg")
             where
                 field f  = rstrip $ T.unpack $(codegenFile "codegen/purescript-field.cg")
+                decodeJsonExtract f = T.unpack $(codegenFile "codegen/purescript-decodejson-extract.cg")
+                decodeJsonAssign f = rstrip $ T.unpack $(codegenFile "codegen/purescript-decodejson-assign.cg")
 

@@ -10,3 +10,13 @@ instance eq~{enumName e} :: Eq ~{enumName e} where
 
 instance ord~{enumName e} :: Ord ~{enumName e} where
     compare = gCompare
+
+instance decodeJson~{enumName e} :: DecodeJson ~{enumName e} where
+    decodeJson json = do
+        x <- decodeJson json
+        case x of
+~{indent 12 $ intercalate "\n" $ map decodeValue $ enumValues e}            _ -> Left $ "Invalid ~{enumName e} value: " ++ x
+            
+instance encodeJson~{enumName e} :: EncodeJson ~{enumName e} where
+    encodeJson x = encodeJson $ case x of
+~{indent 8 $ concatMap encodeValue $ enumValues e}
