@@ -8,11 +8,12 @@ import Control.Monad
 
 data Flag = Version 
           | JsonPath String 
-          | FayPath String deriving Eq
+          | PureScriptPath String deriving Eq
           
 options :: [OptDescr Flag]
 options = [
     Option [] ["json"] (ReqArg JsonPath "FILE") "translate DSL definition to JSON object",
+    Option [] ["purescript"] (ReqArg PureScriptPath "FILE") "translate DSL definition to PureScript module",
     Option ['v'] ["version"] (NoArg Version) "print version number"
   ]
 
@@ -42,4 +43,5 @@ main = do
                             forM_ o (processFlag ast)
                         Nothing -> return ()
         processFlag ast (JsonPath path) = genJson path ast
+        processFlag ast (PureScriptPath path) = genPureScript path ast
         processFlag _ _ = return ()

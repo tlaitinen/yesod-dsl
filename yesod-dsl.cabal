@@ -59,6 +59,7 @@ library
            YesodDsl.Generator.Cabal
            YesodDsl.Generator.EsqueletoInstances
            YesodDsl.Generator.Json
+           YesodDsl.Generator.PureScript
            YesodDsl.Generator.EntityFactories
            YesodDsl.SyncFile
 

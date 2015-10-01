@@ -1,0 +1,12 @@
+data ~{enumName e} = ~{intercalate " | " $ map value $ enumValues e}
+
+derive instance ~{lowerFirst $ enumName e}Generic :: Generic ~{enumName e}
+
+instance show~{enumName e} :: Show ~{enumName e} where
+~{indent 4 $ concatMap showValue $ enumValues e}
+
+instance eq~{enumName e} :: Eq ~{enumName e} where
+    eq = gEq
+
+instance ord~{enumName e} :: Ord ~{enumName e} where
+    compare = gCompare

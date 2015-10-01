@@ -1,0 +1,11 @@
+module ~{moduleName m} where
+import Prelude
+import Data.Argonaut ((~>), (:=), (.?), jsonEmptyObject)
+import Data.Argonaut.Encode (EncodeJson, encodeJson)
+import Data.Argonaut.Decode (DecodeJson, decodeJson)
+import Data.Maybe (Maybe(..))
+import Data.Generic
+
+~{concatMap enum $ modEnums m}
+~{concatMap entity $ modEntities m}
+
