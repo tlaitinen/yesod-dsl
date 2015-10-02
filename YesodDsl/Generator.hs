@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import Data.List
 import Data.Maybe
 import Control.Monad
+import System.FilePath (replaceExtension)
 
 import YesodDsl.Generator.Models
 import YesodDsl.Generator.EntityFactories
@@ -91,5 +92,7 @@ genJson :: FilePath -> Module -> IO ()
 genJson path m = syncFile path $ moduleToJson m
 
 genPureScript :: FilePath -> Module -> IO ()
-genPureScript path m = syncFile path $ moduleToPureScript m
+genPureScript path m = do
+    syncFile path $ moduleToPureScript m
+    syncFile (replaceExtension path ".js") $ moduleToPureScriptJs m
 

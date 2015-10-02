@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YesodDsl.Generator.PureScript (moduleToPureScript) where
+module YesodDsl.Generator.PureScript (moduleToPureScript, moduleToPureScriptJs) where
 import YesodDsl.AST
 import Data.List
 import Data.String.Utils (rstrip)
@@ -24,13 +24,15 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
             FTBool -> "Boolean"
             FTDouble -> "Number"
             FTRational -> "Number"
-            FTTimeOfDay -> "String"     -- TODO
-            FTDay -> "String"           -- TODO
-            FTUTCTime -> "String"       -- TODO
+            FTTimeOfDay -> "TimeOfDay"
+            FTDay -> "Day"           
+            FTUTCTime -> "UTCTime"
             FTCheckmark -> "Boolean"
         EntityField en -> en ++ "Id"
         EnumField en -> en
 
+moduleToPureScriptJs :: Module -> String
+moduleToPureScriptJs m = T.unpack $(codegenFile "codegen/purescript-js.cg")
 moduleToPureScript :: Module -> String
 moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
     where
