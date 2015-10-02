@@ -1,1 +1,1 @@
-~{entityFieldName e f}_ <- x .?  "~{fieldJsonName f}"
+~{hFieldName en f}_ <- x .?  "~{fieldJsonName f}"

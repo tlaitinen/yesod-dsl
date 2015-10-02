@@ -1,0 +1,9 @@
+newtype ~{outputEntityName} = ~{outputEntityName} {
+~{indent 4 $ intercalate ",\n" $ map (field outputEntityName) $ outputFields h}}
+
+instance decodeJson~{outputEntityName} :: DecodeJson ~{outputEntityName} where
+    decodeJson json = do
+        x <- decodeJson json
+~{indent 8 $ concatMap (decodeJsonExtract outputEntityName) $ outputFields h}
+        pure $ ~{outputEntityName} {
+~{indent 12 $ intercalate ",\n" $ map (decodeJsonAssign outputEntityName) $ outputFields h}        }

@@ -1,10 +1,2 @@
+data ~{entityName e} = ~{entityName e}
 type ~{entityName e}Id = Key ~{entityName e}
-newtype ~{entityName e} = ~{entityName e} {
-~{indent 4 $ intercalate ",\n" $ map field $ entityJsonFields e}}
-
-instance decodeJson~{entityName e} :: DecodeJson ~{entityName e} where
-    decodeJson json  = do
-        x <- decodeJson json
-~{indent 8 $ concatMap decodeJsonExtract $ entityJsonFields e}
-        pure $ ~{entityName e} {
-~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ entityJsonFields e}        }
