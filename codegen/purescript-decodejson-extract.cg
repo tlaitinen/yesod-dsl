@@ -1,1 +1,1 @@
-~{hFieldName en f}_ <- x .?  "~{fieldJsonName f}"
+~{fieldName f}_ <- x .?  "~{fieldJsonName f}"

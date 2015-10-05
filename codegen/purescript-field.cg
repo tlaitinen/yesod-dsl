@@ -1,1 +1,1 @@
-~{hFieldName en f} :: ~{pureScriptFieldType f}
+~{fieldName f} :: ~{pureScriptFieldType f}

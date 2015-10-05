@@ -60,7 +60,6 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
 
                 handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
                 outputEntityName = handlerTypeName ++ concatMap pathName (routePath r) 
-                hFieldName en f = lowerFirst en ++ upperFirst (fieldName f)
         pathName pp = case pp of
             PathText t -> upperFirst t
             PathId _ en -> en ++ "Id"
