@@ -1,6 +1,7 @@
 module ~{moduleName m} where
 import Prelude
 import Data.Argonaut.Combinators ((~>), (:=), (.?))
+import Data.Argonaut.Parser (jsonParser)
 import Data.Argonaut.Core (jsonEmptyObject)
 import Data.Argonaut.Encode (EncodeJson, encodeJson)
 import Data.Argonaut.Decode (DecodeJson, decodeJson)
@@ -8,6 +9,9 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Generic
 import Data.Either (Either(..))
 import Data.Array ((!!))
+import qualified Control.Monad.Aff as Aff
+import qualified Network.HTTP.Affjax as Affjax
+import qualified Network.HTTP.RequestHeader as RH
 import qualified Data.String as DS
 import qualified Data.Date as DD
 import qualified Data.Time as DT

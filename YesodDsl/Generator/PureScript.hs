@@ -48,7 +48,7 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 showValue v = T.unpack $(codegenFile "codegen/purescript-enum-show.cg")
                 decodeValue v = rstrip $ T.unpack $(codegenFile "codegen/purescript-enum-decodevalue.cg")
                 encodeValue v = T.unpack $(codegenFile "codegen/purescript-enum-encodevalue.cg")
-        handler r h = T.unpack $(codegenFile "codegen/purescript-handler.cg")
+        handler r h = handlerOutput 
             where
                 
                 handlerOutput
@@ -63,6 +63,14 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
         pathName pp = case pp of
             PathText t -> upperFirst t
             PathId _ en -> en ++ "Id"
+         
+        routePathParams r = mapMaybe (\(n,pp) -> case pp of
+            PathText _ -> Nothing
+            PathId _ en -> Just ("(Key p" ++ show (n::Int) ++ ")",en ++ "Id")) $ zip [1..] (routePath r)
+        routePathUrl r = concatMap (\(n,pp) -> case pp of
+            PathText t -> " ++ \"/" ++ t ++ "\""
+            PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
+        
         outputFields h = concatMap stmtOutputs $ handlerStmts h
         stmtOutputs s = case s of
             Select sq -> mapMaybe selectFieldToField $ sqFields sq

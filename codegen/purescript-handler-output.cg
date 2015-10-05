@@ -7,3 +7,13 @@ instance decodeJson~{outputEntityName} :: DecodeJson ~{outputEntityName} where
 ~{indent 8 $ concatMap (decodeJsonExtract outputEntityName) $ outputFields h}
         pure $ ~{outputEntityName} {
 ~{indent 12 $ intercalate ",\n" $ map (decodeJsonAssign outputEntityName) $ outputFields h}        }
+
+
+~{lowerFirst outputEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{outputEntityName}))
+~{lowerFirst outputEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers = do
+    r <- Affjax.affjax $ Affjax.defaultRequest {
+            url = baseUrl~{routePathUrl r},
+            headers = headers
+        }
+    pure $ jsonParser r.response >>= decodeJson
+

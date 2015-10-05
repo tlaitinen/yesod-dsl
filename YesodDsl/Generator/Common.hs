@@ -18,6 +18,9 @@ quote s = "\"" ++ s ++ "\""
 indent :: Int -> String -> String
 indent x = unlines . (map ((replicate x ' ')++)) . lines
 
+prepend :: String -> String -> String
+prepend x = (x++)
+
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 
