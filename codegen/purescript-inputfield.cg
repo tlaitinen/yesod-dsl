@@ -1,0 +1,1 @@
+~{fieldName f} :: ~{pureScriptFieldType f}

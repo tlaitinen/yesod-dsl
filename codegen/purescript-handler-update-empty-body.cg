@@ -1,0 +1,12 @@
+~{defineResultType}
+
+
+~{lowerFirst handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String ~{resultType})
+~{lowerFirst handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers = do
+    r <- Affjax.affjax $ Affjax.defaultRequest {
+            method = ~{show $ handlerType h},
+            url = baseUrl~{routePathUrl r},
+            headers = headers
+        }
+~{indent 4 $ processResult}
+

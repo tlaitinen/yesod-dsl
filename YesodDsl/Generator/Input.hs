@@ -3,10 +3,33 @@ module YesodDsl.Generator.Input where
 import Data.Maybe
 import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
+import qualified Data.List as L
+import Data.Function (on)
 import Data.String.Utils (rstrip)
 import YesodDsl.AST
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
+
+fieldRefMappingToAttrs :: Entity -> Bool -> [FieldRefMapping] -> [(FieldName, Maybe Field)]
+fieldRefMappingToAttrs e onlyMapped fs = (if onlyMapped then [] else [ (fieldName f, Just f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldInternal f == False, fieldName f `notElem` mapped ]) ++ [ (pn, Just f) | f <- entityFields e, (fn,fr,_) <- fs, (RequestField pn) <- universeBi fr, fieldName f == fn ]
+    where
+        mapped = [ fn | (fn, _, _) <- fs ]
+
+requestAttrs :: Stmt -> [(FieldName, Maybe Field)]
+requestAttrs (Update (Right e) _ Nothing) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
+requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e False fs
+requestAttrs (Insert (Right e) Nothing _) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
+requestAttrs (Insert (Right e) (Just (me, fs)) _) = fieldRefMappingToAttrs e (isJust me) fs
+requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ] ++ (concat $ [ requestAttrs i | i@(Insert _ _ _) <- universeBi hp ] ++ [ requestAttrs u | u@(Update _ _ _) <- universeBi hp ])
+        ++ (concat [ 
+                    [ (fieldJsonName f, Just f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+                    | Insert (Right e) Nothing _ <- universeBi hp ])
+
+nubAttrs :: [(FieldName, Maybe Field)] -> [(FieldName, Maybe Field)]
+nubAttrs  = L.nubBy ((==) `on` fst) 
+
+
+
 inputFieldRef :: FieldRef -> String
 inputFieldRef AuthId = rstrip $ T.unpack $(codegenFile "codegen/input-field-authid.cg")
 inputFieldRef (AuthField fn) = rstrip $ T.unpack $(codegenFile "codegen/input-field-auth.cg")
@@ -21,9 +44,9 @@ inputFieldRef (Const fv) = fieldValueToHs fv
 inputFieldRef ifr = show ifr
 
 getJsonAttrs :: Stmt -> [FieldName]
-getJsonAttrs (Insert (Right e) Nothing _) = [ fieldName f | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
+getJsonAttrs (Insert (Right e) Nothing _) = [ fieldJsonName f | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 getJsonAttrs hp = [ fn | RequestField fn <- universeBi hp ]
-                ++ (concat [ [ fieldName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+                ++ (concat [ [ fieldJsonName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
                     | Insert (Right e) Nothing _ <- universeBi hp ])
 
 getParamDefaults :: [Stmt] -> Map.Map ParamName FieldValue

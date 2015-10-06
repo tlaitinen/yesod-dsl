@@ -1,0 +1,2 @@
+let response = r.response :: String
+pure $ Right $ r.status == SC.StatusCode 200

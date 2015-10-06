@@ -10,32 +10,8 @@ import Data.Maybe
 import qualified Data.Vector as V
 import qualified Data.Text.Lazy.Encoding as LTE
 import YesodDsl.Generator.Input
-import Data.Generics.Uniplate.Data
-import qualified Data.List as L
 import qualified Data.Text.Lazy as LT
-import Data.Function
-fieldRefMappingToAttrs :: Entity -> [FieldRefMapping] -> [(FieldName, Maybe FieldContent)]
-fieldRefMappingToAttrs e fs = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldInternal f == False, fieldName f `notElem` mapped ] ++ [ (pn, Just $ fieldContent f) | f <- entityFields e, (fn,fr,_) <- fs, (RequestField pn) <- universeBi fr, fieldName f == fn ]
-    where
-        mapped = [ fn | (fn, _, _) <- fs ]
 
-requestAttrs :: Stmt -> [(FieldName, Maybe FieldContent)]
-requestAttrs (Update (Right e) _ Nothing) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
-requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e fs
-requestAttrs (Insert (Right e) Nothing _) = [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
-requestAttrs (Insert (Right e) (Just (_, fs)) _) = fieldRefMappingToAttrs e fs
-requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ] ++ (concat $ [ requestAttrs i | i@(Insert _ _ _) <- universeBi hp ] ++ [ requestAttrs u | u@(Update _ _ _) <- universeBi hp ])
-requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ]
-                ++ (concat [ [ (fieldName f, Just $ fieldContent f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
-                    | Insert (Right e) Nothing _ <- universeBi hp ])
-
-nubAttrs :: [(FieldName, Maybe FieldContent)] -> [(FieldName, Maybe FieldContent)]
-nubAttrs  = L.nubBy ((==) `on` fst) . (L.sortBy cmp)
-    where
-        cmp (_, Just _) (_, Nothing) = LT
-        cmp (_, Nothing) (_, Just _) = GT
-        cmp _ _ = EQ
- 
 moduleToJson :: Module -> String
 moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         "name" .= moduleName m,
@@ -81,8 +57,8 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         "inputs" .= [ 
                                 object [
                                     "name" .= fn,
-                                    "type" .= (mfc >>= Just . toJSON . jsonFieldType),
-                                    "references" .= (mfc >>= Just . toJSON . jsonFieldReferences)
+                                    "type" .= (mfc >>= Just . toJSON . jsonFieldType . fieldContent),
+                                    "references" .= (mfc >>= Just . toJSON . jsonFieldReferences . fieldContent)
                                 ] 
                             | (fn, mfc) <- nubAttrs $ concatMap requestAttrs $ handlerStmts h 
                         ],

@@ -1,0 +1,19 @@
+~{defineResultType}
+
+newtype ~{handlerEntityName} = ~{handlerEntityName} {
+~{indent 4 $ intercalate ",\n" $ map inputField $ inputFields h}}
+
+instance encodeJson~{handlerEntityName} :: EncodeJson ~{handlerEntityName} where
+    encodeJson (~{handlerEntityName} x) = do
+~{indent 8 $ intercalate "\n~> " $ map encodeJson $ inputFields h}        ~> jsonEmptyObject
+
+~{lowerFirst handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> ~{handlerEntityName} -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String ~{resultType})
+~{lowerFirst handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers content = do
+    r <- Affjax.affjax $ Affjax.defaultRequest {
+            method = ~{show $ handlerType h},
+            url = baseUrl~{routePathUrl r},
+            headers = headers,
+            content = Just (show $ encodeJson content)
+        }
+~{indent 4 $ processResult}
+

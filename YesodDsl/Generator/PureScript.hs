@@ -12,6 +12,7 @@ import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
 import Data.Generics.Uniplate.Data
 import YesodDsl.Generator.Common
+import YesodDsl.Generator.Input
   
 pureScriptFieldType :: Field -> String
 pureScriptFieldType f = (if fieldOptional f then "Maybe " else "") 
@@ -48,21 +49,32 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 showValue v = T.unpack $(codegenFile "codegen/purescript-enum-show.cg")
                 decodeValue v = rstrip $ T.unpack $(codegenFile "codegen/purescript-enum-decodevalue.cg")
                 encodeValue v = T.unpack $(codegenFile "codegen/purescript-enum-encodevalue.cg")
-        handler r h = handlerOutput 
+        handler r h 
+            | handlerType h == GetHandler = T.unpack $(codegenFile "codegen/purescript-handler-get.cg")
+            | null $ inputFields h =T.unpack $(codegenFile "codegen/purescript-handler-update-empty-body.cg")
+            | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update.cg")
             where
-                
-                handlerOutput
+                defineResultType
                     | null $ outputFields h = ""
-                    | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-output.cg")
-                field en f  = rstrip $ T.unpack $(codegenFile "codegen/purescript-field.cg")
-                decodeJsonExtract en f = T.unpack $(codegenFile "codegen/purescript-decodejson-extract.cg")
-                decodeJsonAssign en f = rstrip $ T.unpack $(codegenFile "codegen/purescript-decodejson-assign.cg")
+                    | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update-result-type.cg")
+                resultType 
+                    | null $ outputFields h = "Boolean"
+                    | otherwise = handlerEntityName ++ "Result"
+                processResult 
+                    | null $ outputFields h = T.unpack $(codegenFile "codegen/purescript-handler-update-boolean-result.cg")
+                    | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update-process-result.cg")
+                field f  = rstrip $ T.unpack $(codegenFile "codegen/purescript-field.cg")
+                encodeJson (fn,Just f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-encodejson-field.cg")
+                encodeJson (fn,Nothing) = rstrip $ T.unpack $(codegenFile "codegen/purescript-encodejson-unknown.cg")
+
+                decodeJsonExtract f = T.unpack $(codegenFile "codegen/purescript-decodejson-extract.cg")
+                decodeJsonAssign f = rstrip $ T.unpack $(codegenFile "codegen/purescript-decodejson-assign.cg")
 
                 handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
-                outputEntityName = handlerTypeName ++ concatMap pathName (routePath r) 
+                handlerEntityName = handlerTypeName ++ concatMap pathName (routePath r) 
         pathName pp = case pp of
             PathText t -> upperFirst t
-            PathId _ en -> en ++ "Id"
+            PathId _ en -> "_"
          
         routePathParams r = mapMaybe (\(n,pp) -> case pp of
             PathText _ -> Nothing
@@ -72,6 +84,12 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
             PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
         
         outputFields h = concatMap stmtOutputs $ handlerStmts h
+        inputFields h = nubAttrs $ concatMap requestAttrs $ handlerStmts h
+        inputField (fn,Just f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
+        inputField (fn,Nothing) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")
+        
+
+            
         stmtOutputs s = case s of
             Select sq -> mapMaybe selectFieldToField $ sqFields sq
             Return ofs -> mapMaybe (\(pn,fr,_) -> fieldRefToContent fr >>= Just . (mkField pn)) ofs
