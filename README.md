@@ -10,6 +10,7 @@ framework](http://www.yesodweb.com/),
  * boilerplate code for entity validation, and filtering and sorting the results 
  * supported field types : Word32, Word64, Int, Int32, Int64, Text, Bool, Double, TimeOfDay, Day, UTCTime, ZonedTime, Checkmark
  * support code for implementing polymorphic relations and accessing common fields
+ * generates [PureScript](http://purescript.org) code to access the web service 
 
 ## License
  * The code generator is distributed under the terms of [Simplified BSD license](LICENSE)
