@@ -9,10 +9,10 @@ instance decodeJson~{handlerEntityName} :: DecodeJson ~{handlerEntityName} where
 ~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ outputFields h}        }
 
 
-~{lowerFirst handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
-~{lowerFirst handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers = do
+~{lowerFirst handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> URIT.Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
+~{lowerFirst handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers query = do
     r <- Affjax.affjax $ Affjax.defaultRequest {
-            url = baseUrl~{routePathUrl r},
+            url = baseUrl~{routePathUrl r} ++ URIQ.printQuery query,
             headers = headers
         }
     pure $ jsonParser r.response >>= decodeJson

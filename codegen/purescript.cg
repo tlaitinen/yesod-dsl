@@ -8,6 +8,9 @@ import Data.Argonaut.Decode (DecodeJson, decodeJson)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Generic
 import Data.Either (Either(..))
+import qualified Data.URI as URI
+import qualified Data.URI.Types as URIT
+import qualified Data.URI.Query as URIQ
 import Data.Array ((!!))
 import qualified Control.Monad.Aff as Aff
 import qualified Network.HTTP.Affjax as Affjax
