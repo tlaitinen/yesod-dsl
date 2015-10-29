@@ -99,7 +99,7 @@ instance decodeJsonDay :: DecodeJson Day where
     decodeJson json = do
         x <- decodeJson json
         fromMaybe (Left $ "Invalid Day: " ++ x) $ do
-            r <- R.match timeOfDayRegex x
+            r <- R.match dayRegex x
             y <- parseInt r 1
             m <- parseInt r 2
             d <- parseInt r 3
