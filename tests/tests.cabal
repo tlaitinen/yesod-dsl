@@ -1,0 +1,63 @@
+name: tests
+version: 0.0.0
+cabal-version: >=1.8
+build-type: Simple
+license: BSD3
+
+library
+    exposed-modules:
+        Handler.Tests
+        Handler.Tests.Internal
+        Handler.Tests.Enums
+        Handler.Tests.Routes
+        Handler.Tests.Esqueleto
+        Handler.Tests.PathPieces
+        Handler.Tests.Validation
+        Handler.Tests.FilterSort
+        Handler.Tests.RouteUpdate_with_specifying_all_fieldsFoo
+        Handler.Tests.RouteUpdate_without_specifying_fieldsFoo
+    build-depends:
+        unordered-containers -any,
+        transformers -any,
+        tagged -any,
+        blaze-builder -any,
+        http-types -any,
+        persistent-template -any,
+        conduit -any,
+        wai -any,
+        resourcet -any,
+        attoparsec -any,
+        time -any,
+        vector -any,
+        esqueleto -any,
+        yesod-persistent -any,
+        old-locale -any,
+        filepath -any,
+        unix -any,
+        path-pieces -any,
+        conduit-extra -any,
+        exceptions -any,
+        temporary -any,
+        mtl -any,
+        cassava -any,
+        array -any,
+        tls -any,
+        monad-logger -any,
+        base -any,
+        yesod -any,
+        aeson -any,
+        http-conduit -any,
+        yesod-core -any,
+        yesod-auth -any,
+        scientific -any,
+        yesod-static -any,
+        yesod-form -any,
+        bytestring -any,
+        text -any,
+        persistent -any
+    extensions: TemplateHaskell QuasiQuotes OverloadedStrings
+                NoImplicitPrelude CPP MultiParamTypeClasses TypeFamilies GADTs
+                GeneralizedNewtypeDeriving FlexibleContexts EmptyDataDecls
+                NoMonomorphismRestriction DeriveDataTypeable
+    ghc-options: -Wall
+

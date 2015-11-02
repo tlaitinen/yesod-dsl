@@ -111,7 +111,8 @@ updateHandlerDecode (pId,p) = case p of
             let
                 maybeExisting = maybeSelectExisting e (mv,fields) fr
                 fieldMappers = mapFields e fields isNew
-                isNew = isNothing fr && isNothing mv
+                isMatched = ((`elem` (map (\(pn,_,_) -> pn) fields)) . fieldName)
+                isNew = (isNothing fr || all isMatched (entityFields e)) && isNothing mv
                 entityToUpdate
                     | isNew = entityName e
                     | otherwise = "e"

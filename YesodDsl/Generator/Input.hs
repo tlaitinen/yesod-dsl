@@ -45,6 +45,7 @@ inputFieldRef ifr = show ifr
 
 getJsonAttrs :: Stmt -> [FieldName]
 getJsonAttrs (Insert (Right e) Nothing _) = [ fieldJsonName f | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
+getJsonAttrs (Update (Right e) fr Nothing) = [ fn | RequestField fn <- universeBi fr ] ++ [ fieldName f | f <- entityFields e ]
 getJsonAttrs hp = [ fn | RequestField fn <- universeBi hp ]
                 ++ (concat [ [ fieldJsonName f | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
                     | Insert (Right e) Nothing _ <- universeBi hp ])

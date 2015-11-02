@@ -1,0 +1,20 @@
+module Tests;
+entity User {
+}
+entity Foo {
+    bar Text;
+}
+
+route /update_with_specifying_all_fields/#FooId {
+    put {
+        update Foo identified by $1 with {
+            bar = $request.bar
+        };
+    }
+}
+
+route /update_without_specifying_fields/#FooId {
+    put {
+        update Foo identified by $1;
+    }
+}
