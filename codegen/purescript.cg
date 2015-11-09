@@ -38,7 +38,18 @@ timeOfDayRegex :: R.Regex
 timeOfDayRegex = R.regex "([0-1][0-9]|2[0-3]):([0-5][0-9]):([0-5][0-9]|60)(\\.\\d+)?" R.noFlags
 
 instance showTimeOfDay :: Show TimeOfDay where
-    show = gShow
+    show (TimeOfDay secs) = DS.joinWith ":" [h,zp m++m,zp s++s] ++ fromMaybe "" frac
+        where
+            ss = I.floor secs
+            h = show $ ss `div` 3600
+            m = show $ (ss `div` 60) `mod` 60
+            zp x = if DS.length x < 2 then "0" else ""
+            s = show $ ss `mod` 60
+            r = secs - I.toNumber ss
+            frac 
+                | r > 0.0 = Just $ show r
+                | otherwise = Nothing
+
 
 instance eqTimeOfDay :: Eq TimeOfDay where
     eq = gEq
@@ -68,17 +79,7 @@ instance decodeJsonTimeOfDay :: DecodeJson TimeOfDay where
             frac Nothing       = 0.0
 
 instance encodeJsonTimeOfDay :: EncodeJson TimeOfDay where
-    encodeJson (TimeOfDay secs) = encodeJson $ DS.joinWith ":" [h,m,s] ++ fromMaybe "" frac
-        where
-            ss = I.floor secs
-            h = show $ ss `div` 3600
-            m = show $ (ss `div` 60) `mod` 60
-            s = show $ ss `mod` 60
-            r = secs - I.toNumber ss
-            frac 
-                | r > 0.0 = Just $ show r
-                | otherwise = Nothing
-
+    encodeJson s = encodeJson $ show s
 data Day = Day Int Int Int
 
 derive instance genericDay :: Generic Day
