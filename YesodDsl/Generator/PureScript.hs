@@ -113,6 +113,7 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                     FloorExpr _ -> Just (False, NormalField FTDouble)
                     CeilingExpr _ -> Just (False, NormalField FTDouble)
                     ExtractExpr _ _ -> Just (False, NormalField FTDouble)
+                    ConcatManyExpr _ -> Just (False, NormalField FTText)
                     _ -> Nothing
                 Just $ mkField vn fc
             _ -> Nothing    
