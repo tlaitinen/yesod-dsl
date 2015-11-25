@@ -43,6 +43,7 @@ import Data.List
     hash        { Tk _ THash }
     equals { Tk _ TEquals }
     sql { Tk _ TSql }
+    map { Tk _ TMap }
     jsonTk { Tk _ TJson }
     concatop { Tk _ TConcatOp }
     ne { Tk _ TNe }
@@ -553,9 +554,22 @@ handlerParam : public {%
     | lowerIdTk fieldRefList {% 
         do 
             l <- mkLoc $1
-            statement l (tkString $1)
-            return $ Call (tkString $1) $2
+            let s1 = tkString $1
+            statement l s1
+            withSymbol l s1 requireFunction
+            return $ Call s1 $2
     } 
+    | map jsonTk with lowerIdTk {%
+        do
+            l <- mkLoc $1
+            let s4 = tkString $4
+            statement l "map json"
+            requireHandlerType l "map json" (==GetHandler)
+            l4 <- mkLoc $4
+            withSymbol l4 s4 requireFunction
+    
+            return $ MapJson (tkString $4) 
+    }
 lowerIdParam: lowerIdTk {%
     do
         l1 <- mkLoc $1

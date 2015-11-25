@@ -130,13 +130,14 @@ getHandlerSelect ps =
                 (indent 8 returnFieldsStr),
                 (T.unpack $(codegenFile "codegen/select-count.cg")),
                 (T.unpack $(codegenFile "codegen/select-results.cg")),
-                getHandlerReturn sq
+                getHandlerReturn sq [ fn | MapJson fn <- universeBi ps ]
                 ]) (emptyContext { ctxNames = sqAliases sq })
         Nothing -> ""
 
-getHandlerReturn :: SelectQuery -> String
-getHandlerReturn sq = T.unpack $(codegenFile "codegen/get-handler-return.cg")
+getHandlerReturn :: SelectQuery -> [FunctionName] -> String
+getHandlerReturn sq jsonMappers = T.unpack $(codegenFile "codegen/get-handler-return.cg")
     where 
+        prependBind = prepend " >>= "
         fieldNames' = concat $ map expand $ sqFields sq
         fieldNames = zip fieldNames' ([1..]::[Int])
         mappedResultFields = concatMap mapResultField $ fieldNames

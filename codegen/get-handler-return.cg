@@ -1,4 +1,4 @@
-    return $ A.object [
+    (return $ A.object [
         "totalCount" .= ((\(Database.Esqueleto.Value v) -> (v::Int)) (head count)),
         "result" .= (toJSON $ map (\row -> case row of
                 (~{intercalate ", " resultFields}) -> A.object [
@@ -6,4 +6,4 @@
                     ]
                 _ -> A.object []
             ) results)
-       ]
+       ])~{concatMap prependBind jsonMappers}

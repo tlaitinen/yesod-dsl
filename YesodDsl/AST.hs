@@ -132,6 +132,7 @@ data Stmt = Public
                   | Require SelectQuery
                   | For VariableName FieldRef [Stmt]
                   | Call FunctionName [FieldRef]
+                  | MapJson FunctionName
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
 type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
