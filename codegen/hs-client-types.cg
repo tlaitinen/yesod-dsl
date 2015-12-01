@@ -1,0 +1,28 @@
+{-# LANGUAGE TemplateHaskell #-}
+module ~{moduleName m}Client.Types (
+    module ~{moduleName m}Client.Types,
+    module Data.Text,
+    module Data.Int,
+    module Data.Word,
+    module Data.Time) where
+
+import Prelude
+import Data.Int (Int32, Int64)
+import Data.Word (Word32, Word64)
+import Data.Text (Text)
+import Data.Time (UTCTime, Day)
+import Data.Aeson
+import Data.Aeson.TH
+
+newtype Key entity = Key Int64 deriving (Show, Read, Ord, Eq)
+
+instance FromJSON (Key entity) where
+    parseJSON = (fmap Key) . parseJSON
+
+instance ToJSON (Key entity) where
+    toJSON (Key x) = toJSON x    
+
+~{concatMap entityIdType $ modEntities m}    
+
+data Checkmark = Active | Inactive deriving (Eq, Ord, Show, Read)
+$(deriveJSON defaultOptions ''Checkmark)

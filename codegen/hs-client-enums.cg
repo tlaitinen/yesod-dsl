@@ -1,0 +1,3 @@
+module ~{moduleName m}Client.Enums where
+
+

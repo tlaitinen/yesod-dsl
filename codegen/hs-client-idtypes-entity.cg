@@ -1,0 +1,2 @@
+data ~{entityName e} = ~{entityName e}
+type ~{entityName e}Id = Key ~{entityName e}

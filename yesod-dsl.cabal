@@ -48,6 +48,7 @@ library
            YesodDsl.Generator.Classes
            YesodDsl.Generator.Common
            YesodDsl.Generator.Input
+           YesodDsl.Generator.Client
            YesodDsl.Generator.Esqueleto
            YesodDsl.Generator.GetHandler
            YesodDsl.Generator.Handlers
@@ -60,6 +61,7 @@ library
            YesodDsl.Generator.EsqueletoInstances
            YesodDsl.Generator.Json
            YesodDsl.Generator.PureScript
+           YesodDsl.Generator.HsClient
            YesodDsl.Generator.EntityFactories
            YesodDsl.SyncFile
 

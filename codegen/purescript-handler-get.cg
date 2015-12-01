@@ -1,12 +1,12 @@
 newtype ~{handlerEntityName} = ~{handlerEntityName} {
-~{indent 4 $ intercalate ",\n" $ map field $ outputFields h}}
+~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
 
 instance decodeJson~{handlerEntityName} :: DecodeJson ~{handlerEntityName} where
     decodeJson json = do
         x <- decodeJson json
-~{indent 8 $ concatMap decodeJsonExtract $ outputFields h}
+~{indent 8 $ concatMap decodeJsonExtract $ handlerOutputFields m h}
         pure $ ~{handlerEntityName} {
-~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ outputFields h}        }
+~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ handlerOutputFields m h}        }
 
 
 ~{lowerFirst handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> URIT.Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))

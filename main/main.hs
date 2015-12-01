@@ -8,12 +8,14 @@ import Control.Monad
 
 data Flag = Version 
           | JsonPath String 
+          | HsClient String
           | PureScriptPath String deriving Eq
           
 options :: [OptDescr Flag]
 options = [
     Option [] ["json"] (ReqArg JsonPath "FILE") "translate DSL definition to JSON object",
-    Option [] ["purescript"] (ReqArg PureScriptPath "FILE") "translate DSL definition to PureScript module",
+    Option [] ["purescript"] (ReqArg PureScriptPath "FILE") "generate client-side PureScript module",
+    Option [] ["hs-client"] (ReqArg HsClient "PATH") "generate client-side Haskell modules",
     Option ['v'] ["version"] (NoArg Version) "print version number"
   ]
 
@@ -44,4 +46,5 @@ main = do
                         Nothing -> return ()
         processFlag ast (JsonPath path) = genJson path ast
         processFlag ast (PureScriptPath path) = genPureScript path ast
+        processFlag ast (HsClient path) = genHsClient path ast
         processFlag _ _ = return ()

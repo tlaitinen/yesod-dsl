@@ -1,0 +1,12 @@
+{-# LANGUAGE TemplateHaskell #-}
+module ~{moduleName m}Client.Result where
+
+import Data.Int
+import Data.Aeson.TH
+
+data Result a = Result {
+    result      :: [a],
+    totalCount  :: Int64
+}
+$(deriveJSON defaultOptions ''Result)
+

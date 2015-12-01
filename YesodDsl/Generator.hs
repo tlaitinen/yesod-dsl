@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YesodDsl.Generator (generate, hsRouteName, genJson, genPureScript) where
+module YesodDsl.Generator (generate, hsRouteName, genJson, genPureScript, genHsClient) where
 import Prelude hiding (readFile)
 import System.FilePath (joinPath)    
 import System.Directory (createDirectoryIfMissing)
@@ -24,6 +24,7 @@ import YesodDsl.Generator.EsqueletoInstances
 import YesodDsl.Generator.Cabal
 import YesodDsl.Generator.Json
 import YesodDsl.Generator.PureScript
+import YesodDsl.Generator.HsClient
 import YesodDsl.SyncFile
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
@@ -96,3 +97,8 @@ genPureScript path m = do
     syncFile path $ moduleToPureScript m
     syncFile (replaceExtension path ".js") $ moduleToPureScriptJs m
 
+genHsClient :: FilePath -> Module -> IO ()
+genHsClient path m = do
+    createDirectoryIfMissing True $ joinPath [path, moduleName m ++ "Client" ]
+    forM_ (moduleToHsClient m) $ \(name, src) -> do
+        syncFile (joinPath [path, name]) src 

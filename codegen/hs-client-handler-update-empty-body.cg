@@ -1,0 +1,16 @@
+{-# LANGUAGE TemplateHaskell #-}
+module ~{moduleName m}Client.~{handlerEntityName} where
+
+import qualified Data.Aeson as A
+import qualified Network.Wreq as W
+import qualified Network.Wreq.Session as WS
+import qualified Network.Wreq.Types as WT
+import qualified Data.Aeson.TH as AT
+
+import ~{moduleName m}Client.Types
+import ~{moduleName m}Client.Enums
+
+~{defineResultType}
+~{methodName} :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> IO (W.Response Result)
+~{methodName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.~{methodName}Eith opts s (baseUrl~{routePathUrl r}) (A.object [])
+

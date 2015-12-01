@@ -1,2 +1,4 @@
-type ~{handlerEntityName}Result = {
+data Result = Result {
 ~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
+
+$(AT.deriveJSON AT.defaultOptions ''Result)

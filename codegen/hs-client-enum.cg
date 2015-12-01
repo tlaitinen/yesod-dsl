@@ -1,0 +1,4 @@
+data ~{enumName e} = ~{intercalate " | " $ map value $ enumValues e} 
+    deriving (Show, Eq, Ord)
+
+$(deriveJSON defaultOptions ''~{enumName e})

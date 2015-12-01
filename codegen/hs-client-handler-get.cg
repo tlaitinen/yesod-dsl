@@ -1,0 +1,21 @@
+{-# LANGUAGE TemplateHaskell #-}
+module ~{moduleName m}Client.~{handlerEntityName} where
+
+import qualified Data.Aeson as A
+import qualified Network.Wreq as W
+import qualified Network.Wreq.Session as WS
+import qualified Network.Wreq.Types as WT
+import qualified Data.Aeson.TH as AT
+
+import ~{moduleName m}Client.Result
+import ~{moduleName m}Client.Types
+import ~{moduleName m}Client.Enums
+
+data Record = Record {
+~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
+
+$(AT.deriveJSON AT.defaultOptions ''Record)
+
+get :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> IO (W.Response (Result Record))
+get s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.getWith opts s (baseUrl~{routePathUrl r}) 
+

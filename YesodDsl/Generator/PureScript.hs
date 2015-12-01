@@ -13,6 +13,7 @@ import Text.Shakespeare.Text hiding (toText)
 import Data.Generics.Uniplate.Data
 import YesodDsl.Generator.Common
 import YesodDsl.Generator.Input
+import YesodDsl.Generator.Client
   
 pureScriptFieldType :: Field -> String
 pureScriptFieldType f = (if fieldOptional f then "Maybe " else "") 
@@ -34,8 +35,6 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
         EntityField en -> en ++ "Id"
         EnumField en -> en
 
-mkField :: FieldName -> (Bool,FieldContent) -> Field
-mkField n (o,c) = Field (Loc "" 0 0) o n c [] Nothing
 
 moduleToPureScriptJs :: Module -> String
 moduleToPureScriptJs m = T.unpack $(codegenFile "codegen/purescript-js.cg")
@@ -51,17 +50,17 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 encodeValue v = T.unpack $(codegenFile "codegen/purescript-enum-encodevalue.cg")
         handler r h 
             | handlerType h == GetHandler = T.unpack $(codegenFile "codegen/purescript-handler-get.cg")
-            | null $ inputFields h =T.unpack $(codegenFile "codegen/purescript-handler-update-empty-body.cg")
+            | null $ handlerInputFields h =T.unpack $(codegenFile "codegen/purescript-handler-update-empty-body.cg")
             | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update.cg")
             where
                 defineResultType
-                    | null $ outputFields h = ""
+                    | null $ handlerOutputFields m h = ""
                     | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update-result-type.cg")
                 resultType 
-                    | null $ outputFields h = "Boolean"
+                    | null $ handlerOutputFields m h = "Boolean"
                     | otherwise = handlerEntityName ++ "Result"
                 processResult 
-                    | null $ outputFields h = T.unpack $(codegenFile "codegen/purescript-handler-update-boolean-result.cg")
+                    | null $ handlerOutputFields m h = T.unpack $(codegenFile "codegen/purescript-handler-update-boolean-result.cg")
                     | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update-process-result.cg")
                 field f  = rstrip $ T.unpack $(codegenFile "codegen/purescript-field.cg")
                 encodeJson (fn,Just f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-encodejson-field.cg")
@@ -72,6 +71,9 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
 
                 handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
                 handlerEntityName = handlerTypeName ++ concatMap pathName (routePath r) 
+
+        inputField (fn,Just f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
+        inputField (fn,Nothing) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")
         pathName pp = case pp of
             PathText t -> upperFirst t
             PathId _ en -> "_"
@@ -83,53 +85,4 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
             PathText t -> " ++ \"/" ++ t ++ "\""
             PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
         
-        outputFields h = concatMap stmtOutputs $ handlerStmts h
-        inputFields h = nubAttrs $ concatMap requestAttrs $ handlerStmts h
-        inputField (fn,Just f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
-        inputField (fn,Nothing) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")
-        
-
-            
-        stmtOutputs s = case s of
-            Select sq -> mapMaybe selectFieldToField $ sqFields sq
-            Return ofs -> mapMaybe (\(pn,fr,_) -> fieldRefToContent fr >>= Just . (mkField pn)) ofs
-            _ -> []
-        selectFieldToField sf = case sf of
-            SelectField (Var _ (Right e) mf) fn mvn -> do
-                f <- lookupField e fn
-                let f' = f { fieldOptional = fieldOptional f || mf }
-                Just $ case mvn of
-                    Just vn -> f' { fieldName = vn }
-                    Nothing -> f'
-            SelectIdField (Var _ (Right e) mf) mvn -> Just $ 
-                mkField (fromMaybe "id" mvn) (mf, EntityField $ entityName e)
-            SelectValExpr ve vn -> do
-                fc <- case ve of
-                    FieldExpr fr -> fieldRefToContent fr
-                    ValBinOpExpr _ op _ -> Just $ if op `elem` [Add,Sub,Div,Mul]
-                        then (False, NormalField FTDouble)
-                        else (False, NormalField FTText)
-                    RandomExpr -> Just (False, NormalField FTDouble)
-                    FloorExpr _ -> Just (False, NormalField FTDouble)
-                    CeilingExpr _ -> Just (False, NormalField FTDouble)
-                    ExtractExpr _ _ -> Just (False, NormalField FTDouble)
-                    ConcatManyExpr _ -> Just (False, NormalField FTText)
-                    _ -> Nothing
-                Just $ mkField vn fc
-            _ -> Nothing    
-        fieldRefToContent fr = case fr of
-            SqlId (Var _ (Right e) mf)     -> Just (mf, EntityField $ entityName e)
-            SqlField (Var _ (Right e) mf) fn -> do
-                f <- lookupField e fn
-                Just $ (fieldOptional f || mf, fieldContent f)
-            AuthId -> Just (False, EntityField "User")
-            AuthField fn -> listToMaybe [ (fieldOptional f, fieldContent f)
-                                          | e <- modEntities m,   
-                                            f <- entityFields e,  
-                                            entityName e == "User",
-                                            fieldName f == fn ]
-            LocalParamField (Var _ (Right e) mf) fn -> do
-                f <- lookupField e fn
-                Just $ (fieldOptional f || mf, fieldContent f)
-            _ -> Nothing
         entity e = T.unpack $(codegenFile "codegen/purescript-entity.cg")
