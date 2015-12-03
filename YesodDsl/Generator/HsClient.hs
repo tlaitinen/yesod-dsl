@@ -45,6 +45,11 @@ moduleToHsClient m = [
             | null $ handlerInputFields h =T.unpack $(codegenFile "codegen/hs-client-handler-update-empty-body.cg")
             | otherwise = T.unpack $(codegenFile "codegen/hs-client-handler-update.cg")
             where
+                fieldLabelModifier (src, dst) = T.unpack $(codegenFile "codegen/hs-client-field-label-modifier.cg")
+                fieldLabelModifiers = [ (fieldName f, fieldJsonName f) | f <- handlerOutputFields m h, fieldName f /= fieldJsonName f ] 
+                maybeFieldLabelModifier
+                    | null fieldLabelModifiers = ""
+                    | otherwise = T.unpack $(codegenFile "codegen/hs-client-field-label-modifiers.cg")
                 methodName = map toLower $ show $ handlerType h
                 defineResultType
                     | null $ handlerOutputFields m h = "type Result = A.Value" :: String

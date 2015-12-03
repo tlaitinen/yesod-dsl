@@ -15,7 +15,7 @@ import ~{moduleName m}Client.Json
 data Record = Record {
 ~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
 
-$(AT.deriveJSON AT.defaultOptions ''Record) -- TODO: handle different json names with fieldLabelModifier
+$(AT.deriveJSON AT.defaultOptions~{maybeFieldLabelModifier} ''Record)
 
 get :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> IO (W.Response (Result Record))
 get s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.getWith opts s (baseUrl~{routePathUrl r}) 

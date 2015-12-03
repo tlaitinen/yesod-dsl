@@ -21,7 +21,7 @@ handlerOutputFields m h = concatMap stmtOutputs $ handlerStmts h
                 f <- lookupField e fn
                 let f' = f { fieldOptional = fieldOptional f || mf }
                 Just $ case mvn of
-                    Just vn -> f' { fieldName = vn }
+                    Just vn -> f' { fieldOptions = [ FieldJsonName vn ] ++ fieldOptions f'  }
                     Nothing -> f'
             SelectIdField (Var _ (Right e) mf) mvn -> Just $ 
                 mkField (fromMaybe "id" mvn) (mf, EntityField $ entityName e)
