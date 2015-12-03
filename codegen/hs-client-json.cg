@@ -1,0 +1,28 @@
+{-# LANGUAGE CPP #-}
+module ~{moduleName m}Client.Json where
+
+import Data.Aeson
+import Data.Time
+import Control.Monad (mzero)
+
+instance ToJSON Day where
+    toJSON = toJSON . show
+
+#ifndef no_FromJSON_Day
+instance FromJSON Day where
+    parseJSON x = do
+        s <- parseJSON x
+        case reads s of
+            (d, _):_ -> return d
+            [] -> mzero
+#endif
+
+instance ToJSON TimeOfDay where
+    toJSON = toJSON . show
+
+instance FromJSON TimeOfDay where
+    parseJSON x = do
+        s <- parseJSON x
+        case reads s of
+            (d, _):_ -> return d
+            [] -> mzero

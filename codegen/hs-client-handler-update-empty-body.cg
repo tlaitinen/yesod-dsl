@@ -9,8 +9,9 @@ import qualified Data.Aeson.TH as AT
 
 import ~{moduleName m}Client.Types
 import ~{moduleName m}Client.Enums
+import ~{moduleName m}Client.Json
 
 ~{defineResultType}
 ~{methodName} :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> IO (W.Response Result)
-~{methodName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.~{methodName}Eith opts s (baseUrl~{routePathUrl r}) (A.object [])
+~{methodName} s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.~{methodName}With opts s (baseUrl~{routePathUrl r}) (A.object [])
 

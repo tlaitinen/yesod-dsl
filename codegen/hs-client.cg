@@ -1,10 +1,12 @@
 module ~{moduleName m}Client (
     module ~{moduleName m}Client.Types,
-    module ~{moduleName m}Client.Result
+    module ~{moduleName m}Client.Result,
+    module ~{moduleName m}Client.Enums
 ) where
 
 import ~{moduleName m}Client.Types
 import ~{moduleName m}Client.Result
+import ~{moduleName m}Client.Enums
 
 
 

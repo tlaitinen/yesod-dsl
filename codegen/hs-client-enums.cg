@@ -1,3 +1,7 @@
-module ~{moduleName m}Client.Enums where
+module ~{moduleName m}Client.Enums (
+~{indent 4 $ intercalate ",\n" $ map (rstrip . exportEnum) $ modEnums m}
+) where
+
+~{concatMap importEnum $ modEnums m}
 
 

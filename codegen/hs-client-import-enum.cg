@@ -1,0 +1,1 @@
+import qualified ~{moduleName m}Client.~{enumName e} as ~{enumName e}

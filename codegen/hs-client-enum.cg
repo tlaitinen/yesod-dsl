@@ -1,4 +1,8 @@
-data ~{enumName e} = ~{intercalate " | " $ map value $ enumValues e} 
-    deriving (Show, Eq, Ord)
+{-# LANGUAGE TemplateHaskell #-}
+module ~{moduleName m}Client.~{enumName e} where
+import qualified Data.Aeson.TH as AT
 
-$(deriveJSON defaultOptions ''~{enumName e})
+data ~{enumName e} = ~{intercalate " | " $ enumValues e} 
+    deriving (Show, Eq, Ord, Read)
+
+$(AT.deriveJSON AT.defaultOptions ''~{enumName e})

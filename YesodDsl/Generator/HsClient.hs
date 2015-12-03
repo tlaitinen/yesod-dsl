@@ -25,18 +25,21 @@ moduleToHsClient m = [
         (baseName ++ ".hs", T.unpack $(codegenFile "codegen/hs-client.cg")),
         (joinPath [baseName, "Result.hs"], T.unpack $(codegenFile "codegen/hs-client-result.cg")),
         (joinPath [baseName, "Types.hs"], T.unpack $(codegenFile "codegen/hs-client-types.cg")),
+        (joinPath [baseName, "Json.hs"], T.unpack $(codegenFile "codegen/hs-client-json.cg")),
         (joinPath [baseName, "Enums.hs"], T.unpack $(codegenFile "codegen/hs-client-enums.cg"))
 
         
     ] ++ [ (handlerFileName r h,  handler r h) 
             | r <- modRoutes m, h <- routeHandlers r ]
+      ++ [ (enumFileName e, enum e) | e <- modEnums m ]
     where
+        importEnum e = T.unpack $(codegenFile "codegen/hs-client-import-enum.cg")
+        exportEnum e = T.unpack $(codegenFile "codegen/hs-client-export-enum.cg")
         entityIdType e = T.unpack $(codegenFile "codegen/hs-client-idtypes-entity.cg")
         baseName = moduleName m ++ "Client"
         handlerFileName r h = joinPath [ baseName, (upperFirst . (map toLower) . show . handlerType) h ++ concatMap pathName (routePath r) ++ ".hs" ]
+        enumFileName e = joinPath [ baseName, enumName e  ++ ".hs" ]
         enum e = T.unpack $(codegenFile "codegen/hs-client-enum.cg")
-            where
-                value v = enumName e ++ v
         handler r h 
             | handlerType h == GetHandler = T.unpack $(codegenFile "codegen/hs-client-handler-get.cg")
             | null $ handlerInputFields h =T.unpack $(codegenFile "codegen/hs-client-handler-update-empty-body.cg")
