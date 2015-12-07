@@ -1,5 +1,7 @@
 module YesodDsl.Generator.Common where
 import YesodDsl.AST
+import Language.Haskell.HsColour.Classify
+
 brackets :: Bool -> String -> String
 brackets True s = "(" ++ s ++ ")"
 brackets False s = s
@@ -26,5 +28,13 @@ entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 
 resultMapper :: Maybe FunctionName -> String
 resultMapper mmapper = maybe "" ((" $ " ++) . (++ " $ ")) mmapper
+
+isKeyword :: String -> Bool
+isKeyword = (== [Keyword]) . map fst . tokenise
+
+safeHsName :: String -> String
+safeHsName x
+    | isKeyword x = x ++ "_"
+    | otherwise = x
 
 

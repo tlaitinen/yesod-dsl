@@ -46,7 +46,7 @@ moduleToHsClient m = [
             | otherwise = T.unpack $(codegenFile "codegen/hs-client-handler-update.cg")
             where
                 fieldLabelModifier (src, dst) = T.unpack $(codegenFile "codegen/hs-client-field-label-modifier.cg")
-                fieldLabelModifiers = [ (fieldName f, fieldJsonName f) | f <- handlerOutputFields m h, fieldName f /= fieldJsonName f ] 
+                fieldLabelModifiers = [ (safeHsName $ fieldJsonName f, fieldJsonName f) | f <- handlerOutputFields m h, safeHsName (fieldJsonName f) /= fieldJsonName f ] 
                 maybeFieldLabelModifier
                     | null fieldLabelModifiers = ""
                     | otherwise = T.unpack $(codegenFile "codegen/hs-client-field-label-modifiers.cg")

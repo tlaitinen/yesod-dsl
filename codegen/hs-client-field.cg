@@ -1,1 +1,1 @@
-~{fieldName f} :: ~{hsFieldType f}
+~{safeHsName $ fieldJsonName f} :: ~{hsFieldType f}

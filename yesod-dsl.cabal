@@ -32,6 +32,7 @@ library
                  , aeson
                  , bytestring
                  , aeson-pretty
+                 , hscolour
     Build-tools:         alex, happy
     ghc-options: -Wall 
     exposed: True
