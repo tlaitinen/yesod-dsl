@@ -10,7 +10,7 @@ import Prelude
 import Data.Int (Int32, Int64)
 import Data.Word (Word32, Word64)
 import Data.Text (Text)
-import Data.Time (UTCTime, Day)
+import Data.Time (UTCTime, Day, TimeOfDay)
 import Data.Aeson
 import Data.Aeson.TH
 

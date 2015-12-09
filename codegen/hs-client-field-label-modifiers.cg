@@ -1,5 +1,5 @@
 { 
-    fieldLabelModifier = \x -> case x of 
-~{indent 8 $ concatMap fieldLabelModifier fieldLabelModifiers}            _ -> x
+    AT.fieldLabelModifier = \x -> case x of 
+~{indent 8 $ concatMap fieldLabelModifier fieldLabelModifiers}        _ -> x
 }
 

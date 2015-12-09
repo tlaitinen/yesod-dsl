@@ -22,7 +22,7 @@ mkField n (o,c) = Field (Loc "" 0 0) o n c [] Nothing
 
 moduleToHsClient :: Module -> [(FilePath, String)]
 moduleToHsClient m = [ 
-        (baseName ++ ".hs", T.unpack $(codegenFile "codegen/hs-client.cg")),
+        (baseName ++".hs", T.unpack $(codegenFile "codegen/hs-client.cg")),
         (joinPath [baseName, "Result.hs"], T.unpack $(codegenFile "codegen/hs-client-result.cg")),
         (joinPath [baseName, "Types.hs"], T.unpack $(codegenFile "codegen/hs-client-types.cg")),
         (joinPath [baseName, "Json.hs"], T.unpack $(codegenFile "codegen/hs-client-json.cg")),
@@ -37,7 +37,7 @@ moduleToHsClient m = [
         exportEnum e = T.unpack $(codegenFile "codegen/hs-client-export-enum.cg")
         entityIdType e = T.unpack $(codegenFile "codegen/hs-client-idtypes-entity.cg")
         baseName = moduleName m ++ "Client"
-        handlerFileName r h = joinPath [ baseName, (upperFirst . (map toLower) . show . handlerType) h ++ concatMap pathName (routePath r) ++ ".hs" ]
+        handlerFileName r h = joinPath [ baseName, (upperFirst . (map toLower) . show . handlerType) h ++ concatMap pathName (routePath r)   ++ ".hs"]
         enumFileName e = joinPath [ baseName, enumName e  ++ ".hs" ]
         enum e = T.unpack $(codegenFile "codegen/hs-client-enum.cg")
         handler r h 
@@ -45,6 +45,9 @@ moduleToHsClient m = [
             | null $ handlerInputFields h =T.unpack $(codegenFile "codegen/hs-client-handler-update-empty-body.cg")
             | otherwise = T.unpack $(codegenFile "codegen/hs-client-handler-update.cg")
             where
+                ifBodyAllowed content 
+                    | handlerType h `elem` [PutHandler, PostHandler] = content :: String
+                    | otherwise = ""
                 fieldLabelModifier (src, dst) = T.unpack $(codegenFile "codegen/hs-client-field-label-modifier.cg")
                 fieldLabelModifiers = [ (safeHsName $ fieldJsonName f, fieldJsonName f) | f <- handlerOutputFields m h, safeHsName (fieldJsonName f) /= fieldJsonName f ] 
                 maybeFieldLabelModifier

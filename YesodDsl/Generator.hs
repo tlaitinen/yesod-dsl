@@ -12,7 +12,8 @@ import qualified Data.Text as T
 import Data.List
 import Data.Maybe
 import Control.Monad
-import System.FilePath (replaceExtension)
+import System.FilePath (replaceExtension, dropExtension)
+import Data.String.Utils (replace)
 
 import YesodDsl.Generator.Models
 import YesodDsl.Generator.EntityFactories
@@ -35,13 +36,13 @@ allImports m = concatMap fmtImport $ modImports m
 fmtImport :: Import -> String
 fmtImport i = T.unpack $(codegenFile "codegen/import.cg")    
 
-writeRoute :: Module -> Route -> IO ()
-writeRoute m r = do
-    let content = concatMap (handler m r) (routeHandlers r)
-    syncFile (joinPath ["Handler", moduleName m, 
-                                      routeModuleName r ++ ".hs"]) $
-        T.unpack $(codegenFile "codegen/route-header.cg") ++ content
+routeFile :: Module -> Route -> (FilePath, String)
+routeFile m r = (joinPath ["Handler", moduleName m, 
+                                      routeModuleName r ++ ".hs"],
+                 T.unpack $(codegenFile "codegen/route-header.cg") 
+                    ++ content)
     where
+        content = concatMap (handler m r) (routeHandlers r)
         imports = concatMap fmtImport $ filter ((`elem` modules) . importModule) $ modImports m
         modules = nub $ catMaybes $ [ 
                             Map.lookup fn importedFunctions 
@@ -55,38 +56,62 @@ writeRoute m r = do
                         ++ concat [ catMaybes [ mm | (_,_,mm) <- ifs ] 
                                     | Update _ _ (Just ifs) <- universeBi r ] 
                         ++ concat [ catMaybes [ mm | (_,_,mm) <- ifs ] | Insert _ (Just (Just _, ifs)) _ <- universeBi r ]
+pathToModuleName :: String -> String
+pathToModuleName = (replace "/" ".") . dropExtension                        
+
 generate :: FilePath -> Module -> IO ()
 generate path m = do
-    syncCabal path m
     createDirectoryIfMissing True (joinPath ["Handler", moduleName m])
-    syncFile (joinPath ["Handler", moduleName m, "Enums.hs"]) $
-        T.unpack $(codegenFile "codegen/enums-header.cg")
-            ++ (concatMap enum $ modEnums m)
-    syncFile (joinPath ["Handler", moduleName m, "Esqueleto.hs"]) $
-        T.unpack $(codegenFile "codegen/esqueleto-header.cg")
-        ++ (esqueletoInstances m)        
 
-    forM_ (modRoutes m) (writeRoute m)
-    syncFile (joinPath ["Handler", moduleName m, "Internal.hs"]) $
-        T.unpack $(codegenFile "codegen/header.cg")
-            ++ models m
-            ++ entityFactories m
-            ++ classes m
-            ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))      
-    syncFile (joinPath ["Handler", moduleName m, "Validation.hs"]) $
-        T.unpack $(codegenFile "codegen/validation-header.cg")
-            ++ (concatMap validationEntity (modEntities m))
-    syncFile (joinPath ["Handler", moduleName m, "Routes.hs"]) $
-           routes m
-    syncFile (joinPath ["Handler", moduleName m ++ ".hs"]) $ 
-        T.unpack $(codegenFile "codegen/dispatch.cg")
-    syncFile (joinPath ["Handler", moduleName m, "PathPieces.hs"]) $
-        T.unpack $(codegenFile "codegen/path-pieces.cg")
-    syncFile (joinPath ["Handler", moduleName m, "FilterSort.hs"]) $
-        T.unpack $(codegenFile "codegen/filter-sort.cg")    
+    forM_ files $ uncurry syncFile
+    syncCabal (replaceExtension path ".cabal") cabalDeps (moduleName m) moduleNames
     where
-           routeImport r = T.unpack $(codegenFile "codegen/route-import.cg")
+        moduleNames = map (pathToModuleName . fst) files
+        files = [(joinPath ["Handler", moduleName m, "Enums.hs"],
+                  T.unpack $(codegenFile "codegen/enums-header.cg")
+                    ++ (concatMap enum $ modEnums m)),
+                 (joinPath ["Handler", moduleName m, "Esqueleto.hs"],
+                  T.unpack $(codegenFile "codegen/esqueleto-header.cg")
+                    ++ (esqueletoInstances m)),
+                 (joinPath ["Handler", moduleName m, "Internal.hs"],
+                  T.unpack $(codegenFile "codegen/header.cg")
+                        ++ models m
+                        ++ entityFactories m
+                        ++ classes m
+                        ++ (T.unpack $(codegenFile "codegen/json-wrapper.cg"))),
+                 (joinPath ["Handler", moduleName m, "Validation.hs"],
+                  T.unpack $(codegenFile "codegen/validation-header.cg")
+                    ++ (concatMap validationEntity (modEntities m))),
+                 (joinPath ["Handler", moduleName m, "Routes.hs"],
+                  routes m),
+                 (joinPath ["Handler", moduleName m ++ ".hs"],
+                  T.unpack $(codegenFile "codegen/dispatch.cg")),
+                 (joinPath ["Handler", moduleName m, "PathPieces.hs"],
+                  T.unpack $(codegenFile "codegen/path-pieces.cg")),
+                 (joinPath ["Handler", moduleName m, "FilterSort.hs"],
+                  T.unpack $(codegenFile "codegen/filter-sort.cg"))]
+                    ++ [ routeFile m r | r <- modRoutes m ]
+        routeImport r = T.unpack $(codegenFile "codegen/route-import.cg")
 
+        cabalDeps = ["unordered-containers",
+                    "transformers",
+                    "tagged",
+                    "blaze-builder",
+                    "http-types",
+                    "wai",
+                    "resourcet",
+                    "attoparsec",
+                    "time",
+                    "vector",
+                    "esqueleto",
+                    "yesod-persistent",
+                    "old-locale",
+                    "filepath",
+                    "unix",
+                    "path-pieces",
+                    "conduit-extra",
+                    "exceptions"
+                    ] 
                             
 
 genJson :: FilePath -> Module -> IO ()
@@ -99,6 +124,11 @@ genPureScript path m = do
 
 genHsClient :: FilePath -> Module -> IO ()
 genHsClient path m = do
-    createDirectoryIfMissing True $ joinPath [path, moduleName m ++ "Client" ]
+    createDirectoryIfMissing True $ joinPath [path, clientModuleName ]
     forM_ (moduleToHsClient m) $ \(name, src) -> do
         syncFile (joinPath [path, name]) src 
+    syncCabal (joinPath [ path, path ++ ".cabal"]) cabalDeps (clientModuleName) moduleNames
+    where
+        moduleNames = map (pathToModuleName . fst) $ moduleToHsClient m
+        clientModuleName = moduleName m ++ "Client"
+        cabalDeps = ["aeson", "wreq", "time", "text"]    

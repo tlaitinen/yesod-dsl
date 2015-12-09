@@ -13,5 +13,5 @@ import ~{moduleName m}Client.Json
 
 ~{defineResultType}
 ~{methodName} :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> IO (W.Response Result)
-~{methodName} s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.~{methodName}With opts s (baseUrl~{routePathUrl r}) (A.object [])
+~{methodName} s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} = W.asJSON =<< WS.~{methodName}With opts s (baseUrl~{routePathUrl r}) ~{ifBodyAllowed "(A.object [])"}
 

@@ -17,6 +17,6 @@ data Request = Request {
 $(AT.deriveJSON AT.defaultOptions ''Request)
 
 ~{defineResultType}
-~{methodName} :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Request -> IO (W.Response Result)
-~{methodName} s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} request = W.asJSON =<< WS.~{methodName}With opts s (baseUrl~{routePathUrl r}) (A.toJSON request)
+~{methodName} :: WS.Session -> WT.Options -> String~{concatMap (prepend " -> ") $ map snd $ routePathParams r}~{ifBodyAllowed " -> Request"} -> IO (W.Response Result)
+~{methodName} s opts baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r}~{ifBodyAllowed " request"} = W.asJSON =<< WS.~{methodName}With opts s (baseUrl~{routePathUrl r}) ~{ifBodyAllowed "(A.toJSON request)"}
 
