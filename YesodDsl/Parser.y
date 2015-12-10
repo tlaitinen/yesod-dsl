@@ -138,7 +138,6 @@ import Data.List
     for { Tk _ TFor }
     extract { Tk _ TExtract }
     concat { Tk _ TConcat }
-    random { Tk _ TRandom }
     floor { Tk _ TFloor }
     ceiling { Tk _ TCeiling }
     exists { Tk _ TExists }
@@ -685,7 +684,7 @@ jsonFields : jsonField { [$1] }
     
 expr : 
      lparen expr rparen { $2 }
-     | not expr { NotExpr $2 }
+     | not expr { UnOpExpr Not $2 }
      | exists lparen pushScope selectQuery popScope rparen
                    { ExistsExpr $4 }
      | fieldRef { FieldExpr $1 }
@@ -708,15 +707,14 @@ expr :
      | expr minus expr { BinOpExpr $1 Sub $3 }
      | expr concatop expr { BinOpExpr $1 Concat $3 }
      | concat lparen exprlist rparen { ConcatManyExpr (reverse $3) }
-     | random lparen rparen { RandomExpr }
-     | floor lparen expr rparen { FloorExpr $3 }
-     | ceiling lparen expr rparen { CeilingExpr $3 }
+     | floor lparen expr rparen { UnOpExpr Floor $3 }
+     | ceiling lparen expr rparen { UnOpExpr Ceiling $3 }
      | extract lparen lowerIdTk from expr rparen {% 
          do
              let s3 = tkString $3
              l3 <- mkLoc $3 
              validateExtractField l3 s3
-             return $ ExtractExpr (tkString $3) $5  
+             return $ UnOpExpr (Extract (tkString $3)) $5  
      }
      | lparen pushScope selectQuery popScope rparen
                 { SubQueryExpr $3 }

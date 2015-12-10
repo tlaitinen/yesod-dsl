@@ -98,10 +98,10 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         ConcatManyExpr _ -> String "string"
                         BinOpExpr _ Concat _ -> String "string"
                         BinOpExpr _ _ _ -> String "number"
-                        RandomExpr -> String "number"
-                        FloorExpr _ -> String "number"
-                        CeilingExpr _ -> String "number"
-                        ExtractExpr _ _ -> String "string"
+                        UnOpExpr Floor _ -> String "number"
+                        UnOpExpr Ceiling _ -> String "number"
+                        UnOpExpr Not _ -> String "boolean"
+                        UnOpExpr (Extract _) _ -> String "string"
                         _ -> Null
                     _ -> Null    
                 references = case sf of

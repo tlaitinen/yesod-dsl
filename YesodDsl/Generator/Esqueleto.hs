@@ -32,7 +32,12 @@ hsBinOp op = case op of
     And -> "&&."
     Or -> "||."
 
-
+hsUnOp :: UnOp -> String
+hsUnOp op = case op of
+    Not -> "not_"
+    Floor -> "floor_"
+    Ceiling -> "ceiling_"
+    Extract fn -> "extractSubField " ++ (quote $ extractSubField fn) 
 
 type TypeName = String
 data Context = Context {
@@ -161,20 +166,10 @@ hsExpr ml ve = do
                            (hsExpr (max 0 $ e1m - e2m) e2)
                     return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
          
-            RandomExpr -> return "random_"
-            FloorExpr ve' -> local noListValue $ do
-                r <- hsExpr 0 ve'
-                return $ "(floor_ $  " ++ r ++ ")"
-            CeilingExpr ve' -> local noListValue $  do
-                r <- hsExpr 0 ve'
-                return $ "(ceiling_ $ " ++ r ++ ")"
-            ExtractExpr fn ve' -> local noListValue $ do
-                r <- hsExpr 0 ve'
-                return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " $ " ++ r++ ")"
             SubQueryExpr sq -> local noListValue $ subQuery "subList_select" sq
-            NotExpr e -> local noListValue $ do
+            UnOpExpr op e -> local noListValue $ do
                 r <- hsExpr 0 e
-                return $ "not_ (" ++ r ++ ")"
+                return $ "(" ++ hsUnOp op ++ " $ " ++ r ++ ")"
             ExistsExpr sq -> local noListValue $ subQuery "exists" sq
             ExternExpr ee ps -> local noListValue $ do
                 ps' <- mapM externExprParam ps
@@ -193,10 +188,8 @@ exprMaybeLevel :: Expr -> Int
 exprMaybeLevel ve = case ve of
     FieldExpr fr -> fieldRefMaybeLevel fr
     ConcatManyExpr _ -> 0
-    BinOpExpr e1 _ e2 -> max (exprMaybeLevel e1) (exprMaybeLevel e2)
-    FloorExpr e -> exprMaybeLevel e
-    CeilingExpr e -> exprMaybeLevel e
-    ExtractExpr _ _ -> 0
+    BinOpExpr e1 _ e2 -> 0
+    UnOpExpr _ e -> 0
     SubQueryExpr sq -> fromMaybe 0 $ listToMaybe $ map exprMaybeLevel $ concatMap (selectFieldExprs) $ sqFields sq
     _ -> 0
     where
@@ -208,9 +201,9 @@ exprMaybeLevel ve = case ve of
  
 exprReturnType :: Expr -> Maybe String
 exprReturnType e = case e of
-    FloorExpr _ -> Just "Double"
-    CeilingExpr _ -> Just "Double"
-    ExtractExpr _ _ -> Just "Double"
+    UnOpExpr Floor _ -> Just "Double"
+    UnOpExpr Ceiling _ -> Just "Double"
+    UnOpExpr (Extract _) _ -> Just "Double"
     _ -> Nothing
 
 mapJoinExpr :: Join -> Reader Context String

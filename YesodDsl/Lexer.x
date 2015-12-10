@@ -125,7 +125,6 @@ tokens :-
     $digit+ 		{ mkTvar (TInt . read) }
     $digit+ "." $digit+ { mkTvar (TFloat . read) }
      "now" { mkT TNow }
-     "random" { mkT TRandom }
      "ceiling" { mkT TCeiling }
      "floor" { mkT TFloor }
      "exists" { mkT TExists }
@@ -254,7 +253,6 @@ data TokenType = TSemicolon
            | TFor
            | TExtract
            | TConcat
-           | TRandom
            | TFloor
            | TCeiling
            | TExists

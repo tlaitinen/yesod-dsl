@@ -31,10 +31,10 @@ handlerOutputFields m h = concatMap stmtOutputs $ handlerStmts h
                     BinOpExpr _ op _ -> Just $ if op `elem` [Add,Sub,Div,Mul]
                         then (False, NormalField FTDouble)
                         else (False, NormalField FTText)
-                    RandomExpr -> Just (False, NormalField FTDouble)
-                    FloorExpr _ -> Just (False, NormalField FTDouble)
-                    CeilingExpr _ -> Just (False, NormalField FTDouble)
-                    ExtractExpr _ _ -> Just (False, NormalField FTDouble)
+                    UnOpExpr Floor _ -> Just (False, NormalField FTDouble)
+                    UnOpExpr Ceiling _ -> Just (False, NormalField FTDouble)
+                    UnOpExpr (Extract _) _ -> Just (False, NormalField FTDouble)
+                    UnOpExpr Not _ -> Just (False, NormalField FTBool)
                     ConcatManyExpr _ -> Just (False, NormalField FTText)
                     _ -> Nothing
                 Just $ mkField vn fc

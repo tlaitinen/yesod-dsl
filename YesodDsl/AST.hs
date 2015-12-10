@@ -89,6 +89,8 @@ isOuterJoin _ = False
 
 data BinOp = And | Or | Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn | Add | Sub | Div | Mul | Concat  deriving (Show,Eq, Data,Typeable)     
 
+data UnOp = Floor | Ceiling | Not | Extract FieldName deriving (Show, Eq, Data, Typeable)
+
 data FunctionParam = FieldRefParam FieldRef
                    | VerbatimParam String
     deriving (Show, Eq, Data, Typeable)
@@ -96,13 +98,9 @@ data FunctionParam = FieldRefParam FieldRef
 type MaybeLevel = Int
     
 data Expr = FieldExpr FieldRef
-          | NotExpr Expr
           | ConcatManyExpr [Expr]
           | BinOpExpr Expr BinOp Expr 
-          | RandomExpr
-          | FloorExpr Expr
-          | CeilingExpr Expr
-          | ExtractExpr FieldName Expr
+          | UnOpExpr UnOp Expr
           | SubQueryExpr SelectQuery 
           | ExistsExpr SelectQuery
           | ExternExpr FunctionName [FunctionParam]
