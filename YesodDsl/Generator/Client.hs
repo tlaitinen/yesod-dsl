@@ -25,10 +25,10 @@ handlerOutputFields m h = concatMap stmtOutputs $ handlerStmts h
                     Nothing -> f'
             SelectIdField (Var _ (Right e) mf) mvn -> Just $ 
                 mkField (fromMaybe "id" mvn) (mf, EntityField $ entityName e)
-            SelectValExpr ve vn -> do
+            SelectExpr ve vn -> do
                 fc <- case ve of
                     FieldExpr fr -> fieldRefToContent fr
-                    ValBinOpExpr _ op _ -> Just $ if op `elem` [Add,Sub,Div,Mul]
+                    BinOpExpr _ op _ -> Just $ if op `elem` [Add,Sub,Div,Mul]
                         then (False, NormalField FTDouble)
                         else (False, NormalField FTText)
                     RandomExpr -> Just (False, NormalField FTDouble)

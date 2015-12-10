@@ -39,7 +39,7 @@ updateHandlerRunDB (pId,p) = concat $ [
                 let maybeExpr = rstrip $ T.unpack $(codegenFile "codegen/delete-all.cg") 
                 in T.unpack $(codegenFile "codegen/delete.cg")
             DeleteFrom (Right en) vn (Just e) -> 
-                    let maybeExpr = scopedBoolExpr (Map.fromList [(vn,(en,False))]) e
+                    let maybeExpr = scopedExpr (Map.fromList [(vn,(en,False))]) e
                     in T.unpack $(codegenFile "codegen/delete.cg")
             For vn fr hps -> 
                 let content = concatMap updateHandlerRunDB $ zip [1..] hps

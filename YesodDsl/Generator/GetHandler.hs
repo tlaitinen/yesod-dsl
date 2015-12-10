@@ -76,7 +76,7 @@ defaultSortFields sq = do
 
 implicitJoinExpr :: Join -> Reader Context String
 implicitJoinExpr (Join _ _ _ (Just expr)) = do
-    e <- hsBoolExpr expr
+    e <- hsExpr 0 expr
     return $ "where_ (" ++ e ++ ")\n"
 implicitJoinExpr _ = return ""
 
@@ -85,7 +85,7 @@ baseIfFilter :: IfFilterParams -> Reader Context String
 baseIfFilter (pn,joins,bExpr,useFlag) = withScope 
     (Map.fromList $ catMaybes [ either (\_ -> Nothing) (\e -> Just (joinAlias j, (e, isOuterJoin $ joinType j))) $ joinEntity j | j <- joins]) $ do
         joinExprs <- liftM concat $ mapM implicitJoinExpr joins
-        expr <- hsBoolExpr bExpr
+        expr <- hsExpr 0 bExpr
         return $ T.unpack $ if useFlag
             then $(codegenFile "codegen/base-if-filter.cg")
             else $(codegenFile "codegen/base-if-filter-nouse.cg")
@@ -109,7 +109,7 @@ getHandlerSelect ps =
                           else ""
             maybeWhere <- case sqWhere sq of
                 Just expr -> do
-                    e <- hsBoolExpr expr
+                    e <- hsExpr 0 expr
                     return $ "where_ (" ++ e ++ ")\n"
                 Nothing -> return ""
             joinExprs <- liftM concat $ mapM mapJoinExpr $ reverse $ sqJoins sq
@@ -144,7 +144,7 @@ getHandlerReturn sq jsonMappers = T.unpack $(codegenFile "codegen/get-handler-re
         resultFields = map (\(_,i) -> "(Database.Esqueleto.Value f"++ show i ++ ")")  fieldNames
         expand (SelectField _ fn an') = [ maybe fn id an' ]
         expand (SelectIdField _ an') = [ maybe "id" id an' ]
-        expand (SelectValExpr _ an) = [ an ]
+        expand (SelectExpr _ an) = [ an ]
         expand _ = []
         mapResultField (fn,i) = T.unpack $(codegenFile "codegen/map-result-field.cg")
 

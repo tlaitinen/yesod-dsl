@@ -87,16 +87,7 @@ isOuterJoin RightOuterJoin = True
 isOuterJoin FullOuterJoin = True
 isOuterJoin _ = False
 
-data BinOp = Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn  deriving (Show,Eq, Data,Typeable)     
-data ValBinOp = Add | Sub | Div | Mul | Concat deriving (Show,Eq, Data,Typeable)    
-
-data BoolExpr = AndExpr BoolExpr BoolExpr
-          | OrExpr BoolExpr BoolExpr
-          | NotExpr BoolExpr
-          | BinOpExpr ValExpr BinOp ValExpr 
-          | ExistsExpr SelectQuery
-          | ExternExpr FunctionName [FunctionParam]
-          deriving (Show, Eq, Data, Typeable)
+data BinOp = And | Or | Eq | Ne | Lt | Gt | Le | Ge | Like | Ilike | Is | In | NotIn | Add | Sub | Div | Mul | Concat  deriving (Show,Eq, Data,Typeable)     
 
 data FunctionParam = FieldRefParam FieldRef
                    | VerbatimParam String
@@ -104,15 +95,18 @@ data FunctionParam = FieldRefParam FieldRef
 
 type MaybeLevel = Int
     
-data ValExpr = FieldExpr FieldRef
-           | ConcatManyExpr [ValExpr]
-           | ValBinOpExpr ValExpr ValBinOp ValExpr 
-           | RandomExpr
-           | FloorExpr ValExpr
-           | CeilingExpr ValExpr
-           | ExtractExpr FieldName ValExpr
-           | SubQueryExpr SelectQuery 
-           deriving (Show, Eq, Data, Typeable)
+data Expr = FieldExpr FieldRef
+          | NotExpr Expr
+          | ConcatManyExpr [Expr]
+          | BinOpExpr Expr BinOp Expr 
+          | RandomExpr
+          | FloorExpr Expr
+          | CeilingExpr Expr
+          | ExtractExpr FieldName Expr
+          | SubQueryExpr SelectQuery 
+          | ExistsExpr SelectQuery
+          | ExternExpr FunctionName [FunctionParam]
+          deriving (Show, Eq, Data, Typeable)
 
 type EntityRef = Either EntityName Entity
 entityRefName :: EntityRef -> EntityName
@@ -124,7 +118,7 @@ data Stmt = Public
                   | DefaultFilterSort
                   | Select SelectQuery 
                   | IfFilter IfFilterParams
-                  | DeleteFrom EntityRef VariableName (Maybe BoolExpr)
+                  | DeleteFrom EntityRef VariableName (Maybe Expr)
                   | GetById EntityRef FieldRef VariableName
                   | Update EntityRef FieldRef (Maybe [FieldRefMapping])
                   | Insert EntityRef (Maybe (Maybe VariableName, [FieldRefMapping])) (Maybe VariableName)
@@ -135,13 +129,13 @@ data Stmt = Public
                   | MapJson FunctionName
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
-type IfFilterParams = (ParamName,[Join],BoolExpr,UseParamFlag)
+type IfFilterParams = (ParamName,[Join],Expr,UseParamFlag)
 
 data SelectQuery = SelectQuery {
     sqFields       :: [SelectField],
     sqFrom         :: (EntityRef, VariableName),
     sqJoins        :: [Join],
-    sqWhere        :: Maybe BoolExpr,
+    sqWhere        :: Maybe Expr,
     sqOrderBy        :: [(FieldRef, SortDir)],
     sqLimitOffset  :: (Int, Int)
 } deriving (Show, Eq, Data, Typeable)    
@@ -156,15 +150,14 @@ sqAliases sq = Map.fromList $ catMaybes $ (either (\_ -> Nothing) (\e -> Just (v
 data SelectField = SelectAllFields VariableRef
                  | SelectField VariableRef FieldName (Maybe VariableName)
                  | SelectIdField VariableRef (Maybe VariableName)
-                 | SelectValExpr ValExpr VariableName
-                 deriving (Show, Eq, Data, Typeable)
-
-    
+                 | SelectExpr Expr VariableName
+                deriving (Show, Eq, Data, Typeable)
+                    
 data Join = Join {
     joinType   :: JoinType,
     joinEntity :: EntityRef,
     joinAlias  :: VariableName,
-    joinExpr   :: Maybe BoolExpr
+    joinExpr   :: Maybe Expr
 } deriving (Show, Eq, Data, Typeable)
 
 type FieldRefMapping = (ParamName, FieldRef, Maybe FunctionName)

@@ -15,7 +15,7 @@ requireStmts ps = concatMap f $ zip ([1..] :: [Int]) ps
             (do
                 mw <- case sqWhere sq of
                     Just expr -> do
-                        e <- hsBoolExpr expr 
+                        e <- hsExpr 0 expr 
                         return $ "where_ (" ++ e ++ ")\n"
                     Nothing -> return ""
                 jes <- liftM concat $ mapM mapJoinExpr (reverse $ sqJoins sq)

@@ -24,6 +24,15 @@ hsBinOp op = case op of
     Is -> "`is`"
     In -> "`in_`"
     NotIn -> "`notIn`"
+    Div -> "/."
+    Mul -> "*."
+    Add -> "+."
+    Sub -> "-."
+    Concat -> "++."
+    And -> "&&."
+    Or -> "||."
+
+
 
 type TypeName = String
 data Context = Context {
@@ -109,17 +118,9 @@ hsOrderBy (f,d) = do
     where dir SortAsc = "asc "
           dir SortDesc = "desc "
 
-hsValBinOp :: ValBinOp -> String
-hsValBinOp vo = case vo of
-    Div -> "/."
-    Mul -> "*."
-    Add -> "+."
-    Sub -> "-."
-    Concat -> "++."
-
-    
-hsValExpr :: MaybeLevel -> ValExpr -> Reader Context String
-hsValExpr ml ve = do
+        
+hsExpr :: MaybeLevel -> Expr -> Reader Context String
+hsExpr ml ve = do
     c <- content
     maybePromoteJust c
     where 
@@ -131,25 +132,56 @@ hsValExpr ml ve = do
                 return $ makeJust ml c
         content = case ve of
             FieldExpr fr -> hsFieldRef ml fr
-            ConcatManyExpr ves -> do
-                rs <- mapM (hsValExpr 0) ves
+            ConcatManyExpr ves -> local noListValue $ do
+                rs <- mapM (hsExpr 0) ves
                 return $ "(concat_ [" ++ intercalate ", " rs ++ "])"
-            ValBinOpExpr e1 vop e2 -> do
-                r1 <- hsValExpr 0 e1
-                r2 <- hsValExpr 0 e2
-                return $ "(" ++ r1 ++ ") " ++ hsValBinOp vop ++ " (" ++ r2 ++ ")"
+            BinOpExpr e1 op e2 -> if op `elem` [ Add , Sub , Div , Mul , Concat, And, Or ] 
+                then local noListValue $ do
+                    r1 <- hsExpr 0 e1
+                    r2 <- hsExpr 0 e2
+                    return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")" 
+                else do
+                    let e1m = exprMaybeLevel e1
+                        e2m = exprMaybeLevel e2
+                        e1rt = exprReturnType e1
+                        e2rt = exprReturnType e2
+                    r1 <- local 
+                            (\ctx -> ctx { 
+                                ctxExprType = e2rt
+                            } )
+                            (hsExpr (max 0 $ e2m - e1m) e1)
+                    r2 <- local 
+                            (\ctx -> ctx { 
+                                ctxExprType = case op of
+                                    Ilike -> Just "Text"
+                                    Like -> Just "Text"
+                                    _ -> e1rt,
+                                ctxExprListValue = op `elem` [In, NotIn]
+                            }) 
+                           (hsExpr (max 0 $ e1m - e2m) e2)
+                    return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
+         
             RandomExpr -> return "random_"
-            FloorExpr ve' -> do
-                r <- hsValExpr 0 ve'
+            FloorExpr ve' -> local noListValue $ do
+                r <- hsExpr 0 ve'
                 return $ "(floor_ $  " ++ r ++ ")"
-            CeilingExpr ve' -> do
-                r <- hsValExpr 0 ve'
+            CeilingExpr ve' -> local noListValue $  do
+                r <- hsExpr 0 ve'
                 return $ "(ceiling_ $ " ++ r ++ ")"
-            ExtractExpr fn ve' -> do
-                r <- hsValExpr 0 ve'
+            ExtractExpr fn ve' -> local noListValue $ do
+                r <- hsExpr 0 ve'
                 return $ "(extractSubField " ++ (quote $ extractSubField fn) ++ " $ " ++ r++ ")"
-            SubQueryExpr sq -> subQuery "subList_select" sq
-
+            SubQueryExpr sq -> local noListValue $ subQuery "subList_select" sq
+            NotExpr e -> local noListValue $ do
+                r <- hsExpr 0 e
+                return $ "not_ (" ++ r ++ ")"
+            ExistsExpr sq -> local noListValue $ subQuery "exists" sq
+            ExternExpr ee ps -> local noListValue $ do
+                ps' <- mapM externExprParam ps
+                return $ intercalate " " $ [ee] ++ map ((++ ")"). ("("++)) ps'
+        externExprParam (FieldRefParam fr) = hsFieldRef 0 fr
+        externExprParam (VerbatimParam v) = return v 
+        noListValue ctx = ctx { ctxExprListValue = False }
 fieldRefMaybeLevel :: FieldRef -> Int
 fieldRefMaybeLevel (SqlId (Var _ _ mf)) = boolToInt mf
 fieldRefMaybeLevel (SqlField (Var _ (Right e) mf) fn) = boolToInt mf + (fromMaybe 0 $ lookupField e fn >>= \f -> Just $ boolToInt $ fieldOptional f)
@@ -157,17 +189,24 @@ fieldRefMaybeLevel (Const NothingValue) =  1
 fieldRefMaybeLevel _ =  0
 
 
-exprMaybeLevel :: ValExpr -> Int
+exprMaybeLevel :: Expr -> Int
 exprMaybeLevel ve = case ve of
     FieldExpr fr -> fieldRefMaybeLevel fr
-    ConcatManyExpr ves -> 0
-    ValBinOpExpr e1 _ e2 -> max (exprMaybeLevel e1) (exprMaybeLevel e2)
+    ConcatManyExpr _ -> 0
+    BinOpExpr e1 _ e2 -> max (exprMaybeLevel e1) (exprMaybeLevel e2)
     FloorExpr e -> exprMaybeLevel e
     CeilingExpr e -> exprMaybeLevel e
-    ExtractExpr _ e -> 0
+    ExtractExpr _ _ -> 0
     SubQueryExpr sq -> fromMaybe 0 $ listToMaybe $ map exprMaybeLevel $ concatMap (selectFieldExprs) $ sqFields sq
     _ -> 0
-exprReturnType :: ValExpr -> Maybe String
+    where
+        selectFieldExprs sf = case sf of
+            (SelectField vn fn _) -> [ FieldExpr $ SqlField vn fn]
+            (SelectIdField vn _) -> [ FieldExpr $ SqlId vn ]
+            (SelectExpr ve' _) -> [ ve' ]
+            _  -> []
+ 
+exprReturnType :: Expr -> Maybe String
 exprReturnType e = case e of
     FloorExpr _ -> Just "Double"
     CeilingExpr _ -> Just "Double"
@@ -176,24 +215,20 @@ exprReturnType e = case e of
 
 mapJoinExpr :: Join -> Reader Context String
 mapJoinExpr (Join _ _ _ (Just expr)) = do
-    e <- hsBoolExpr expr
+    e <- hsExpr 0 expr
     return $ "on (" ++ e ++ ")\n"
 mapJoinExpr _  = return ""
 
-selectFieldExprs :: SelectField -> [ValExpr]
-selectFieldExprs sf = 
-    case sf of
-        (SelectField vn fn _) -> [ FieldExpr $ SqlField vn fn]
-        (SelectIdField vn _) -> [ FieldExpr $ SqlId vn ]
-        (SelectValExpr ve _) -> [ ve ]
-        _ -> []
 
 selectReturnFields :: SelectQuery -> Reader Context String
 selectReturnFields sq = do
-    let fieldExprs = concatMap selectFieldExprs (sqFields sq)
-    ves <- mapM (hsValExpr 0) fieldExprs
+    ves <- forM (sqFields sq) $ \sf -> case sf of
+        SelectField vn fn _ -> hsExpr 0 $ FieldExpr $ SqlField vn fn
+        SelectIdField vn _  -> hsExpr 0 $ FieldExpr $ SqlId vn
+        SelectExpr ve _  -> hsExpr 0 ve
+        _ -> return ""
     return $ "return (" ++ (intercalate ", " ves) ++ ")"
-        
+    where
 joinDef :: Join-> String
 joinDef (Join jt _ vn _) = "`" ++ show jt ++ "` " ++ vn
 
@@ -203,7 +238,7 @@ subQuery sqFunc sq = withScope (sqAliases sq) $ do
     rfs <- selectReturnFields sq
     maybeWhere <- case sqWhere sq of
         Just expr -> do
-            e <- hsBoolExpr expr
+            e <- hsExpr 0 expr
             return $ "where_ (" ++ e ++ ")"
         Nothing -> return ""
     return $ sqFunc ++ " $ from $ \\(" ++ vn ++ 
@@ -221,47 +256,6 @@ withScope :: Map.Map VariableName (Entity, MaybeFlag) -> Reader Context a -> Rea
 withScope names = local $ \ctx -> ctx { ctxNames = Map.union names $ ctxNames ctx }
 
 
-scopedBoolExpr :: Map.Map VariableName (Entity, MaybeFlag) -> BoolExpr -> String
-scopedBoolExpr names e = runReader (hsBoolExpr e) $ emptyContext { ctxNames = names }
+scopedExpr :: Map.Map VariableName (Entity, MaybeFlag) -> Expr -> String
+scopedExpr names e = runReader (hsExpr 0 e) $ emptyContext { ctxNames = names }
 
-hsBoolExpr :: BoolExpr -> Reader Context String
-hsBoolExpr expr = local (\ctx -> ctx { ctxExprListValue = False}) $
-    case expr of
-        AndExpr e1 e2 -> do
-            r1 <- hsBoolExpr e1
-            r2 <- hsBoolExpr e2
-            return $ "(" ++ r1 ++ ") &&. (" ++ r2 ++ ")"
-        OrExpr e1 e2 -> do
-            r1 <- hsBoolExpr e1
-            r2 <- hsBoolExpr e2 
-            return $ "(" ++ r1 ++ ") ||. (" ++ r2 ++ ")"
-        NotExpr e -> do
-            r <- hsBoolExpr e
-            return $ "not_ (" ++ r ++ ")"
-        BinOpExpr e1 op e2 -> do
-            let e1m = exprMaybeLevel e1
-                e2m = exprMaybeLevel e2
-                e1rt = exprReturnType e1
-                e2rt = exprReturnType e2
-            r1 <- local 
-                    (\ctx -> ctx { 
-                        ctxExprType = e2rt
-                    } )
-                    (hsValExpr (max 0 $ e2m - e1m) e1)
-            r2 <- local 
-                    (\ctx -> ctx { 
-                        ctxExprType = case op of
-                            Ilike -> Just "Text"
-                            Like -> Just "Text"
-                            _ -> e1rt,
-                        ctxExprListValue = op `elem` [In, NotIn]
-                    }) 
-                   (hsValExpr (max 0 $ e1m - e2m) e2)
-            return $ "(" ++ r1 ++ ") " ++ hsBinOp op ++ " (" ++ r2 ++ ")"
-        ExistsExpr sq -> subQuery "exists" sq
-        ExternExpr ee ps -> do
-            ps' <- mapM externExprParam ps
-            return $ intercalate " " $ [ee] ++ map ((++ ")"). ("("++)) ps'
-    where
-        externExprParam (FieldRefParam fr) = hsFieldRef 0 fr
-        externExprParam (VerbatimParam v) = return v 

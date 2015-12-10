@@ -16,7 +16,7 @@ maxInstances m = safeMaximum $ map sqFieldNumber
                                                hp <- handlerStmts h]
     where isSelectQuery (Select _) = True
           isSelectQuery _ = False
-          sqFieldNumber (Select sq) = length $ concatMap selectFieldExprs (sqFields sq)
+          sqFieldNumber (Select sq) = length $ sqFields sq
           sqFieldNumber _ = 0
           safeMaximum [] = 0
           safeMaximum xs = maximum xs

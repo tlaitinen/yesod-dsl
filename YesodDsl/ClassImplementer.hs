@@ -105,7 +105,7 @@ trSq m sq = sq {
                         SelectIdField (Var vn' (Left "") False) $ aliasName "id" man men
                         | (vn',men) <- newAliases vn
                     ]
-                SelectValExpr _ _ -> [sf]  
+                SelectExpr _ _ -> [sf]  
 
         trExpr e = 
             let r = catMaybes [
@@ -113,14 +113,14 @@ trSq m sq = sq {
                         in if e' /= e && validExpr e' then Just e' else Nothing
                         | (s,(d,_)) <- vnMap
                     ] 
-                in if null r then e else foldl1 OrExpr r
-                      
+                in if null r then e else foldl1 mkOrExpr r
+        mkOrExpr e1 e2 = BinOpExpr e1 Or e2              
         trueExpr = let c = (FieldExpr (Const (BoolValue True))) in BinOpExpr c Eq c
         trDropInvalidExprs e = 
             let  
                 me = case e of
-                    AndExpr e1 e2 -> Just (e1,e2)
-                    OrExpr e1 e2 -> Just (e1,e2)
+                    BinOpExpr e1 And e2 -> Just (e1,e2)
+                    BinOpExpr e1 Or e2 -> Just (e1,e2)
                     _ -> Nothing
             in case me >>= \(e1,e2) -> Just  (validExpr e1, validExpr e2, e1, e2) of
                     Just (True, True, _, _) -> e

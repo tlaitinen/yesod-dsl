@@ -146,9 +146,12 @@ import Data.List
     checkmarkActive { Tk _ TCheckmarkActive }
     checkmarkInactive { Tk _ TCheckmarkInactive }
 
-%left in 
+%left and or
+%right in 
+%nonassoc equals ne lt gt le ge like ilike is
 %left plus minus
 %left asterisk slash
+%left concatop
 %%
 
 
@@ -600,17 +603,16 @@ selectField: lowerIdTk dot asterisk {%
     | lowerIdTk dot lowerIdTk maybeSelectAlias {%
         do
             l1 <- mkLoc $1
+            let v = Var (tkString $1) (Left "") False
             if tkString $3 == "id"
-                then return (l1, SelectIdField (Var (tkString $1) (Left "") False) $4) 
-                else return (l1, SelectField (Var (tkString $1) (Left "") False) (tkString $3) $4) 
+                then return (l1, SelectIdField v $4)
+                else return (l1, SelectField v (tkString $3) $4)
     }
-    | valexpr as lowerIdTk {% 
+    | expr as lowerIdTk {% 
         do
             l3 <- mkLoc $3
-            return (l3, SelectValExpr $1 (tkString $3) )
-    }
-           
-       
+            return (l3, SelectExpr $1 (tkString $3) )
+    } 
 maybeSelectAlias: { Nothing }
                 | as lowerIdTk { Just $ tkString $2 }
 joins : { [] }
@@ -680,64 +682,61 @@ jsonFields : jsonField { [$1] }
 
 
 
-binop : equals { Eq }
-      | ne { Ne }
-      | lt { Lt }
-      | gt { Gt }
-      | le { Le }
-      | ge { Ge }
-      | like { Like }
-      | ilike {Ilike }
-      | is { Is }
-      | in { In }
-      | not in { NotIn }
-expr : expr and expr { AndExpr $1 $3 }
-     | expr or expr { OrExpr $1 $3 }
+    
+expr : 
+     lparen expr rparen { $2 }
      | not expr { NotExpr $2 }
-     | lparen expr rparen { $2 } 
-     | valexpr binop valexpr { BinOpExpr $1 $2 $3 }
      | exists lparen pushScope selectQuery popScope rparen
                    { ExistsExpr $4 }
+     | fieldRef { FieldExpr $1 }
+     | expr and expr { BinOpExpr $1 And $3 }
+     | expr or expr { BinOpExpr $1 Or $3 }
+     | expr equals expr { BinOpExpr $1 Eq $3 }
+     | expr ne expr { BinOpExpr $1 Ne $3 }
+     | expr lt expr { BinOpExpr $1 Lt $3 }
+     | expr gt expr { BinOpExpr $1 Gt $3 }
+     | expr le expr { BinOpExpr $1 Le $3 }
+     | expr ge expr { BinOpExpr $1 Ge $3 }
+     | expr like expr { BinOpExpr $1 Like $3 }
+     | expr ilike expr { BinOpExpr $1 Ilike $3 }
+     | expr is expr { BinOpExpr $1 Is $3 }
+     | expr in expr { BinOpExpr $1 In $3 }
+     | expr not in expr { BinOpExpr $1 NotIn $4 }
+     | expr slash expr { BinOpExpr $1 Div $3 }
+     | expr asterisk expr { BinOpExpr $1 Mul $3 }
+     | expr plus expr { BinOpExpr $1 Add $3 }
+     | expr minus expr { BinOpExpr $1 Sub $3 }
+     | expr concatop expr { BinOpExpr $1 Concat $3 }
+     | concat lparen exprlist rparen { ConcatManyExpr (reverse $3) }
+     | random lparen rparen { RandomExpr }
+     | floor lparen expr rparen { FloorExpr $3 }
+     | ceiling lparen expr rparen { CeilingExpr $3 }
+     | extract lparen lowerIdTk from expr rparen {% 
+         do
+             let s3 = tkString $3
+             l3 <- mkLoc $3 
+             validateExtractField l3 s3
+             return $ ExtractExpr (tkString $3) $5  
+     }
+     | lparen pushScope selectQuery popScope rparen
+                { SubQueryExpr $3 }
      | lowerIdTk functionParamList {%
-     do
-         l1 <- mkLoc $1
-         let s1 = tkString $1
-         withSymbol l1 s1 requireFunction
-         return $ ExternExpr s1 $2
+         do
+             l1 <- mkLoc $1
+             let s1 = tkString $1
+             withSymbol l1 s1 requireFunction
+             return $ ExternExpr s1 $2
      }         
+ 
+
 
 functionParamList: functionParam { [$1] }
                  | functionParamList functionParam { $1 ++ [$2] }
 functionParam: fieldRef { FieldRefParam $1 }
              | verbatim { VerbatimParam (tkString $1) }
     
-
-valbinop :      
-      slash { Div }
-      | asterisk { Mul } 
-      | plus { Add }
-      | minus { Sub }
-      | concatop { Concat }
-
-valexpr : lparen valexpr rparen { $2 }
-        | fieldRef { FieldExpr $1 }
-        | valexpr valbinop valexpr { ValBinOpExpr $1 $2 $3 }
-        | concat lparen valexprlist rparen { ConcatManyExpr (reverse $3) }
-        | random lparen rparen { RandomExpr }
-        | floor lparen valexpr rparen { FloorExpr $3 }
-        | ceiling lparen valexpr rparen { CeilingExpr $3 }
-        | extract lparen lowerIdTk from valexpr rparen {% 
-            do
-                let s3 = tkString $3
-                l3 <- mkLoc $3 
-                validateExtractField l3 s3
-                return $ ExtractExpr (tkString $3) $5  
-        }
-        | lparen pushScope selectQuery popScope rparen
-                   { SubQueryExpr $3 }
-
-valexprlist: valexpr { [$1] }        
-           | valexprlist comma valexpr { $3 : $1 }
+exprlist: expr { [$1] }        
+        | exprlist comma expr { $3 : $1 }
 
 maybeJoinOn : { Nothing }
             | on expr { Just $2 }

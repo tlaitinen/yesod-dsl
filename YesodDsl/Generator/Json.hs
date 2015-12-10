@@ -89,15 +89,15 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                 name = case sf of
                     SelectField _ fn mvn -> fromMaybe fn mvn
                     SelectIdField _ mvn -> fromMaybe "id" mvn
-                    SelectValExpr _ vn -> vn
+                    SelectExpr _ vn -> vn
                     _ -> ""
                 type_ = case sf of
                     SelectField (Var _ (Right e) _) fn _ -> fromMaybe Null $ lookupField e fn >>= Just . toJSON . jsonFieldType . fieldContent
                     SelectIdField _ _ -> String "integer"
-                    SelectValExpr ve _ -> case ve of
+                    SelectExpr ve _ -> case ve of
                         ConcatManyExpr _ -> String "string"
-                        ValBinOpExpr _ Concat _ -> String "string"
-                        ValBinOpExpr _ _ _ -> String "number"
+                        BinOpExpr _ Concat _ -> String "string"
+                        BinOpExpr _ _ _ -> String "number"
                         RandomExpr -> String "number"
                         FloorExpr _ -> String "number"
                         CeilingExpr _ -> String "number"

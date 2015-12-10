@@ -10,14 +10,12 @@ import qualified Data.Map as Map
 
 
 simplify :: Module -> Module
-simplify m = everywhere ((mkT sHandler) . (mkT sValExpr) . (mkT sBoolExpr)
+simplify m = everywhere ((mkT sHandler) . (mkT sExpr) 
                          . (mkT sStmt) . (mkT mapEntityRef)) m
     where
-        sValExpr (SubQueryExpr sq) = SubQueryExpr $ mapSq sq
-        sValExpr x = x
-
-        sBoolExpr (ExistsExpr sq) = ExistsExpr $ mapSq sq
-        sBoolExpr x = x
+        sExpr (SubQueryExpr sq) = SubQueryExpr $ mapSq sq
+        sExpr (ExistsExpr sq) = ExistsExpr $ mapSq sq
+        sExpr x = x
         sStmt (Require sq) = Require $ mapSq sq
         sStmt (IfFilter (pn,js,be,uf)) = IfFilter (pn, map mapJoin js, be, uf)
         sStmt (Select sq) = Select $ mapSq sq
@@ -27,11 +25,11 @@ simplify m = everywhere ((mkT sHandler) . (mkT sValExpr) . (mkT sBoolExpr)
                 sqJoins = map mapJoin $ sqJoins sq
                } in sq' {
                 sqFields = concatMap (expand sq') $ sqFields sq',
-                sqWhere = everywhere ((mkT sValExpr) . (mkT sBoolExpr)) $ sqWhere sq'
+                sqWhere = everywhere (mkT sExpr) $ sqWhere sq'
             }
         mapJoin j =  j { 
                 joinEntity = mapEntityRef $ joinEntity j,
-                joinExpr = joinExpr j >>= Just . (everywhere $ (mkT sValExpr) . (mkT sBoolExpr))
+                joinExpr = joinExpr j >>= Just . (everywhere $ (mkT sExpr))
             }
 
         lookupEntity en = L.find ((==en) . entityName) $ modEntities m
