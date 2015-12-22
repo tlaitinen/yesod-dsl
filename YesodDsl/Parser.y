@@ -327,6 +327,9 @@ handlerdef : handlerType pushScope handlerParamsBlock popScope {%
     }
 fieldRefList : { [ ] }
              | fieldRefList fieldRef { $1 ++ [$2] }
+
+fieldRefCommaList : fieldRef { [$1] }
+                  | fieldRefCommaList comma fieldRef { $1 ++ [$3] } 
 fieldRef : 
     value { Const $1 }
     | now lparen rparen { Now }
@@ -519,19 +522,19 @@ handlerParam : public {%
             requireHandlerType l1 "default-filter-sort" (==GetHandler)
             return DefaultFilterSort 
     }
-    | if param stringval equals localParam then pushScope joins where expr popScope {% 
+    | if param stringval equals localParam then pushScope joins where expr maybeOrder popScope {% 
         do
             l1 <- mkLoc $1
             statement l1 "if-then"
             requireHandlerType l1 "if-then" (==GetHandler)
-            return $ IfFilter ($3 ,$8 ,$10, True) 
+            return $ IfFilter ($3 ,$8 ,$10, $11, True) 
     }
-    | if param stringval equals underscore then pushScope joins where expr popScope {% 
+    | if param stringval equals underscore then pushScope joins where expr maybeOrder popScope {% 
         do
             l1 <- mkLoc $1
             statement l1 "if-then"
             requireHandlerType l1 "if-then" (==GetHandler)
-            return $ IfFilter ($3, $8, $10, False) 
+            return $ IfFilter ($3, $8, $10, $11, False) 
     }
     | return json {% 
         do
@@ -635,7 +638,16 @@ maybeOffset: { 0 }
 
 orderByList : orderByListitem { [$1] }
         | orderByList comma orderByListitem { $3 : $1 }
-orderByListitem : fieldRef orderByDir { ($1, $2) }
+orderByListitem :
+                fieldRef orderByDir { (Nothing, [$1], $2) }
+                | lowerIdTk lparen fieldRefCommaList rparen orderByDir 
+    {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1 
+            withSymbol l1 s1 requireFunction
+            return $ (Just s1, $3, $5)
+    }
 
 orderByDir : asc { SortAsc }
         |desc  { SortDesc }

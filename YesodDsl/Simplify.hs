@@ -17,7 +17,7 @@ simplify m = everywhere ((mkT sHandler) . (mkT sExpr)
         sExpr (ExistsExpr sq) = ExistsExpr $ mapSq sq
         sExpr x = x
         sStmt (Require sq) = Require $ mapSq sq
-        sStmt (IfFilter (pn,js,be,uf)) = IfFilter (pn, map mapJoin js, be, uf)
+        sStmt (IfFilter (pn,js,be,ob,uf)) = IfFilter (pn, map mapJoin js, be, ob, uf)
         sStmt (Select sq) = Select $ mapSq sq
         sStmt x = x
 
@@ -55,7 +55,7 @@ sHandler h = everywhere ((mkT mapVarRef) . (mkT mapStmt) . (mkT mapSq)) h
     where
         baseAliases = Map.unions [ sqAliases sq | Select sq <- universeBi h ]
         mapStmt df@(DeleteFrom er vn _) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [ er >>= \e -> Right (vn, (e, False)) ] ]) df
-        mapStmt i@(IfFilter (_,js,_,_)) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [  joinEntity j >>= \e -> Right (joinAlias j,(e, isOuterJoin $ joinType j)) | j <- js ] ]) i
+        mapStmt i@(IfFilter (_,js,_,_,_)) = everywhere (mkT $ mapSqVarRef $ Map.unions [ baseAliases, Map.fromList $ rights [  joinEntity j >>= \e -> Right (joinAlias j,(e, isOuterJoin $ joinType j)) | j <- js ] ]) i
         mapStmt i = i 
         mapSq sq = everywhere (mkT $ mapSqVarRef $ sqAliases sq) sq
         mapSqVarRef aliases (Var vn (Left "") _) = case Map.lookup vn aliases of

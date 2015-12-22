@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 module YesodDsl.Generator.GetHandler where
@@ -19,7 +20,7 @@ import qualified Data.Map as Map
 getStmt :: Stmt -> String
 getStmt DefaultFilterSort = T.unpack $(codegenFile "codegen/default-filter-sort-param.cg")
     ++ (T.unpack $(codegenFile "codegen/offset-limit-param.cg"))
-getStmt (IfFilter (pn,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
+getStmt (IfFilter (pn,_,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filter-param.cg")
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
 getStmt _ = ""      
 
@@ -82,17 +83,21 @@ implicitJoinExpr _ = return ""
 
 
 baseIfFilter :: IfFilterParams -> Reader Context String
-baseIfFilter (pn,joins,bExpr,useFlag) = withScope 
+baseIfFilter (pn,joins,bExpr,obs,useFlag) = withScope 
     (Map.fromList $ catMaybes [ either (\_ -> Nothing) (\e -> Just (joinAlias j, (e, isOuterJoin $ joinType j))) $ joinEntity j | j <- joins]) $ do
         joinExprs <- liftM concat $ mapM implicitJoinExpr joins
         expr <- hsExpr 0 bExpr
+        sortFields <- mapM hsOrderBy obs
+        
         return $ T.unpack $ if useFlag
             then $(codegenFile "codegen/base-if-filter.cg")
             else $(codegenFile "codegen/base-if-filter-nouse.cg")
     where 
-          maybeFrom = if null joins 
-                        then "do"
-                        else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
+        maybeOrderBy [] = ""
+        maybeOrderBy sortFields = T.unpack $(codegenFile "codegen/static-order-by.cg")
+        maybeFrom = if null joins 
+                      then "do"
+                      else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
 getHandlerSelect :: [Stmt] -> String
 getHandlerSelect ps = 
     case listToMaybe [ sq | Select sq <- universeBi ps ] of
@@ -119,7 +124,7 @@ getHandlerSelect ps =
             maybeDefaultSortFields <- if defaultFilterSort
                 then defaultSortFields sq
                 else do
-                    staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
+                    sortFields <- mapM hsOrderBy $ sqOrderBy sq
                     return $ T.unpack $(codegenFile "codegen/static-order-by.cg")
             return $ concat [
                 (T.unpack $(codegenFile "codegen/base-select-query.cg")),

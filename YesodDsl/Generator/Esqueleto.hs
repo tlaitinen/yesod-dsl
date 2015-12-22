@@ -116,12 +116,19 @@ hsFieldRef ml (NamedLocalParam vn) = normalFieldRef ml $ "result_" ++ vn
 hsFieldRef ml (Const (fv@(NothingValue))) = return $  makeJust ml $ fieldValueToEsqueleto fv
 hsFieldRef ml (Const fv) = return $ makeJust ml $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 
 hsFieldRef _ fr = return $ show fr
-hsOrderBy :: (FieldRef, SortDir) -> Reader Context String
-hsOrderBy (f,d) = do
-    content <- hsFieldRef 0 f
-    return $ dir d ++ "(" ++ content ++ ")"
-    where dir SortAsc = "asc "
-          dir SortDesc = "desc "
+hsOrderBy :: (Maybe FunctionName, [FieldRef], SortDir) -> Reader Context String
+hsOrderBy ob = case ob of
+    (Nothing, fs,d) -> simple fs d
+    (Just fn, fs, d) -> aggr fn fs d
+    where 
+        dir SortAsc = "asc "
+        dir SortDesc = "desc "
+        simple fs d = do
+            contents <- forM fs $ hsFieldRef 0 
+            return $ intercalate ", " [ dir d ++ "(" ++ content ++ ")" | content <- contents ]
+        aggr fn fs d = do
+            contents <- forM fs $ hsFieldRef 0
+            return $ dir d ++ "(" ++ fn ++ " (" ++ (intercalate ") (" contents) ++ "))" 
 
         
 hsExpr :: MaybeLevel -> Expr -> Reader Context String

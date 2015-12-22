@@ -127,14 +127,14 @@ data Stmt = Public
                   | MapJson FunctionName
                   deriving (Show, Eq, Data, Typeable) 
 type UseParamFlag = Bool    
-type IfFilterParams = (ParamName,[Join],Expr,UseParamFlag)
-
+type IfFilterParams = (ParamName,[Join],Expr,[OrderBy],UseParamFlag)
+type OrderBy = (Maybe FunctionName, [FieldRef], SortDir)
 data SelectQuery = SelectQuery {
     sqFields       :: [SelectField],
     sqFrom         :: (EntityRef, VariableName),
     sqJoins        :: [Join],
     sqWhere        :: Maybe Expr,
-    sqOrderBy        :: [(FieldRef, SortDir)],
+    sqOrderBy      :: [OrderBy],
     sqLimitOffset  :: (Int, Int)
 } deriving (Show, Eq, Data, Typeable)    
 

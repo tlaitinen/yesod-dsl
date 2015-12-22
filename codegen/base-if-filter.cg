@@ -2,4 +2,4 @@
             Just localParam -> ~{maybeFrom} 
 ~{indent 16 joinExprs}                
                 where_ $ ~{expr}
-            Nothing -> return ()
+~{indent 16 $ maybeOrderBy sortFields}            Nothing -> return ()
