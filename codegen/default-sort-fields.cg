@@ -3,4 +3,4 @@ case defaultSortJson of
 ~{indent 12 $ fields}
             _ -> return ()
         ) xs
-    Nothing -> orderBy [ ~{intercalate ", " staticSortFields} ]
+    Nothing -> ~{checkIfFilterOrderBy}orderBy [ ~{intercalate ", " staticSortFields} ]

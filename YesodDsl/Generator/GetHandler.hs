@@ -58,19 +58,24 @@ defaultSortField :: (Entity, VariableName, Field, ParamName, MaybeFlag) -> Reade
 defaultSortField (e,vn,f,pn,isMaybe) = do
     return $ T.unpack $(codegenFile "codegen/default-sort-field.cg")
 
-defaultSortFields :: SelectQuery -> Reader Context String
-defaultSortFields sq = do
+defaultSortFields :: [IfFilterParams] -> SelectQuery -> Reader Context String
+defaultSortFields ifFilters sq = do
     sortFields <- liftM concat $ mapM fromSelectField (sqFields sq)
     fields <- liftM concat $ mapM defaultSortField sortFields
     staticSortFields <- mapM hsOrderBy $ sqOrderBy sq
     return $ T.unpack $(codegenFile "codegen/default-sort-fields.cg")
     where 
-          fromSelectField (SelectField (Var vn (Right e) mf) fn an) = do
+        ifFilterOrderBys = [ "filterParam_" ++ pn | (pn, _, _, obs, _) <- ifFilters, null obs == False ] 
+        checkIfFilterOrderBy 
+            | null ifFilterOrderBys = ""
+            | otherwise = rstrip (T.unpack $(codegenFile "codegen/default-sort-fields-check-if-filter-order-by.cg")) ++ " "
+          
+        fromSelectField (SelectField (Var vn (Right e) mf) fn an) = do
               return [ (e,vn, f, maybe (fieldName f) id an,mf)
                  | f <- entityFields e,
                    fieldName f == fn ]
-          fromSelectField (SelectIdField _ _) = return [] -- TODO
-          fromSelectField _ = return []         
+        fromSelectField (SelectIdField _ _) = return [] -- TODO
+        fromSelectField _ = return []         
 
 
 
@@ -122,7 +127,7 @@ getHandlerSelect ps =
             filterFieldsStr <- defaultFilterFields sq
             returnFieldsStr <- selectReturnFields sq
             maybeDefaultSortFields <- if defaultFilterSort
-                then defaultSortFields sq
+                then defaultSortFields ifFilters sq
                 else do
                     sortFields <- mapM hsOrderBy $ sqOrderBy sq
                     return $ T.unpack $(codegenFile "codegen/static-order-by.cg")
