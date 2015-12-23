@@ -1,10 +1,8 @@
     let baseQuery limitOffsetOrder = from $ \(~{selectVar} ~{concatMap joinDef (sqJoins sq)}) -> do
 ~{indent 8 $ joinExprs}        let ~{selectVar}Id' = ~{selectVar} ^. ~{entityRefName selectEntity}Id
 ~{indent 8 $ maybeWhere}
-        _ <- if limitOffsetOrder
-            then do 
-                offset ~{show offset}
-                limit ~{show limit}
-~{indent 16 $ maybeDefaultSortFields}
-~{indent 16 $ maybeDefaultLimitOffset}                 
-            else return ()
+        _ <- when limitOffsetOrder $ do
+            offset ~{show offset}
+            limit ~{show limit}
+~{indent 12 $ maybeDefaultSortFields}
+~{indent 12 $ maybeDefaultLimitOffset}                 

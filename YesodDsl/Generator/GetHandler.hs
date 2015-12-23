@@ -99,7 +99,7 @@ baseIfFilter (pn,joins,bExpr,obs,useFlag) = withScope
             else $(codegenFile "codegen/base-if-filter-nouse.cg")
     where 
         maybeOrderBy [] = ""
-        maybeOrderBy sortFields = T.unpack $(codegenFile "codegen/static-order-by.cg")
+        maybeOrderBy sortFields = T.unpack $(codegenFile "codegen/if-filter-order-by.cg")
         maybeFrom = if null joins 
                       then "do"
                       else T.unpack $(codegenFile "codegen/if-filter-from.cg")    
