@@ -1,1 +1,1 @@
-~{fieldName f}_ <- x .?  "~{fieldJsonName f}"
+~{fieldJsonName f}_ <- x .?  "~{fieldJsonName f}"

@@ -1,1 +1,1 @@
-"~{fn}" := x.~{fieldName f}
+"~{fn}" := x.~{fieldJsonName f}
