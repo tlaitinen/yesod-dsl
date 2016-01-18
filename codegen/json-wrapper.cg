@@ -1,5 +1,7 @@
+#ifdef ToJSON_Day
 instance ToJSON Day where
     toJSON = toJSON . show
+#endif
 
 #ifdef FromJSON_Day
 instance FromJSON Day where
