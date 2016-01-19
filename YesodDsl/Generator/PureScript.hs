@@ -80,7 +80,7 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
          
         routePathParams r = mapMaybe (\(n,pp) -> case pp of
             PathText _ -> Nothing
-            PathId _ en -> Just ("(Key p" ++ show (n::Int) ++ ")",en ++ "Id")) $ zip [1..] (routePath r)
+            PathId _ en -> Just ("p" ++ show (n::Int),en ++ "Id")) $ zip [1..] (routePath r)
         routePathUrl r = concatMap (\(n,pp) -> case pp of
             PathText t -> " ++ \"/" ++ t ++ "\""
             PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
