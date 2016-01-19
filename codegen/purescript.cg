@@ -18,6 +18,7 @@ import qualified Network.HTTP.RequestHeader as RH
 import Network.HTTP.Method (Method(POST, PUT, DELETE))
 import qualified Network.HTTP.StatusCode as SC
 import qualified Data.String as DS
+import qualified Data.Char as DC
 import qualified Data.Date as DD
 import qualified Data.Time as DT
 import qualified Data.String.Regex as R
@@ -147,7 +148,7 @@ data Key record = Key Number
 derive instance genericKey :: Generic (Key record)
 
 instance showKey :: Show (Key record) where
-    show = gShow
+    show (Key n) = DS.takeWhile (\ch -> ch /= DC.fromCharCode 46) $ show n
 
 instance eqKey :: Eq (Key record) where
     eq = gEq
