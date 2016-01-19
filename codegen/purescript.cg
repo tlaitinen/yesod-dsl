@@ -148,7 +148,7 @@ data Key record = Key Number
 derive instance genericKey :: Generic (Key record)
 
 instance showKey :: Show (Key record) where
-    show (Key n) = DS.takeWhile (\ch -> ch /= DC.fromCharCode 46) $ show n
+    show (Key n) = DS.takeWhile (/= '.') $ show n
 
 instance eqKey :: Eq (Key record) where
     eq = gEq
