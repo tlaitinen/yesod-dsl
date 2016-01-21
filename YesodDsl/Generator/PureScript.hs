@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
-module YesodDsl.Generator.PureScript (moduleToPureScript, moduleToPureScriptJs) where
+module YesodDsl.Generator.PureScript (moduleToPureScript) where
 import YesodDsl.AST
 import Data.List
 import Data.Maybe
@@ -36,8 +36,6 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
         EnumField en -> en
 
 
-moduleToPureScriptJs :: Module -> String
-moduleToPureScriptJs m = T.unpack $(codegenFile "codegen/purescript-js.cg")
 moduleToPureScript :: Module -> String
 moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
         ++ concat [ handler r h | r <- modRoutes m, h <- routeHandlers r ]

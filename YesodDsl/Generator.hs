@@ -120,7 +120,6 @@ genJson path m = syncFile path $ moduleToJson m
 genPureScript :: FilePath -> Module -> IO ()
 genPureScript path m = do
     syncFile path $ moduleToPureScript m
-    syncFile (replaceExtension path ".js") $ moduleToPureScriptJs m
 
 genHsClient :: FilePath -> Module -> IO ()
 genHsClient path m = do
