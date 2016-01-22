@@ -5,7 +5,7 @@ import YesodDsl.Generator.Input
 import YesodDsl.Generator.Common
 
 
-handlerInputFields :: Handler -> [(FieldName, Maybe Field)]
+handlerInputFields :: Handler -> [(FieldName, Either OptionalFlag Field)]
 handlerInputFields h = nubAttrs $ concatMap requestAttrs $ handlerStmts h
 
 handlerOutputFields :: Module -> Handler ->  [Field]

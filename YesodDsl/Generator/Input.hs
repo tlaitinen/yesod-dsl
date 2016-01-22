@@ -11,31 +11,33 @@ import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
 import YesodDsl.Generator.Common
 
-fieldRefMappingToAttrs :: Entity -> Bool -> [FieldRefMapping] -> [(FieldName, Maybe Field)]
-fieldRefMappingToAttrs e onlyMapped fs = (if onlyMapped then [] else [ (fieldName f, Just f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldInternal f == False, fieldName f `notElem` mapped ]) ++ [ (pn, Just f) | f <- entityFields e, (fn,fr,_) <- fs, (RequestField pn) <- universeBi fr, fieldName f == fn ]
+type OptionalFlag = Bool
+
+fieldRefMappingToAttrs :: Entity -> Bool -> [FieldRefMapping] -> [(FieldName, Either OptionalFlag Field)]
+fieldRefMappingToAttrs e onlyMapped fs = (if onlyMapped then [] else [ (fieldName f, Right f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldInternal f == False, fieldName f `notElem` mapped ]) ++ [ (pn, Right f) | f <- entityFields e, (fn,fr,_) <- fs, (RequestField pn) <- universeBi fr, fieldName f == fn ]
     where
         mapped = [ fn | (fn, _, _) <- fs ]
 
-requestAttrs :: Stmt -> [(FieldName, Maybe Field)]
+requestAttrs :: Stmt -> [(FieldName, Either OptionalFlag Field)]
 requestAttrs (Select sq) = [    
-        ("start", Just $ mkField "start" (True, NormalField FTInt32)),
-        ("limit", Just $ mkField "limit" (True, NormalField FTInt32))
-    ] ++ [ (fn, Nothing) | RequestField fn <- universeBi sq ]
-requestAttrs (IfFilter (pn,js,e,_,_)) = [ (pn, Nothing) ] ++ [ (fn, Nothing) | RequestField fn <- universeBi js ] ++ [ (fn, Nothing) | RequestField fn <- universeBi e ]
-requestAttrs (GetById _ fr _) = [ (fn, Nothing) | RequestField fn <- universeBi fr ]
-requestAttrs (Call _ frs) = [ (fn, Nothing) | RequestField fn <- universeBi frs ]
-requestAttrs (Require sq) = [ (fn, Nothing) | RequestField fn <- universeBi sq ]            
-requestAttrs (DeleteFrom _ _ me) = [ (fn, Nothing) | RequestField fn <- universeBi me ]
-requestAttrs (Update (Right e) _ Nothing) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
+        ("start", Right $ mkField "start" (True, NormalField FTInt32)),
+        ("limit", Right $ mkField "limit" (True, NormalField FTInt32))
+    ] ++ [ (fn, Left False) | RequestField fn <- universeBi sq ]
+requestAttrs (IfFilter (pn,js,e,_,_)) = [ (pn, Left True) ] ++ [ (fn, Left True) | RequestField fn <- universeBi js ] ++ [ (fn, Left True) | RequestField fn <- universeBi e ]
+requestAttrs (GetById _ fr _) = [ (fn, Left False) | RequestField fn <- universeBi fr ]
+requestAttrs (Call _ frs) = [ (fn, Left False) | RequestField fn <- universeBi frs ]
+requestAttrs (Require sq) = [ (fn, Left False) | RequestField fn <- universeBi sq ]            
+requestAttrs (DeleteFrom _ _ me) = [ (fn, Left False) | RequestField fn <- universeBi me ]
+requestAttrs (Update (Right e) _ Nothing) = [ (fieldJsonName f, Right f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e False fs
-requestAttrs (Insert (Right e) Nothing _) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
+requestAttrs (Insert (Right e) Nothing _) = [ (fieldJsonName f, Right f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 requestAttrs (Insert (Right e) (Just (me, fs)) _) = fieldRefMappingToAttrs e (isJust me) fs
-requestAttrs hp = [ (fn, Nothing) | RequestField fn <- universeBi hp ] ++ (concat $ [ requestAttrs i | i@(Insert _ _ _) <- universeBi hp ] ++ [ requestAttrs u | u@(Update _ _ _) <- universeBi hp ])
+requestAttrs hp = [ (fn, Left False) | RequestField fn <- universeBi hp ] ++ (concat $ [ requestAttrs i | i@(Insert _ _ _) <- universeBi hp ] ++ [ requestAttrs u | u@(Update _ _ _) <- universeBi hp ])
         ++ (concat [ 
-                    [ (fieldJsonName f, Just f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
+                    [ (fieldJsonName f, Right f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False ]
                     | Insert (Right e) Nothing _ <- universeBi hp ])
 
-nubAttrs :: [(FieldName, Maybe Field)] -> [(FieldName, Maybe Field)]
+nubAttrs :: [(FieldName, Either OptionalFlag Field)] -> [(FieldName, Either OptionalFlag Field)]
 nubAttrs  = L.nubBy ((==) `on` fst) 
 
 

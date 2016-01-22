@@ -1,1 +1,1 @@
-~{fn} :: A.Value
+~{fn} :: ~{maybeMaybe optional}A.Value

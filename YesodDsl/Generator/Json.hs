@@ -57,8 +57,8 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
                         "inputs" .= [ 
                                 object [
                                     "name" .= fn,
-                                    "type" .= (mfc >>= Just . toJSON . jsonFieldType . fieldContent),
-                                    "references" .= (mfc >>= Just . toJSON . jsonFieldReferences . fieldContent)
+                                    "type" .= ((eitherToMaybe mfc) >>= Just . toJSON . jsonFieldType . fieldContent),
+                                    "references" .= ((eitherToMaybe mfc) >>= Just . toJSON . jsonFieldReferences . fieldContent)
                                 ] 
                             | (fn, mfc) <- nubAttrs $ concatMap requestAttrs $ handlerStmts h 
                         ],
@@ -70,6 +70,7 @@ moduleToJson m = LT.unpack $ LTE.decodeUtf8 $ encodePretty $ object [
         
     ]
     where
+        eitherToMaybe = either (const Nothing) Just
         outputs hp = case hp of
             Select sq -> map selectField $ sqFields sq
             Return ofs -> [

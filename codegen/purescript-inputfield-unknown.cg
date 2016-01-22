@@ -1,1 +1,1 @@
-~{fn} :: Json
+~{fn} :: ~{maybeMaybe optional}Json
