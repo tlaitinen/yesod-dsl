@@ -15,8 +15,8 @@ instance toURIQuery~{handlerEntityName}Query :: ToURIQuery ~{handlerEntityName}Q
     toURIQuery (~{handlerEntityName}Query q) = URIT.Query $
 ~{indent 8 $ concatMap toURIQuery $ handlerInputFields h}        SM.empty 
 
-~{lowerFirst handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> ~{handlerEntityName}Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
-~{lowerFirst handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers query = do
+get~{handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> ~{handlerEntityName}Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
+get~{handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers query = do
     r <- Affjax.affjax $ Affjax.defaultRequest {
         url = baseUrl~{routePathUrl r} ++ URIQ.printQuery (toURIQuery query),
         headers = headers
