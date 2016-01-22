@@ -20,7 +20,12 @@ requestAttrs :: Stmt -> [(FieldName, Maybe Field)]
 requestAttrs (Select sq) = [    
         ("start", Just $ mkField "start" (True, NormalField FTInt32)),
         ("limit", Just $ mkField "limit" (True, NormalField FTInt32))
-    ]
+    ] ++ [ (fn, Nothing) | RequestField fn <- universeBi sq ]
+requestAttrs (IfFilter (pn,js,e,_,_)) = [ (pn, Nothing) ] ++ [ (fn, Nothing) | RequestField fn <- universeBi js ] ++ [ (fn, Nothing) | RequestField fn <- universeBi e ]
+requestAttrs (GetById _ fr _) = [ (fn, Nothing) | RequestField fn <- universeBi fr ]
+requestAttrs (Call _ frs) = [ (fn, Nothing) | RequestField fn <- universeBi frs ]
+requestAttrs (Require sq) = [ (fn, Nothing) | RequestField fn <- universeBi sq ]            
+requestAttrs (DeleteFrom _ _ me) = [ (fn, Nothing) | RequestField fn <- universeBi me ]
 requestAttrs (Update (Right e) _ Nothing) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e False fs
 requestAttrs (Insert (Right e) Nothing _) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
