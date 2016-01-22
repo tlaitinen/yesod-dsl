@@ -2,27 +2,26 @@ module ~{moduleName m} where
 import Prelude
 import Data.Argonaut.Combinators ((~>), (:=), (.?))
 import Data.Argonaut.Parser (jsonParser)
-import Data.Argonaut.Core (jsonEmptyObject, Json(..))
-import Data.Argonaut.Encode (EncodeJson, encodeJson)
-import Data.Argonaut.Decode (DecodeJson, decodeJson)
+import Data.Argonaut.Core (jsonEmptyObject, Json)
+import Data.Argonaut.Encode (class EncodeJson, encodeJson)
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Generic
+import Data.Generic (class Generic, gCompare, gEq)
 import Data.Either (Either(..))
-import qualified Data.URI as URI
-import qualified Data.URI.Types as URIT
-import qualified Data.URI.Query as URIQ
-import Data.Array ((!!))
-import qualified Control.Monad.Aff as Aff
-import qualified Network.HTTP.Affjax as Affjax
-import qualified Network.HTTP.RequestHeader as RH
+import Data.URI as URI
+import Data.URI.Types as URIT
+import Data.URI.Query as URIQ
+import Control.Monad.Aff as Aff
+import Network.HTTP.Affjax as Affjax
+import Network.HTTP.RequestHeader as RH
 import Network.HTTP.Method (Method(POST, PUT, DELETE))
-import qualified Network.HTTP.StatusCode as SC
-import qualified Data.String as DS
-import qualified Data.Char as DC
-import qualified Data.Date as DD
-import qualified Data.Time as DT
-import qualified Data.String.Regex as R
-import qualified Data.Int as I
+import Network.HTTP.StatusCode as SC
+import Data.String as DS
+import Data.Date as DD
+import Data.Time as DT
+import Data.String.Regex as R
+import Data.StrMap as SM
+import Data.BigInt
 import YesodDsl
 
         

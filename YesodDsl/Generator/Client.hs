@@ -2,9 +2,8 @@ module YesodDsl.Generator.Client where
 import YesodDsl.AST
 import Data.Maybe
 import YesodDsl.Generator.Input
+import YesodDsl.Generator.Common
 
-mkField :: FieldName -> (Bool,FieldContent) -> Field
-mkField n (o,c) = Field (Loc "" 0 0) o n c [] Nothing
 
 handlerInputFields :: Handler -> [(FieldName, Maybe Field)]
 handlerInputFields h = nubAttrs $ concatMap requestAttrs $ handlerStmts h

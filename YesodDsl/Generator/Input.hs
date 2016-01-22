@@ -9,6 +9,7 @@ import Data.String.Utils (rstrip)
 import YesodDsl.AST
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
+import YesodDsl.Generator.Common
 
 fieldRefMappingToAttrs :: Entity -> Bool -> [FieldRefMapping] -> [(FieldName, Maybe Field)]
 fieldRefMappingToAttrs e onlyMapped fs = (if onlyMapped then [] else [ (fieldName f, Just f) | f <- entityFields e, isNothing $ fieldDefault f, fieldOptional f == False, fieldInternal f == False, fieldName f `notElem` mapped ]) ++ [ (pn, Just f) | f <- entityFields e, (fn,fr,_) <- fs, (RequestField pn) <- universeBi fr, fieldName f == fn ]
@@ -16,6 +17,10 @@ fieldRefMappingToAttrs e onlyMapped fs = (if onlyMapped then [] else [ (fieldNam
         mapped = [ fn | (fn, _, _) <- fs ]
 
 requestAttrs :: Stmt -> [(FieldName, Maybe Field)]
+requestAttrs (Select sq) = [    
+        ("start", Just $ mkField "start" (True, NormalField FTInt32)),
+        ("limit", Just $ mkField "limit" (True, NormalField FTInt32))
+    ]
 requestAttrs (Update (Right e) _ Nothing) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]
 requestAttrs (Update (Right e) _ (Just fs)) = fieldRefMappingToAttrs e False fs
 requestAttrs (Insert (Right e) Nothing _) = [ (fieldJsonName f, Just f) | f <- entityFields e, fieldInternal f == False, fieldReadOnly f == False ]

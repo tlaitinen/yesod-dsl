@@ -20,14 +20,14 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
     ++ case fieldContent f of
         NormalField ft -> case ft of
             FTWord32 -> "Int"
-            FTWord64 -> "Number"
+            FTWord64 -> "BigInt"
             FTInt32 -> "Int"
-            FTInt -> "Number"
-            FTInt64 -> "Number"
+            FTInt -> "BigInt"
+            FTInt64 -> "BigInt"
             FTText -> "String"
             FTBool -> "Boolean"
             FTDouble -> "Number"
-            FTRational -> "Number"
+            FTRational -> "Number" -- TODO: Data.Rational
             FTTimeOfDay -> "TimeOfDay"
             FTDay -> "Day"           
             FTUTCTime -> "UTCTime"
@@ -68,7 +68,8 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 decodeJsonAssign f = rstrip $ T.unpack $(codegenFile "codegen/purescript-decodejson-assign.cg")
 
                 handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
-                handlerEntityName = handlerTypeName ++ concatMap pathName (routePath r) 
+                handlerEntityName = (if handlerType h /= GetHandler then handlerTypeName else "") ++ concatMap pathName (routePath r) 
+        toURIQuery (fn,_) = T.unpack $(codegenFile "codegen/purescript-touriquery.cg")
 
         inputField (fn,Just f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
         inputField (fn,Nothing) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")

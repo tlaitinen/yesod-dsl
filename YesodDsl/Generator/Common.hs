@@ -2,6 +2,9 @@ module YesodDsl.Generator.Common where
 import YesodDsl.AST
 import Language.Haskell.HsColour.Classify
 
+mkField :: FieldName -> (Bool,FieldContent) -> Field
+mkField n (o,c) = Field (Loc "" 0 0) o n c [] Nothing
+
 brackets :: Bool -> String -> String
 brackets True s = "(" ++ s ++ ")"
 brackets False s = s

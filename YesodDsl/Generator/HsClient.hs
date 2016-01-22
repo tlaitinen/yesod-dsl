@@ -17,8 +17,6 @@ import YesodDsl.Generator.Models
 import YesodDsl.Generator.Client
 import System.FilePath (joinPath)
   
-mkField :: FieldName -> (Bool,FieldContent) -> Field
-mkField n (o,c) = Field (Loc "" 0 0) o n c [] Nothing
 
 moduleToHsClient :: Module -> [(FilePath, String)]
 moduleToHsClient m = [ 
