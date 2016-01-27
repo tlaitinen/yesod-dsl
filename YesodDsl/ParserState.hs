@@ -4,7 +4,9 @@
 
 module YesodDsl.ParserState (ParserMonad, initParserState, getParserState,
     getPath, getParsed,
-    setParserState, runParser, pushScope, popScope, declare, declareGlobal, SymType(..),
+    setParserState, runParser, pushScope, popScope, 
+    declare, declareClassInstances, declareGlobal, SymType(..),
+    addClassInstances,
     ParserState, mkLoc, parseErrorCount, withSymbol, withGlobalSymbol, withSymbolNow,
     pError,
     hasReserved,
@@ -94,7 +96,8 @@ data ParserState = ParserState {
     psPendingValidations :: [[PendingValidation]],
     psEntityValidations :: [EntityValidation],
     psLastStatement :: Maybe (Location, String),
-    psChecks      :: [(Location,String,FieldType)]
+    psChecks      :: [(Location,String,FieldType)],
+    psClassInstances :: Map.Map ClassName [EntityName]
 } deriving (Show)
 
 instance Show (Syms -> ParserMonad ()) where
@@ -115,7 +118,8 @@ initParserState = ParserState {
     psPendingValidations = [],
     psEntityValidations = [],
     psLastStatement = Nothing,
-    psChecks = []
+    psChecks = [],
+    psClassInstances = Map.empty
 }
 getParserState :: ParserMonad ParserState
 getParserState = get
@@ -125,6 +129,13 @@ getPath = gets psPath
 
 getParsed :: ParserMonad [FilePath]
 getParsed = gets psParsed
+
+addClassInstances :: EntityName -> [ClassName] -> ParserMonad ()
+addClassInstances en cns = modify $ \ps -> ps {
+        psClassInstances = Map.unionWith (++) (psClassInstances ps) m
+    }
+    where 
+        m = Map.fromListWith (++) [ (cn,[en]) | cn <- cns ]
 
 setCurrentHandlerType :: HandlerType -> ParserMonad ()
 setCurrentHandlerType ht = modify $ \ps -> ps {
@@ -236,6 +247,12 @@ globalError e = do
 
 declare :: Location -> String -> SymType -> ParserMonad ()
 declare l n t = declare' False l n t
+
+declareClassInstances :: ClassName -> Location -> String -> ParserMonad ()
+declareClassInstances cn l n = do
+    ps <- get
+    forM_ (Map.findWithDefault [] cn $ psClassInstances ps) $ \en -> do
+        declare l (n ++ "_" ++ en) (SEntity en)
 
 declareGlobal :: Location -> String -> SymType -> ParserMonad ()
 declareGlobal l n t = declare' True l n t

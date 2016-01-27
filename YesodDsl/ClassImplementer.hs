@@ -7,6 +7,8 @@ import Data.Generics
 import Data.Generics.Uniplate.Data
 import qualified Data.Map as Map
 import qualified Data.List as L
+import Debug.Trace
+
 
 lookupField' :: Module -> EntityName -> FieldName -> Maybe Field
 lookupField' m en fn = listToMaybe [ f | e <- modEntities m,

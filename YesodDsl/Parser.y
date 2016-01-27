@@ -255,6 +255,7 @@ entityDef : entity upperIdTk maybeTableName lbrace
         let n = tkString $2
         let e = Entity l n $3 $6 (reverse $7) [] (reverse $8) $9 (reverse $10) 
         declareGlobal l n (SEntity n)
+        addClassInstances n $6
         return e
     }
 
@@ -407,7 +408,7 @@ declareFromEntity: upperIdTk as lowerIdTk {%
             l3 <- mkLoc $3
             let (s1,s3) = (tkString $1, tkString $3)
             declare l3 s3 (SEntity s1)
-
+            declareClassInstances s1 l3 s3 
             withSymbol l1 s1 $ requireEntityOrClass
             return (Left s1,s3)
     }
