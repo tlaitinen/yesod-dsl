@@ -6,7 +6,7 @@ import YesodDsl.AST
 import Data.List
 import Data.Maybe
 import Data.Char (toLower)
-import Data.String.Utils (rstrip)
+import Data.String.Utils (rstrip, replace)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.Shakespeare.Text hiding (toText)
@@ -68,10 +68,13 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 decodeJsonAssign f = rstrip $ T.unpack $(codegenFile "codegen/purescript-decodejson-assign.cg")
 
                 handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
+                handlerModuleName = replace "_" "P" handlerEntityName
                 handlerEntityName = (if handlerType h /= GetHandler then handlerTypeName else "") ++ concatMap pathName (routePath r) 
 
                 inputFieldSetter (fn, Right f) = T.unpack $(codegenFile "codegen/purescript-inputfield-setter.cg")
                 inputFieldSetter (fn, Left optional) = T.unpack $(codegenFile "codegen/purescript-inputfield-setter-unknown.cg")
+
+                outputFieldLens f = T.unpack $(codegenFile "codegen/purescript-output-field-lens.cg")
         toURIQuery (fn,_) = T.unpack $(codegenFile "codegen/purescript-touriquery.cg")
         inputField (fn,Right f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
         inputField (fn,Left optional) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")

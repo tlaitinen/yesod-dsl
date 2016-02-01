@@ -1,3 +1,3 @@
-_~{lowerFirst $ handlerEntityName}~{upperFirst $ fieldName f} :: ~{pureScriptFieldType f} -> ~{handlerEntityName}Query -> ~{handlerEntityName}Query
-_~{lowerFirst $ handlerEntityName}~{upperFirst $ fieldName f} x (~{handlerEntityName}Query q) = ~{handlerEntityName}Query $ insertQueryParam "~{fieldName f}" x q 
+q_~{fieldName f} :: ~{pureScriptFieldType f} -> Query -> Query
+q_~{fieldName f} x (Query q) = Query $ insertQueryParam "~{fieldName f}" x q 
 

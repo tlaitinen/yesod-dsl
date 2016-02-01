@@ -1,4 +1,6 @@
 module ~{moduleName m} where
+
+module ~{moduleName m}.DB where
 import Prelude
 import Data.Argonaut.Combinators ((~>), (:=), (.?))
 import Data.Argonaut.Parser (jsonParser)
@@ -15,12 +17,12 @@ import Network.HTTP.Affjax as Affjax
 import Network.HTTP.RequestHeader as RH
 import Network.HTTP.Method (Method(POST, PUT, DELETE))
 import Network.HTTP.StatusCode as SC
+import Optic.Core 
 import Data.String as DS
 import Data.Date as DD
 import Data.Time as DT
 import Data.BigInt
 import YesodDsl
-
         
 ~{concatMap enum $ modEnums m}
 ~{concatMap entity $ modEntities m}

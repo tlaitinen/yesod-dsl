@@ -1,5 +1,26 @@
+module ~{moduleName m}.~{handlerModuleName} where
+import ~{moduleName m}.DB
+import Prelude
+import YesodDsl
+import Data.Argonaut.Decode (class DecodeJson, decodeJson)
+import Data.Argonaut.Combinators ((~>), (:=), (.?))
+import Data.Argonaut.Parser (jsonParser)
+import Data.Argonaut.Core (jsonEmptyObject, Json)
+import Control.Monad.Aff as Aff
+import Data.Maybe (Maybe(Just))
+import Data.Either (Either(..))
+import Network.HTTP.Affjax as Affjax
+import Network.HTTP.RequestHeader as RH
+import Network.HTTP.Method (Method(POST, PUT, DELETE))
+import Network.HTTP.StatusCode as SC
+import Optic.Core
+import Data.URI.Types as URIT
+import Data.URI.Query as URIQ
+
 newtype ~{handlerEntityName} = ~{handlerEntityName} {
 ~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
+
+~{concatMap outputFieldLens $ handlerOutputFields m h}
 
 instance decodeJson~{handlerEntityName} :: DecodeJson ~{handlerEntityName} where
     decodeJson json = do
@@ -8,17 +29,17 @@ instance decodeJson~{handlerEntityName} :: DecodeJson ~{handlerEntityName} where
         pure $ ~{handlerEntityName} {
 ~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ handlerOutputFields m h}        }
 
-newtype ~{handlerEntityName}Query = ~{handlerEntityName}Query URIT.Query 
+newtype Query = Query URIT.Query 
 
-~{lowerFirst $ handlerEntityName}Query :: Maybe Int -> Maybe Int -> ~{handlerEntityName}Query
-~{lowerFirst $ handlerEntityName}Query s l = ~{handlerEntityName}Query $ paginationQuery s l
+query :: Maybe Int -> Maybe Int -> Query
+query s l = Query $ paginationQuery s l
 
 ~{concatMap inputFieldSetter $ handlerInputFields h}
 
-get~{handlerEntityName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> ~{handlerEntityName}Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
-get~{handlerEntityName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers (~{handlerEntityName}Query query) = do
+get :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
+get baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers (Query q) = do
     r <- Affjax.affjax $ Affjax.defaultRequest {
-        url = baseUrl~{routePathUrl r} ++ URIQ.printQuery query,
+        url = baseUrl~{routePathUrl r} ++ URIQ.printQuery q,
         headers = headers
     }
     pure $ jsonParser r.response >>= decodeJson
