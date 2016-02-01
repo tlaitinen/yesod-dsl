@@ -5,10 +5,9 @@ import Data.Argonaut.Parser (jsonParser)
 import Data.Argonaut.Core (jsonEmptyObject, Json)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(Just))
 import Data.Generic (class Generic, gCompare, gEq)
 import Data.Either (Either(..))
-import Data.URI as URI
 import Data.URI.Types as URIT
 import Data.URI.Query as URIQ
 import Control.Monad.Aff as Aff
@@ -19,8 +18,6 @@ import Network.HTTP.StatusCode as SC
 import Data.String as DS
 import Data.Date as DD
 import Data.Time as DT
-import Data.String.Regex as R
-import Data.StrMap as SM
 import Data.BigInt
 import YesodDsl
 

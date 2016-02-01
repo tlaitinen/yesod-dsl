@@ -19,10 +19,7 @@ fieldRefMappingToAttrs e onlyMapped fs = (if onlyMapped then [] else [ (fieldNam
         mapped = [ fn | (fn, _, _) <- fs ]
 
 requestAttrs :: Stmt -> [(FieldName, Either OptionalFlag Field)]
-requestAttrs (Select sq) = [    
-        ("start", Right $ mkField "start" (True, NormalField FTInt32)),
-        ("limit", Right $ mkField "limit" (True, NormalField FTInt32))
-    ] ++ [ (fn, Left False) | RequestField fn <- universeBi sq ]
+requestAttrs (Select sq) = [ (fn, Left False) | RequestField fn <- universeBi sq ]
 requestAttrs (IfFilter (pn,js,e,_,_)) = [ (pn, Left True) ] ++ [ (fn, Left True) | RequestField fn <- universeBi js ] ++ [ (fn, Left True) | RequestField fn <- universeBi e ]
 requestAttrs (GetById _ fr _) = [ (fn, Left False) | RequestField fn <- universeBi fr ]
 requestAttrs (Call _ frs) = [ (fn, Left False) | RequestField fn <- universeBi frs ]

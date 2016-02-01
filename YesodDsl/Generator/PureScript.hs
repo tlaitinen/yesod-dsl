@@ -69,8 +69,10 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
 
                 handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
                 handlerEntityName = (if handlerType h /= GetHandler then handlerTypeName else "") ++ concatMap pathName (routePath r) 
-        toURIQuery (fn,_) = T.unpack $(codegenFile "codegen/purescript-touriquery.cg")
 
+                inputFieldSetter (fn, Right f) = T.unpack $(codegenFile "codegen/purescript-inputfield-setter.cg")
+                inputFieldSetter (fn, Left optional) = T.unpack $(codegenFile "codegen/purescript-inputfield-setter-unknown.cg")
+        toURIQuery (fn,_) = T.unpack $(codegenFile "codegen/purescript-touriquery.cg")
         inputField (fn,Right f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
         inputField (fn,Left optional) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")
         maybeMaybe x = if x then "Maybe " else "" :: Text
