@@ -26,4 +26,4 @@ import YesodDsl
         
 ~{concatMap enum $ modEnums m}
 ~{concatMap entity $ modEntities m}
-
+~{concatMap route $ modRoutes m}

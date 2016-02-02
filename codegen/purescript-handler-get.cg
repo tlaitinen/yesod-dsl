@@ -1,4 +1,4 @@
-module ~{moduleName m}.~{handlerModuleName} where
+module ~{moduleName m}.~{routeModuleName r}.~{handlerModuleName h} where
 import ~{moduleName m}.DB
 import Prelude
 import YesodDsl
@@ -17,16 +17,16 @@ import Optic.Core
 import Data.URI.Types as URIT
 import Data.URI.Query as URIQ
 
-newtype Record = Record {
+newtype ~{handlerEntityName} = ~{handlerEntityName} {
 ~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
 
 ~{concatMap outputFieldLens $ handlerOutputFields m h}
 
-instance decodeJsonRecord :: DecodeJson Record where
+instance decodeJson~{handlerEntityName} :: DecodeJson ~{handlerEntityName} where
     decodeJson json = do
         x <- decodeJson json
 ~{indent 8 $ concatMap decodeJsonExtract $ handlerOutputFields m h}
-        pure $ Record {
+        pure $ ~{handlerEntityName} {
 ~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ handlerOutputFields m h}        }
 
 newtype Query = Query URIT.Query 
@@ -36,11 +36,10 @@ query s l = Query $ paginationQuery s l
 
 ~{concatMap inputFieldSetter $ handlerInputFields h}
 
-get :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result Record))
+get :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> Query -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String (Result ~{handlerEntityName}))
 get baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers (Query q) = do
     r <- Affjax.affjax $ Affjax.defaultRequest {
         url = baseUrl~{routePathUrl r} ++ URIQ.printQuery q,
         headers = headers
     }
     pure $ jsonParser r.response >>= decodeJson
-

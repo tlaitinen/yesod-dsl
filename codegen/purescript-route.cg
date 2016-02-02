@@ -1,0 +1,4 @@
+module ~{moduleName m}.~{routeModuleName r} (
+~{indent 4 $ intercalate ",\n" $ map (exportHandler r) $ routeHandlers r}    ) where
+~{concatMap (importHandler r) $ routeHandlers r}
+~{concatMap (handler r) $ routeHandlers r} 
