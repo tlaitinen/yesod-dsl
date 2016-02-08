@@ -1,0 +1,1 @@
+~{handlerTypeName h}~{routeModuleName} ~{handlerTypeName h}~{routeModuleName}Params (~{resultType} -> a)

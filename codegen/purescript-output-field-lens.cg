@@ -1,3 +1,0 @@
-_~{fieldJsonName f} :: LensP ~{handlerEntityName} (~{pureScriptFieldType f})
-_~{fieldJsonName f} = lens (\(~{handlerEntityName} r) -> r."~{fieldJsonName f}") (\(~{handlerEntityName} r) v -> ~{handlerEntityName} $ r { "~{fieldJsonName f}" = v })
-

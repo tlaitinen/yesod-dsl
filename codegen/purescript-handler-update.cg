@@ -1,4 +1,4 @@
-module ~{moduleName m}.~{routeModuleName r}.~{handlerModuleName h} where
+module ~{moduleName m}.~{routeModuleName}.~{handlerModuleName h} where
 import ~{moduleName m}.DB
 import Prelude
 import YesodDsl
@@ -17,20 +17,12 @@ import Data.Maybe (Maybe(Just))
 
 ~{defineResultType}
 
-newtype ~{handlerEntityName} = ~{handlerEntityName} {
+type ~{handlerEntityName h}Params = {
 ~{indent 4 $ intercalate ",\n" $ map inputField $ handlerInputFields h}}
 
-instance encodeJson~{handlerEntityName} :: EncodeJson ~{handlerEntityName} where
-    encodeJson (~{handlerEntityName} x) = do
-~{indent 8 $ intercalate "\n~> " $ map encodeJson $ handlerInputFields h}        ~> jsonEmptyObject
+newtype ~{handlerEntityName h}ParamsP = ~{handlerEntityName h}ParamsP ~{handlerEntityName h}Params
 
-~{lowerFirst handlerTypeName} :: forall e. Affjax.URL~{concatMap (prepend " -> ") $ map snd $ routePathParams r} -> Array RH.RequestHeader -> ~{handlerEntityName} -> Aff.Aff (ajax :: Affjax.AJAX | e) (Either String ~{resultType})
-~{lowerFirst handlerTypeName} baseUrl~{concatMap (prepend " ") $ map fst $ routePathParams r} headers content = do
-    r <- Affjax.affjax $ Affjax.defaultRequest {
-            method = ~{show $ handlerType h},
-            url = baseUrl~{routePathUrl r},
-            headers = headers,
-            content = Just (show $ encodeJson content)
-        }
-~{indent 4 $ processResult}
+instance encodeJson~{handlerEntityName h}ParamsP :: EncodeJson ~{handlerEntityName h}ParamsP where
+    encodeJson (~{handlerEntityName h}ParamsP x) = do
+~{indent 8 $ intercalate "\n~> " $ map encodeJson $ handlerInputFields h}        ~> jsonEmptyObject
 

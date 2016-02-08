@@ -1,4 +1,9 @@
-module ~{moduleName m}.~{routeModuleName r} (
-~{indent 4 $ intercalate ",\n" $ map (exportHandler r) $ routeHandlers r}    ) where
-~{concatMap (importHandler r) $ routeHandlers r}
-~{concatMap (handler r) $ routeHandlers r} 
+~{concatMap handler $ routeHandlers r} 
+
+module ~{moduleName m}.~{routeModuleName} (
+~{indent 4 $ intercalate ",\n" $ map exportHandler $ routeHandlers r}    ) where
+import YesodDsl
+~{concatMap importHandler $ routeHandlers r}
+
+data ~{routeModuleName}R a = 
+~{indent 4 $ intercalate " |\n" $ map (rstrip . handlerRequestDataType) $ routeHandlers r} 

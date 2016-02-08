@@ -1,3 +1,0 @@
-q_~{fn} :: Json -> Query -> Query
-q_~{fn} x (Query q) = Query $ insertQueryParam "~{fn}" x q 
-

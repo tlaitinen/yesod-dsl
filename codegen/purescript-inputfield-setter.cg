@@ -1,3 +1,0 @@
-q_~{fieldName f} :: ~{pureScriptFieldType f} -> Query -> Query
-q_~{fieldName f} x (Query q) = Query $ insertQueryParam "~{fieldName f}" x q 
-

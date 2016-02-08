@@ -45,16 +45,27 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 showValue v = T.unpack $(codegenFile "codegen/purescript-enum-show.cg")
                 decodeValue v = rstrip $ T.unpack $(codegenFile "codegen/purescript-enum-decodevalue.cg")
                 encodeValue v = T.unpack $(codegenFile "codegen/purescript-enum-encodevalue.cg")
-        route r = T.unpack $(codegenFile "codegen/purescript-route.cg")        
-        exportHandler r h = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-handler.cg")
-        importHandler r h = T.unpack $(codegenFile "codegen/purescript-import-handler.cg")
 
-        handlerModuleName h = case handlerType h of
-            GetHandler -> "Get" :: String
-            PostHandler -> "Post"
-            DeleteHandler -> "Delete"
-            PutHandler -> "Put"
-        handler r h 
+        entity e = T.unpack $(codegenFile "codegen/purescript-entity.cg")
+route :: Module -> Route -> String
+route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")        
+    where
+        exportHandler h = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-handler.cg")
+        importHandler h = T.unpack $(codegenFile "codegen/purescript-import-handler.cg")
+        handlerRequestDataType h = T.unpack $(codegenFile "codegen/purescript-handler-request-data-type.cg")
+            where
+                resultType = case handlerType h of
+                    GetHandler -> "(Result " ++ handlerEntityName h ++ ")"
+                    _ -> updateHandlerResultType h
+
+        updateHandlerResultType h
+            | null $ handlerOutputFields m h = "Boolean"
+            | otherwise = handlerEntityName h ++ "Result"
+        handlerModuleName = handlerTypeName
+
+        handlerEntityName h = (if handlerType h /= GetHandler then handlerTypeName h else "") ++ routePathName
+        handlerTypeName h = upperFirst $ map toLower (show $ handlerType h) 
+        handler h 
             | handlerType h == GetHandler = T.unpack $(codegenFile "codegen/purescript-handler-get.cg")
             | null $ handlerInputFields h =T.unpack $(codegenFile "codegen/purescript-handler-update-empty-body.cg")
             | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update.cg")
@@ -62,9 +73,6 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 defineResultType
                     | null $ handlerOutputFields m h = ""
                     | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update-result-type.cg")
-                resultType 
-                    | null $ handlerOutputFields m h = "Boolean"
-                    | otherwise = handlerEntityName ++ "Result"
                 processResult 
                     | null $ handlerOutputFields m h = T.unpack $(codegenFile "codegen/purescript-handler-update-boolean-result.cg")
                     | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update-process-result.cg")
@@ -75,28 +83,23 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 decodeJsonExtract f = T.unpack $(codegenFile "codegen/purescript-decodejson-extract.cg")
                 decodeJsonAssign f = rstrip $ T.unpack $(codegenFile "codegen/purescript-decodejson-assign.cg")
 
-                handlerTypeName = upperFirst $ map toLower (show $ handlerType h) 
-                handlerEntityName = (if handlerType h /= GetHandler then handlerTypeName else "") ++ routePathName r
 
-                inputFieldSetter (fn, Right f) = T.unpack $(codegenFile "codegen/purescript-inputfield-setter.cg")
-                inputFieldSetter (fn, Left optional) = T.unpack $(codegenFile "codegen/purescript-inputfield-setter-unknown.cg")
 
-                outputFieldLens f = T.unpack $(codegenFile "codegen/purescript-output-field-lens.cg")
-        toURIQuery (fn,_) = T.unpack $(codegenFile "codegen/purescript-touriquery.cg")
         inputField (fn,Right f) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield.cg")
         inputField (fn,Left optional) = rstrip $ T.unpack $(codegenFile "codegen/purescript-inputfield-unknown.cg")
+        toURIQuery (fn, Right f) = T.unpack $(codegenFile "codegen/purescript-toqueryparam.cg")
+        toURIQuery (fn, Left optional) = T.unpack $(codegenFile "codegen/purescript-toqueryparam-unknown.cg")
         maybeMaybe x = if x then "Maybe " else "" :: Text
         routeModuleName = routePathName 
-        routePathName = (concatMap pathName) . routePath
+        routePathName = (concatMap pathName) $ routePath r
         pathName pp = case pp of
             PathText t -> upperFirst t
             PathId _ en -> "I"
          
-        routePathParams r = mapMaybe (\(n,pp) -> case pp of
+        routePathParams = mapMaybe (\(n,pp) -> case pp of
             PathText _ -> Nothing
             PathId _ en -> Just ("p" ++ show (n::Int),en ++ "Id")) $ zip [1..] (routePath r)
-        routePathUrl r = concatMap (\(n,pp) -> case pp of
+        routePathUrl = concatMap (\(n,pp) -> case pp of
             PathText t -> " ++ \"/" ++ t ++ "\""
             PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
         
-        entity e = T.unpack $(codegenFile "codegen/purescript-entity.cg")

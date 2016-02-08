@@ -1,1 +1,1 @@
-import ~{moduleName m}.~{routeModuleName r}.~{handlerModuleName h}
+import ~{moduleName m}.~{routeModuleName}.~{handlerModuleName h}

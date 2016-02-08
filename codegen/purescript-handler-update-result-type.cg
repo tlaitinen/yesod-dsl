@@ -1,2 +1,2 @@
-type ~{handlerEntityName}Result = {
+type ~{handlerEntityName h}Result = {
 ~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}

@@ -8,6 +8,12 @@ import YesodDsl.Generator.Common
 handlerInputFields :: Handler -> [(FieldName, Either OptionalFlag Field)]
 handlerInputFields h = nubAttrs $ concatMap requestAttrs $ handlerStmts h
 
+getHandlerInputFields :: Handler -> [(FieldName, Either OptionalFlag Field)]
+getHandlerInputFields h = [
+        ("start", Right $ mkField "start" (True, NormalField FTInt32)),
+        ("limit", Right $ mkField "limit" (True, NormalField FTInt32))
+    ] ++ handlerInputFields h
+
 handlerOutputFields :: Module -> Handler ->  [Field]
 handlerOutputFields m h = concatMap stmtOutputs $ handlerStmts h
     where
