@@ -37,6 +37,6 @@ type ~{handlerTypeName h}~{routeModuleName}Params = {
 newtype ~{handlerTypeName h}~{routeModuleName}ParamsP = ~{handlerTypeName h}~{routeModuleName}ParamsP ~{handlerTypeName h}~{routeModuleName}Params
 
 instance toURIQuery~{handlerTypeName h}~{routeModuleName}ParamsP :: ToURIQuery ~{handlerTypeName h}~{routeModuleName}ParamsP where
-    toURIQuery (~{handlerTypeName h}~{routeModuleName}ParamsP x) =
+    toURIQuery (~{handlerTypeName h}~{routeModuleName}ParamsP x) = dropEmptyQueryParams $
 ~{indent 8 $ concatMap toURIQuery $ getHandlerInputFields h}        emptyQuery
 
