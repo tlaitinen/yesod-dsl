@@ -39,6 +39,8 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
 moduleToPureScript :: Module -> String
 moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
     where
+        exportRouteModule r = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-route.cg")
+        importRouteModule r = T.unpack $(codegenFile "codegen/purescript-import-route.cg")
         enum e = T.unpack $(codegenFile "codegen/purescript-enum.cg")
             where
                 value v = enumName e ++ v
@@ -47,9 +49,22 @@ moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
                 encodeValue v = T.unpack $(codegenFile "codegen/purescript-enum-encodevalue.cg")
 
         entity e = T.unpack $(codegenFile "codegen/purescript-entity.cg")
+routeModuleNameP :: Route -> String
+routeModuleNameP = routePathNameP
+
+routePathNameP :: Route -> String
+routePathNameP r = (concatMap pathName) $ routePath r
+
+pathName :: PathPiece -> String
+pathName pp = case pp of
+    PathText t -> upperFirst t
+    PathId _ en -> "I"
+
 route :: Module -> Route -> String
 route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")        
     where
+        routeModuleName = routeModuleNameP r
+        routePathName = routePathNameP r
         exportHandler h = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-handler.cg")
         importHandler h = T.unpack $(codegenFile "codegen/purescript-import-handler.cg")
         handlerRequestDataType h = T.unpack $(codegenFile "codegen/purescript-handler-request-data-type.cg")
@@ -90,12 +105,7 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
         toURIQuery (fn, Right f) = T.unpack $(codegenFile "codegen/purescript-toqueryparam.cg")
         toURIQuery (fn, Left optional) = T.unpack $(codegenFile "codegen/purescript-toqueryparam-unknown.cg")
         maybeMaybe x = if x then "Maybe " else "" :: Text
-        routeModuleName = routePathName 
-        routePathName = (concatMap pathName) $ routePath r
-        pathName pp = case pp of
-            PathText t -> upperFirst t
-            PathId _ en -> "I"
-         
+        
         routePathParams = mapMaybe (\(n,pp) -> case pp of
             PathText _ -> Nothing
             PathId _ en -> Just ("p" ++ show (n::Int),en ++ "Id")) $ zip [1..] (routePath r)

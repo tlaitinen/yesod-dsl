@@ -14,7 +14,6 @@ import Network.HTTP.Affjax as Affjax
 import Network.HTTP.RequestHeader as RH
 import Network.HTTP.Method (Method(POST, PUT, DELETE))
 import Network.HTTP.StatusCode as SC
-import Optic.Core
 import Data.URI.Types as URIT
 import Data.URI.Query as URIQ
 
