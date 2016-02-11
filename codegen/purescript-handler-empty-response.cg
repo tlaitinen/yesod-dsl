@@ -1,0 +1,1 @@
+~{handlerTypeName h}~{routeModuleName} ~{concatMap (append " ") $ replicate (length $ routePathParams) "_"}_ r -> Right r

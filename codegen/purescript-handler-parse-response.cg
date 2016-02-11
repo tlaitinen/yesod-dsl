@@ -1,0 +1,3 @@
+~{handlerTypeName h}~{routeModuleName} ~{concatMap (append " ") $ replicate (length $ routePathParams) "_"}_ r -> case decodeJson x.response of
+    Right (Result ys c) -> Right $ r $ Result (map (\(~{routeModuleName}P y) -> y) ys) c
+    Left e  -> Left e 

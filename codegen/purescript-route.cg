@@ -8,13 +8,17 @@ import ~{moduleName m}.DB
 import Network.HTTP.Affjax as A
 import Network.HTTP.Method as A
 import Data.Maybe (Maybe(..))
+import Data.Either (Either(..))
 import Data.URI.Query as URIQ
 import Data.Argonaut.Encode (encodeJson)
+import Data.Argonaut.Decode (decodeJson)
 ~{concatMap importHandler $ routeHandlers r}
 
 data ~{routeModuleName}R a = 
 ~{indent 4 $ intercalate " |\n" $ map (rstrip . handlerRequestDataType) $ routeHandlers r} 
 
-instance yesodDslRequest~{routeModuleName}R :: YesodDslRequest (~{routeModuleName}R a) where
-    yesodDslRequest baseUrl headers x = case x of
+instance yesodDslRequest~{routeModuleName}R :: YesodDslRequest (~{routeModuleName}R a) a where
+    yesodDslRequest baseUrl headers req = case req of
 ~{indent 8 $ concatMap handlerRequest $ routeHandlers r}
+    yesodDslParseResponse req x = case req of
+~{indent 8 $ concatMap handlerParseResponse $ routeHandlers r}
