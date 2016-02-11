@@ -2,8 +2,14 @@
 
 module ~{moduleName m}.~{routeModuleName} (
 ~{indent 4 $ intercalate ",\n" $ map exportHandler $ routeHandlers r}    ) where
+import Prelude
 import YesodDsl
+import ~{moduleName m}.DB
 ~{concatMap importHandler $ routeHandlers r}
 
 data ~{routeModuleName}R a = 
 ~{indent 4 $ intercalate " |\n" $ map (rstrip . handlerRequestDataType) $ routeHandlers r} 
+
+instance yesodDslRequest~{routeModuleName}R :: YesodDslRequest (~{routeModuleName}R a) where
+    yesodDslEndpoint x = case x of
+~{indent 8 $ concatMap handlerEndpoint $ routeHandlers r}

@@ -67,6 +67,7 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
         routePathName = routePathNameP r
         exportHandler h = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-handler.cg")
         importHandler h = T.unpack $(codegenFile "codegen/purescript-import-handler.cg")
+        handlerEndpoint h = T.unpack $(codegenFile "codegen/purescript-handler-endpoint.cg")
         handlerRequestDataType h = T.unpack $(codegenFile "codegen/purescript-handler-request-data-type.cg")
             where
                 resultType = case handlerType h of
@@ -105,11 +106,10 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
         toURIQuery (fn, Right f) = T.unpack $(codegenFile "codegen/purescript-toqueryparam.cg")
         toURIQuery (fn, Left optional) = T.unpack $(codegenFile "codegen/purescript-toqueryparam-unknown.cg")
         maybeMaybe x = if x then "Maybe " else "" :: Text
-        
         routePathParams = mapMaybe (\(n,pp) -> case pp of
             PathText _ -> Nothing
             PathId _ en -> Just ("p" ++ show (n::Int),en ++ "Id")) $ zip [1..] (routePath r)
-        routePathUrl = concatMap (\(n,pp) -> case pp of
-            PathText t -> " ++ \"/" ++ t ++ "\""
-            PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
+        routePathUrl = intercalate " ++ " $ map (\(n,pp) -> case pp of
+            PathText t -> "\"/" ++ t ++ "\""
+            PathId _ _ -> "\"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
         
