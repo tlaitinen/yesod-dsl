@@ -1,0 +1,6 @@
+~{handlerTypeName h}~{routeModuleName} ~{intercalate " " $ map fst $ routePathParams} p _ -> A.defaultRequest {
+        url     = baseUrl ++ ~{routePathUrl}~{handlerQueryString h},
+        method  = A.~{show $ handlerType h},
+        headers = headers,
+        content = ~{handlerContent h}
+    }

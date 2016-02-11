@@ -65,9 +65,15 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
     where
         routeModuleName = routeModuleNameP r
         routePathName = routePathNameP r
+        handlerQueryString h = case handlerType h of
+            GetHandler -> rstrip $ T.unpack $(codegenFile "codegen/purescript-get-handler-query-string.cg")
+            _ -> ""
+        handlerContent h = case handlerType h of
+            GetHandler -> "Nothing"
+            _ -> rstrip $ T.unpack $(codegenFile "codegen/purescript-update-handler-content.cg")
         exportHandler h = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-handler.cg")
         importHandler h = T.unpack $(codegenFile "codegen/purescript-import-handler.cg")
-        handlerEndpoint h = T.unpack $(codegenFile "codegen/purescript-handler-endpoint.cg")
+        handlerRequest h = T.unpack $(codegenFile "codegen/purescript-handler-request.cg")
         handlerRequestDataType h = T.unpack $(codegenFile "codegen/purescript-handler-request-data-type.cg")
             where
                 resultType = case handlerType h of
