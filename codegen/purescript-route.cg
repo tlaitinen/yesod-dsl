@@ -17,7 +17,7 @@ import Data.Argonaut.Decode (decodeJson)
 data ~{routeModuleName}R a = 
 ~{indent 4 $ intercalate " |\n" $ map (rstrip . handlerRequestDataType) $ routeHandlers r} 
 
-instance yesodDslRequest~{routeModuleName}R :: YesodDslRequest (~{routeModuleName}R a) a where
+instance yesodDslRequest~{routeModuleName}R :: YesodDslRequest ~{routeModuleName}R a where
     yesodDslRequest baseUrl headers req = case req of
 ~{indent 8 $ concatMap handlerRequest $ routeHandlers r}
     yesodDslParseResponse req x = case req of
