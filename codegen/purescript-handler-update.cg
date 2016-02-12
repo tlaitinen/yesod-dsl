@@ -23,6 +23,6 @@ type ~{handlerEntityName h}Params = {
 newtype ~{handlerEntityName h}ParamsP = ~{handlerEntityName h}ParamsP ~{handlerEntityName h}Params
 
 instance encodeJson~{handlerEntityName h}ParamsP :: EncodeJson ~{handlerEntityName h}ParamsP where
-    encodeJson (~{handlerEntityName h}ParamsP x) = do
-~{indent 8 $ intercalate "\n~> " $ map encodeJson $ handlerInputFields h}        ~> jsonEmptyObject
+    encodeJson (~{handlerEntityName h}ParamsP x) = ~{choose (null $ handlerInputFields h) "" "do"}
+~{indent 8 $ intercalate "\n~> " $ map encodeJson $ handlerInputFields h}        ~{choose (null $ handlerInputFields h) "" "~>"} jsonEmptyObject
 

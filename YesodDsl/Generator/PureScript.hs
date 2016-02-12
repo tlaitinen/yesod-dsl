@@ -20,10 +20,10 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
     ++ case fieldContent f of
         NormalField ft -> case ft of
             FTWord32 -> "Int"
-            FTWord64 -> "BigInt"
+            FTWord64 -> "BigIntP"
             FTInt32 -> "Int"
-            FTInt -> "BigInt"
-            FTInt64 -> "BigInt"
+            FTInt -> "BigIntP"
+            FTInt64 -> "BigIntP"
             FTText -> "String"
             FTBool -> "Boolean"
             FTDouble -> "Number"
@@ -90,9 +90,12 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
 
         handlerEntityName h = (if handlerType h /= GetHandler then handlerTypeName h else "") ++ routePathName
         handlerTypeName h = upperFirst $ map toLower (show $ handlerType h) 
+        choose :: Bool -> Text -> Text -> Text 
+        choose cond t e 
+            | cond = t
+            | otherwise = e
         handler h 
             | handlerType h == GetHandler = T.unpack $(codegenFile "codegen/purescript-handler-get.cg")
-            | null $ handlerInputFields h =T.unpack $(codegenFile "codegen/purescript-handler-update-empty-body.cg")
             | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update.cg")
             where
                 defineResultType
