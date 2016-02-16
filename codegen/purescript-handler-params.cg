@@ -1,0 +1,12 @@
+type ~{handlerBaseName h}Params = {
+~{indent 4 $ intercalate ",\n" $ map inputField $ handlerInputFields h}}
+
+def~{handlerBaseName h} :: ~{maybeRequiredParamsType h}~{handlerBaseName h}Params
+def~{handlerBaseName h} ~{choose (null $ requiredInputFields h) "" "x "}= {
+~{indent 4 $ intercalate ",\n" $ map defaultInputField $ handlerInputFields h}}
+
+newtype ~{handlerBaseName h}ParamsP = ~{handlerBaseName h}ParamsP ~{handlerBaseName h}Params
+
+instance encodeJson~{handlerBaseName h}ParamsP :: EncodeJson ~{handlerBaseName h}ParamsP where
+    encodeJson (~{handlerBaseName h}ParamsP x) = ~{choose (null $ handlerInputFields h) "" "do"}
+~{indent 8 $ intercalate "\n~> " $ map encodeJson $ handlerInputFields h}        ~{choose (null $ handlerInputFields h) "" "~>"} jsonEmptyObject

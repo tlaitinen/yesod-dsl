@@ -1,1 +1,1 @@
-~{handlerTypeName h}~{routeModuleName} ~{intercalate " " $ map snd routePathParams} ~{handlerTypeName h}~{routeModuleName}Params (~{resultType})
+~{handlerBaseName h} ~{intercalate " " $ map snd routePathParams} ~{handlerBaseName h}Params (~{resultType})

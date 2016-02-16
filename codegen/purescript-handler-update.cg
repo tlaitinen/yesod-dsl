@@ -6,23 +6,16 @@ import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.Argonaut.Combinators ((~>), (:=), (.?))
 import Data.Argonaut.Parser (jsonParser)
-import Data.Argonaut.Core (jsonEmptyObject, Json)
+import Data.Argonaut.Core (jsonEmptyObject, Json, jsonNull)
 import Control.Monad.Aff as Aff
 import Network.HTTP.Affjax as Affjax
 import Network.HTTP.RequestHeader as RH
 import Network.HTTP.Method (Method(POST, PUT, DELETE))
 import Network.HTTP.StatusCode as SC
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(Just))
+import Data.Maybe (Maybe(..))
 
 ~{defineResultType}
 
-type ~{handlerEntityName h}Params = {
-~{indent 4 $ intercalate ",\n" $ map inputField $ handlerInputFields h}}
-
-newtype ~{handlerEntityName h}ParamsP = ~{handlerEntityName h}ParamsP ~{handlerEntityName h}Params
-
-instance encodeJson~{handlerEntityName h}ParamsP :: EncodeJson ~{handlerEntityName h}ParamsP where
-    encodeJson (~{handlerEntityName h}ParamsP x) = ~{choose (null $ handlerInputFields h) "" "do"}
-~{indent 8 $ intercalate "\n~> " $ map encodeJson $ handlerInputFields h}        ~{choose (null $ handlerInputFields h) "" "~>"} jsonEmptyObject
+~{defineHandlerParams h}
 

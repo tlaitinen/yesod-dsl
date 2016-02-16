@@ -6,9 +6,9 @@ import Data.Argonaut.Decode (class DecodeJson, decodeJson)
 import Data.Argonaut.Encode (class EncodeJson, encodeJson)
 import Data.Argonaut.Combinators ((~>), (:=), (.?))
 import Data.Argonaut.Parser (jsonParser)
-import Data.Argonaut.Core (jsonEmptyObject, Json)
+import Data.Argonaut.Core (jsonEmptyObject, Json, jsonNull)
 import Control.Monad.Aff as Aff
-import Data.Maybe (Maybe(Just))
+import Data.Maybe (Maybe(..))
 import Data.Either (Either(..))
 import Network.HTTP.Affjax as Affjax
 import Network.HTTP.RequestHeader as RH
@@ -29,13 +29,5 @@ instance decodeJson~{handlerEntityName h}P :: DecodeJson ~{handlerEntityName h}P
         pure $ ~{handlerEntityName h}P {
 ~{indent 12 $ intercalate ",\n" $ map decodeJsonAssign $ handlerOutputFields m h}        }
 
-type ~{handlerTypeName h}~{routeModuleName}Params = {
-~{indent 4 $ intercalate ",\n" $ map inputField $ getHandlerInputFields h}
-}
-
-newtype ~{handlerTypeName h}~{routeModuleName}ParamsP = ~{handlerTypeName h}~{routeModuleName}ParamsP ~{handlerTypeName h}~{routeModuleName}Params
-
-instance toURIQuery~{handlerTypeName h}~{routeModuleName}ParamsP :: ToURIQuery ~{handlerTypeName h}~{routeModuleName}ParamsP where
-    toURIQuery (~{handlerTypeName h}~{routeModuleName}ParamsP x) = dropEmptyQueryParams $
-~{indent 8 $ concatMap toURIQuery $ getHandlerInputFields h}        emptyQuery
+~{defineHandlerParams h}
 
