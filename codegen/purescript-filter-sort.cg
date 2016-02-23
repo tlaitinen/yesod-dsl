@@ -1,0 +1,17 @@
+data ~{routeModuleName}SortField =
+~{indent 4 $ intercalate " |\n" $ map sortField (handlerSqFields h)}
+
+instance encodeJson~{routeModuleName}SortField :: EncodeJson ~{routeModuleName}SortField where
+    encodeJson x = encodeJson $ case x of
+~{indent 8 $ concatMap encodeJsonSortField (handlerSqFields h)}
+
+type ~{routeModuleName}Sort = Array (SortField ~{routeModuleName}SortField)
+
+data ~{routeModuleName}FilterField =
+~{indent 4 $ intercalate " |\n" $ map filterField (handlerFilterFields h)}
+
+
+type ~{routeModuleName}Filter = Array (~{routeModuleName}FilterField)
+
+instance encodeJson~{routeModuleName}FilterField :: EncodeJson ~{routeModuleName}FilterField where
+    encodeJson x = encodeJson "TODO"

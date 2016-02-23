@@ -5,11 +5,19 @@ import YesodDsl.Generator.Input
 import YesodDsl.Generator.Common
 
 
-handlerInputFields :: Handler -> [(FieldName, Either OptionalFlag Field)]
+data InputField = InputField Field 
+                | InputUnknown  FieldName OptionalFlag
+                | InputSort
+                | InputFilter
+
+handlerInputFields :: Handler -> [InputField]
 handlerInputFields h = (if handlerType h == GetHandler then [ 
-        ("start", Right $ mkField "start" (True, NormalField FTInt32)),
-        ("limit", Right $ mkField "limit" (True, NormalField FTInt32))
-    ] else []) ++ (nubAttrs $ concatMap requestAttrs $ handlerStmts h)
+        InputField $ mkField "start" (True, NormalField FTInt32),
+        InputField $ mkField "limit" (True, NormalField FTInt32)
+    ] else []) ++ (map trAttr $ nubAttrs $ concatMap requestAttrs $ handlerStmts h) ++ (if DefaultFilterSort `elem` handlerStmts h then [ InputSort, InputFilter ] else [])
+    where 
+        trAttr (fn, Left o) = InputUnknown fn o
+        trAttr (_, Right f) = InputField f
 
 handlerOutputFields :: Module -> Handler ->  [Field]
 handlerOutputFields m h = concatMap stmtOutputs $ handlerStmts h

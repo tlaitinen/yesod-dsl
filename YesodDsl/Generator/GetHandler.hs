@@ -24,6 +24,9 @@ getStmt (IfFilter (pn,_,_,_,useFlag)) = T.unpack $(codegenFile "codegen/get-filt
     where forceType = if useFlag == True then (""::String) else " :: Maybe Text"
 getStmt _ = ""      
 
+selectQueryFields :: SelectQuery -> [(Entity, VariableName, Field, VariableName, MaybeFlag)]
+selectQueryFields sq = runReader (ctxFields sq) (emptyContext { ctxNames = sqAliases sq }) 
+
 ctxFields :: SelectQuery -> Reader Context [(Entity, VariableName, Field, VariableName, MaybeFlag)]
 ctxFields sq = do
     names <- asks ctxNames

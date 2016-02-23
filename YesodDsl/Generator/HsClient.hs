@@ -70,7 +70,8 @@ moduleToHsClient m = [
             PathText t -> " ++ \"/" ++ t ++ "\""
             PathId _ _ -> " ++ \"/\" ++ show p" ++ show (n::Int)) $ zip [1..] (routePath r)
         
-        inputField (fn,Right f) = rstrip $ T.unpack $(codegenFile "codegen/hs-client-inputfield.cg")
-        inputField (fn,Left optional) = rstrip $ T.unpack $(codegenFile "codegen/hs-client-inputfield-unknown.cg")
+        inputField (InputField f) = rstrip $ T.unpack $(codegenFile "codegen/hs-client-inputfield.cg")
+        inputField (InputUnknown fn optional) = rstrip $ T.unpack $(codegenFile "codegen/hs-client-inputfield-unknown.cg")
+        inputField _ = "{- TODO -}"
         maybeMaybe x = if x then "Maybe " else "" :: Text
         entity e = T.unpack $(codegenFile "codegen/hs-client-entity.cg")

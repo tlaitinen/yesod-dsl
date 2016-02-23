@@ -1,3 +1,4 @@
+~{maybeFilterSort h}
 type ~{handlerBaseName h}Params = {
 ~{indent 4 $ intercalate ",\n" $ map inputField $ handlerInputFields h}}
 

@@ -16,6 +16,7 @@ import Network.HTTP.Method (Method(POST, PUT, DELETE))
 import Network.HTTP.StatusCode as SC
 import Data.URI.Types as URIT
 import Data.URI.Query as URIQ
+import Data.Tuple (Tuple(..))
 
 type ~{handlerEntityName h} = {
 ~{indent 4 $ intercalate ",\n" $ map field $ handlerOutputFields m h}}
