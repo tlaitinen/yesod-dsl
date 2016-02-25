@@ -1,0 +1,1 @@
+~{routeModuleName}~{filterFieldName alias} _ value -> encodeJson value

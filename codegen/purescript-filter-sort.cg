@@ -10,8 +10,16 @@ type ~{routeModuleName}Sort = Array (SortField ~{routeModuleName}SortField)
 data ~{routeModuleName}FilterField =
 ~{indent 4 $ intercalate " |\n" $ map filterField (handlerFilterFields h)}
 
-
 type ~{routeModuleName}Filter = Array (~{routeModuleName}FilterField)
 
+instance yesodDslFilter~{routeModuleName}FilterField :: YesodDslFilter ~{routeModuleName}FilterField where
+    yesodDslFilterField x = case x of
+~{indent 8 $ concatMap filterFieldFieldName $ handlerFilterFields h}
+    yesodDslFilterOp x = case x of
+~{indent 8 $ concatMap filterFieldOp $ handlerFilterFields h}
+    yesodDslFilterValue x = case x of
+~{indent 8 $ concatMap filterFieldValue $ handlerFilterFields h}
+
+
 instance encodeJson~{routeModuleName}FilterField :: EncodeJson ~{routeModuleName}FilterField where
-    encodeJson x = encodeJson "TODO"
+    encodeJson f = encodeJson (YesodDslFilterP f) 

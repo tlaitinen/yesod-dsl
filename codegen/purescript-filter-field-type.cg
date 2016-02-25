@@ -1,1 +1,1 @@
-~{routeModuleName}~{filterFieldName alias}F FilterOp (~{pureScriptFieldType f})
+~{routeModuleName}~{filterFieldName alias} FilterOp (~{pureScriptFieldType f})

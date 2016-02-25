@@ -119,8 +119,13 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
                 SelectIdField _ mvn -> fromMaybe "id" mvn
                 SelectExpr _ vn -> vn
                 _ -> ""
-        filterFieldName = upperFirst . (replace "." "_")
+        filterFieldName = (prepend "_") . (replace "." "_")
         filterField (e,_,f,alias,mf) = rstrip $ T.unpack $(codegenFile "codegen/purescript-filter-field-type.cg")        
+        filterFieldFieldName (_,_,_,alias,_) = T.unpack $(codegenFile "codegen/purescript-filter-field-name.cg")        
+        filterFieldOp (_,_,_,alias,_) = T.unpack $(codegenFile "codegen/purescript-filter-field-op.cg")        
+        filterFieldValue (_,_,_,alias,_) = T.unpack $(codegenFile "codegen/purescript-filter-field-value.cg")        
+
+        
         handlerRequestDataType h = T.unpack $(codegenFile "codegen/purescript-handler-request-data-type.cg")
             where
                 resultType = case handlerType h of
