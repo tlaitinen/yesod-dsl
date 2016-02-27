@@ -1,7 +1,7 @@
 ~{concatMap handler $ routeHandlers r} 
 
 module ~{moduleName m}.~{routeModuleName} (
-~{indent 4 $ intercalate ",\n" $ map exportHandler $ routeHandlers r}    ) where
+~{indent 4 $ concatMap (append ",\n") $ map exportHandler $ routeHandlers r}    ~{routeModuleName}R(..)) where
 import Prelude
 import YesodDsl
 import ~{moduleName m}.DB
