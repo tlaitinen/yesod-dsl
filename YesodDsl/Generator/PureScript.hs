@@ -17,6 +17,10 @@ import YesodDsl.Generator.Client
 import Data.Generics.Uniplate.Data
 import YesodDsl.Generator.GetHandler (selectQueryFields)
 
+choose :: Bool -> String -> String -> String 
+choose cond t e 
+    | cond = t
+    | otherwise = e
 fieldValueToPureScript :: FieldValue -> String
 fieldValueToPureScript fv = case fv of
     StringValue s -> "\"" ++ s ++ "\""
@@ -60,8 +64,8 @@ pureScriptFieldType f = (if fieldOptional f then "Maybe " else "")
         EnumField en -> en
 
 
-moduleToPureScript :: Module -> String
-moduleToPureScript m = T.unpack $(codegenFile "codegen/purescript.cg")
+moduleToPureScript :: Module -> Maybe String -> String
+moduleToPureScript m pfx = T.unpack $(codegenFile "codegen/purescript.cg")
     where
         exportRouteModule r = rstrip $ T.unpack $(codegenFile "codegen/purescript-export-route.cg")
         importRouteModule r = T.unpack $(codegenFile "codegen/purescript-import-route.cg")
@@ -139,10 +143,6 @@ route m r = T.unpack $(codegenFile "codegen/purescript-route.cg")
 
         handlerEntityName h = (if handlerType h /= GetHandler then handlerTypeName h else "") ++ routePathName
         handlerTypeName h = upperFirst $ map toLower (show $ handlerType h) 
-        choose :: Bool -> String -> String -> String 
-        choose cond t e 
-            | cond = t
-            | otherwise = e
         handler h 
             | handlerType h == GetHandler = T.unpack $(codegenFile "codegen/purescript-handler-get.cg")
             | otherwise = T.unpack $(codegenFile "codegen/purescript-handler-update.cg")

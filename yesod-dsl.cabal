@@ -82,7 +82,8 @@ executable  yesod-dsl
                  , strict
                  , Cabal
                  , yesod-dsl
-                 
+                 , uniplate
+
     ghc-options: -Wall 
 
 

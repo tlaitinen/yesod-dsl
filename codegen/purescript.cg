@@ -1,4 +1,4 @@
-module ~{moduleName m} (
+module ~{fromMaybe "" pfx}~{choose (isJust pfx) "." ""}~{moduleName m} (
     module ~{moduleName m}.DB~{concatMap (prepend ",\n    ") $ map exportRouteModule $ modRoutes m}
     ) where
 import ~{moduleName m}.DB

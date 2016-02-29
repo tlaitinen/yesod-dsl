@@ -117,9 +117,9 @@ generate path m = do
 genJson :: FilePath -> Module -> IO ()
 genJson path m = syncFile path $ moduleToJson m
 
-genPureScript :: FilePath -> Module -> IO ()
-genPureScript path m = do
-    syncFile path $ moduleToPureScript m
+genPureScript :: FilePath -> Module -> Maybe String -> IO ()
+genPureScript path m pfx = do
+    syncFile path $ moduleToPureScript m pfx
 
 genHsClient :: FilePath -> Module -> IO ()
 genHsClient path m = do
