@@ -447,11 +447,11 @@ handlerParamsBlock : lbrace beginHandler handlerParams rbrace {%
                 l4 <- mkLoc $4
                 when (hasSelect == False) $ 
                     pError l4 "missing select in GET handler"
-            return (reverse $3) 
+            return $3 
     }
 
 handlerParams : { [] }
-     | handlerParams handlerParam semicolon { $2 : $1 }
+     | handlerParams handlerParam semicolon { $1 ++ [$2] }
 handlerParam : public {%
         do
             l <- mkLoc $1
