@@ -111,7 +111,6 @@ hsFieldRef ml (PathParam p) = normalFieldRef ml $ "p" ++ show p
 hsFieldRef ml LocalParam   = normalFieldRef ml "localParam"
 hsFieldRef ml (LocalParamField (Var vn (Right e) _) fn) = normalFieldRef ml $ entityName e ++ upperFirst fn ++ " $ result_" ++ vn
 hsFieldRef ml (RequestField fn)  = normalFieldRef ml $ "attr_" ++ fn
-hsFieldRef ml (EnumValueRef en vn)  = normalFieldRef ml $ en ++ vn
 hsFieldRef ml (NamedLocalParam vn) = normalFieldRef ml $ "result_" ++ vn
 hsFieldRef ml (Const (fv@(NothingValue))) = return $  makeJust ml $ fieldValueToEsqueleto fv
 hsFieldRef ml (Const fv) = return $ makeJust ml $ "(val " ++ fieldValueToEsqueleto fv ++  ")" 

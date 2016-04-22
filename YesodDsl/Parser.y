@@ -364,15 +364,6 @@ fieldRef :
                then return $ SqlId (Var (s1 ++ "_" ++ s3) (Left "") False)
                else return $ SqlField (Var (s1 ++ "_" ++ s3) (Left "") False) s5
     }
-    | upperIdTk dot upperIdTk {%
-        do
-            l1 <- mkLoc $1
-            let s1 = tkString $1
-            l3 <- mkLoc $3
-            let s3 = tkString $3
-            withSymbol l1 s1 $ requireEnumValue l3 s3
-            return $ EnumValueRef s1 s3
-    }
     | pathParam {%
         do
             l1 <- mkLoc $1
@@ -904,6 +895,15 @@ value : stringval { StringValue $1 }
       | lbracket rbracket { EmptyList }
       | checkmarkActive { CheckmarkValue Active }
       | checkmarkInactive { CheckmarkValue Inactive }
+      | upperIdTk dot upperIdTk {%
+        do
+            l1 <- mkLoc $1
+            let s1 = tkString $1
+            l3 <- mkLoc $3
+            let s3 = tkString $3
+            withSymbol l1 s1 $ requireEnumValue l3 s3
+            return $ EnumFieldValue s1 s3
+    }
       
       
 uniques : { [] }

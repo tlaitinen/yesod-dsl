@@ -218,7 +218,6 @@ data FieldRef = SqlId VariableRef
               | AuthField FieldName
               | LocalParam
               | LocalParamField VariableRef FieldName
-              | EnumValueRef EnumName FieldName
               | PathParam Int 
               | RequestField FieldName
               | NamedLocalParam VariableName
