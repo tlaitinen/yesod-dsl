@@ -43,6 +43,7 @@ import Data.List
     hash        { Tk _ THash }
     equals { Tk _ TEquals }
     sql { Tk _ TSql }
+    sqltype { Tk _ TSqlType }
     map { Tk _ TMap }
     jsonTk { Tk _ TJson }
     concatop { Tk _ TConcatOp }
@@ -843,6 +844,12 @@ fieldOption : check lowerIdTk {%
             l <- mkLoc $1
             declare l "sql column name" SReserved
             return $ FieldColumnName $2
+    }
+    | sqltype stringval {%
+        do
+            l <- mkLoc $1
+            declare l "sql column type" SReserved
+            return $ FieldColumnType $2
     }
     | jsonTk stringval {%
         do

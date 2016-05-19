@@ -45,6 +45,7 @@ type EnumName = String
 type EnumValue = String
 type FunctionName = String
 type FieldName = String 
+type SQLType = String
 
 data FieldType = FTWord32 | FTWord64 | FTInt | FTInt32 | FTInt64 | FTText 
                | FTBool | FTDouble | FTTimeOfDay | FTDay | FTUTCTime 
@@ -274,6 +275,7 @@ fieldJsonName f = fromMaybe (fieldName f) $ listToMaybe [ fn | FieldJsonName fn 
 data FieldOption = FieldCheck FunctionName
                  | FieldDefault FieldValue
                  | FieldColumnName FieldName
+                 | FieldColumnType SQLType
                  | FieldJsonName FieldName
                  | FieldInternal
                  | FieldReadOnly
@@ -333,6 +335,9 @@ fieldDefault f = listToMaybe [ fv | FieldDefault fv <- universeBi f ]
 
 fieldColumnName :: Field -> Maybe FieldName
 fieldColumnName f = listToMaybe [ cn | FieldColumnName cn <- universeBi f ]
+
+fieldColumnType :: Field -> Maybe SQLType
+fieldColumnType f = listToMaybe [ cn | FieldColumnType cn <- universeBi f ]
 
 fieldChecks :: Field -> [FunctionName]
 fieldChecks f = [ func | FieldCheck func <- universeBi f ]

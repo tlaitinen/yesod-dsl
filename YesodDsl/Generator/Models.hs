@@ -49,6 +49,7 @@ persistFieldType f = baseFieldType f
                    ++ (maybeDefaultNull f)
                    ++ (maybeCheckmarkNullable $ fieldContent f)
                    ++ (maybeColumnName . fieldColumnName) f 
+                   ++ (maybeColumnType . fieldColumnType) f
     where 
           maybeDefault (Just d) = " \"default=" ++ (fieldValueToSql d)  ++ "\""
           maybeDefault _ = " "
@@ -58,6 +59,8 @@ persistFieldType f = baseFieldType f
           maybeCheckmarkNullable _ = ""
           maybeColumnName (Just cn) =" \"sql=" ++ cn ++ "\""
           maybeColumnName Nothing = ""
+          maybeColumnType (Just ct) =" \"sqltype=" ++ ct ++ "\""
+          maybeColumnType Nothing = ""
 
 
 
