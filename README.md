@@ -38,6 +38,14 @@ be handled correctly. However, if the generated code compiles, it probably does
 the right thing. If it does not compile, please post an issue with a minimal
 example reproducing the issue.
 
+## Status
+
+This project is not actively developed anymore because I'm focusing my efforts
+on [servant](https://github.com/haskell-servant/servant) instead of
+[yesod](http://www.yesodweb.com/). Servant is more suitable for developing an
+API server than Yesod, requires less boilerplate and can generate client
+code, so it renders this project largely obsolete.
+
 ## DSL syntax
 
 The syntax for the input of yesod-dsl is illustrated by the following complete
