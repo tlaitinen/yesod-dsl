@@ -31,8 +31,10 @@ append x = (++x)
 entityFieldName :: Entity -> Field -> String
 entityFieldName e f = (lowerFirst . entityName) e ++ (upperFirst . fieldName) f
 
-resultMapper :: Maybe FunctionName -> String
-resultMapper mmapper = maybe "" ((" $ " ++) . (++ " $ ")) mmapper
+resultMapper :: Maybe FunctionName -> String -> String
+resultMapper mfn c = case mfn of
+    Just fn -> "(" ++ fn ++ " $ " ++ c ++ ")"
+    Nothing -> c
 
 isKeyword :: String -> Bool
 isKeyword = (== [Keyword]) . map fst . tokenise

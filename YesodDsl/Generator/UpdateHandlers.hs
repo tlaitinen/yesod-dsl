@@ -79,16 +79,16 @@ mapJsonInputField ifields isNew (e,f) = do
         mcontent 
             | null ifields && fieldInternal f == False && fieldReadOnly f == False = Just $ let fn = fieldName f in T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
             | otherwise = case maybeInput of
-                Just (RequestField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
-                Just (AuthId, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
-                Just (AuthField fn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
-                Just (PathParam i, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
-                Just (Const v, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
-                Just (Now, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
-                Just (NamedLocalParam vn, mm) -> Just $ resultMapper mm ++ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
+                Just (RequestField fn, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-normal.cg")
+                Just (AuthId, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-authid.cg")
+                Just (AuthField fn, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-auth.cg")
+                Just (PathParam i, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-pathparam.cg")
+                Just (Const v, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-const.cg")
+                Just (Now, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-now.cg")
+                Just (NamedLocalParam vn, mm) -> Just $ resultMapper mm $ T.unpack $(codegenFile "codegen/map-input-field-localparam.cg")
                 Just (LocalParamField (Var vn (Right e') _) fn, mm) -> do
                     let en = entityName e'
-                    return $ resultMapper mm ++ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
+                    return $ resultMapper mm $ T.unpack $(codegenFile "codegen/input-field-local-param-field.cg")
                 Just (fr,_) -> error $ "Sorry, not implemented yet: " ++ show fr    
                 Nothing -> if isNew then Just $ defaultFieldValue f
                                     else Nothing
@@ -164,6 +164,7 @@ updateHandlerReturnRunDB ps = case listToMaybe $ filter isReturn ps of
         isReturn (Return _) = True
         isReturn _ = False
         trOutputField (pn,NamedLocalParam vn,mm) = rstrip $ T.unpack $(codegenFile "codegen/output-field-local-param.cg")
+            where rhs = resultMapper mm $ "(toJSON result_" ++ vn ++ ")"
         trOutputField (_,fr,_) = error $ "not implemented yet, sorry : " ++ show fr
 
 

@@ -1,1 +1,1 @@
-"~{pn}" .= ~{resultMapper mm}(toJSON result_~{vn})
+"~{pn}" .= ~{rhs}
